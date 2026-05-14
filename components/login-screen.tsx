@@ -24,6 +24,16 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
 
   const totalSteps = 6
 
+  // --- FUNÇÃO DE RASTREAMENTO DE LEAD ---
+  const trackLead = () => {
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      (window as any).fbq('track', 'Lead', {
+        content_name: 'Cadastro BankPix',
+        status: 'Iniciado'
+      });
+    }
+  }
+
   // Ciclo de mensagens no carregamento final
   useEffect(() => {
     if (finalLoading) {
@@ -64,6 +74,11 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
   }
 
   const nextStep = async () => {
+    // DISPARA O LEAD NO MOMENTO QUE PASSA DO PASSO 1
+    if (step === 1) {
+      trackLead();
+    }
+
     setIsProcessing(true)
     await new Promise(r => setTimeout(r, 2000))
     setIsProcessing(false)
