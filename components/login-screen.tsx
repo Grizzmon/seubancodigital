@@ -31,8 +31,8 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
         'Verificando seu cadastro...',
         'Preparando seu Pix...',
         'Conectando ao sistema Brasil...',
-        'Só mais um momento...',
-        'Não feche a tela...'
+        'So mais um momento...',
+        'Nao feche a tela...'
       ]
       let i = 0
       const interval = setInterval(() => {
@@ -59,7 +59,7 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
         alert("Senha incorreta!")
       }
     } else {
-      alert("Conta não encontrada. Clique no botão de destaque abaixo para criar.")
+      alert("Conta nao encontrada. Clique no botao abaixo para criar.")
     }
   }
 
@@ -72,7 +72,7 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
 
   const handleFinalRegister = async () => {
     if (password !== confirmPassword) {
-      alert("As senhas não coincidem!")
+      alert("As senhas nao coincidem!")
       return
     }
 
@@ -158,6 +158,40 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     )
   }
 
+  // Titulos e descricoes para cada etapa
+  const stepInfo: { [key: number]: { icon: React.ReactNode; title: string; subtitle: string } } = {
+    1: {
+      icon: <User className="w-8 h-8 text-primary" />,
+      title: "Qual e o seu nome completo?",
+      subtitle: "Digite seu nome como esta no documento"
+    },
+    2: {
+      icon: <Calendar className="w-8 h-8 text-primary" />,
+      title: "Qual e a sua data de nascimento?",
+      subtitle: "Precisamos confirmar sua idade"
+    },
+    3: {
+      icon: <MapPin className="w-8 h-8 text-primary" />,
+      title: "Onde voce mora?",
+      subtitle: "Selecione sua provincia"
+    },
+    4: {
+      icon: <Phone className="w-8 h-8 text-primary" />,
+      title: "Qual e o seu numero de celular?",
+      subtitle: "Esse sera seu numero de acesso"
+    },
+    5: {
+      icon: <BarChart3 className="w-8 h-8 text-primary" />,
+      title: "Qual seu limite diario?",
+      subtitle: "Defina o valor que pretende movimentar"
+    },
+    6: {
+      icon: <Lock className="w-8 h-8 text-primary" />,
+      title: "Pronto! Seu cadastro esta quase pronto",
+      subtitle: "Crie uma senha segura para sua conta"
+    }
+  }
+
   const renderStepContent = () => {
     if (isProcessing) {
       return (
@@ -168,73 +202,129 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
       )
     }
 
+    const currentStepInfo = stepInfo[step]
+
     switch (step) {
       case 1:
         return (
           <div className="space-y-6">
-            <input autoFocus className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-2xl outline-none focus:border-primary uppercase" value={name} onChange={e => setName(e.target.value)} placeholder="NOME COMPLETO" />
-            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2">SEGUINTE <ArrowRight /></button>
+            <div className="text-center mb-6">
+              <div className="flex justify-center mb-4">
+                <div className="p-4 bg-primary/10 rounded-2xl">{currentStepInfo.icon}</div>
+              </div>
+              <h2 className="text-2xl font-black text-gray-900 mb-2">{currentStepInfo.title}</h2>
+              <p className="text-sm text-gray-500 font-medium">{currentStepInfo.subtitle}</p>
+            </div>
+            <input autoFocus className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-xl outline-none focus:border-primary uppercase" value={name} onChange={e => setName(e.target.value)} placeholder="SEU NOME COMPLETO" />
+            <button onClick={nextStep} disabled={!name.trim()} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">CONTINUAR <ArrowRight /></button>
           </div>
         )
       case 2:
         return (
           <div className="space-y-6">
+            <div className="text-center mb-6">
+              <div className="flex justify-center mb-4">
+                <div className="p-4 bg-primary/10 rounded-2xl">{currentStepInfo.icon}</div>
+              </div>
+              <h2 className="text-2xl font-black text-gray-900 mb-2">{currentStepInfo.title}</h2>
+              <p className="text-sm text-gray-500 font-medium">{currentStepInfo.subtitle}</p>
+            </div>
             <input type="date" className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-xl outline-none focus:border-primary" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
-            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2">SEGUINTE <ArrowRight /></button>
+            <button onClick={nextStep} disabled={!birthDate} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">CONTINUAR <ArrowRight /></button>
           </div>
         )
       case 3:
         return (
           <div className="space-y-6">
+            <div className="text-center mb-6">
+              <div className="flex justify-center mb-4">
+                <div className="p-4 bg-primary/10 rounded-2xl">{currentStepInfo.icon}</div>
+              </div>
+              <h2 className="text-2xl font-black text-gray-900 mb-2">{currentStepInfo.title}</h2>
+              <p className="text-sm text-gray-500 font-medium">{currentStepInfo.subtitle}</p>
+            </div>
             <select className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-xl outline-none focus:border-primary appearance-none" value={province} onChange={e => setProvince(e.target.value)}>
-              <option value="">PROVÍNCIA</option>
-              <option value="Zambézia">Zambézia</option>
-              <option value="Maputo">Maputo</option>
+              <option value="">SELECIONE A PROVINCIA</option>
+              <option value="Maputo Cidade">Maputo Cidade</option>
+              <option value="Maputo Provincia">Maputo Provincia</option>
+              <option value="Gaza">Gaza</option>
+              <option value="Inhambane">Inhambane</option>
               <option value="Sofala">Sofala</option>
-              <option value="Nampula">Nampula</option>
+              <option value="Manica">Manica</option>
               <option value="Tete">Tete</option>
+              <option value="Zambezia">Zambezia</option>
+              <option value="Nampula">Nampula</option>
+              <option value="Cabo Delgado">Cabo Delgado</option>
+              <option value="Niassa">Niassa</option>
             </select>
-            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2">SEGUINTE <ArrowRight /></button>
+            <button onClick={nextStep} disabled={!province} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">CONTINUAR <ArrowRight /></button>
           </div>
         )
       case 4:
         return (
           <div className="space-y-6">
-            <input type="tel" className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-2xl outline-none focus:border-primary" value={phone} onChange={e => setPhone(e.target.value)} placeholder="84XXXXXXX" />
-            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2">SEGUINTE <ArrowRight /></button>
+            <div className="text-center mb-6">
+              <div className="flex justify-center mb-4">
+                <div className="p-4 bg-primary/10 rounded-2xl">{currentStepInfo.icon}</div>
+              </div>
+              <h2 className="text-2xl font-black text-gray-900 mb-2">{currentStepInfo.title}</h2>
+              <p className="text-sm text-gray-500 font-medium">{currentStepInfo.subtitle}</p>
+            </div>
+            <div className="relative">
+              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 font-bold">+258</span>
+              <input type="tel" className="w-full p-5 pl-16 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-xl outline-none focus:border-primary" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="84XXXXXXX" maxLength={9} />
+            </div>
+            <p className="text-xs text-gray-400 text-center">Formato: 84, 85, 86 ou 87 + 7 digitos</p>
+            <button onClick={nextStep} disabled={phone.length !== 9} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">CONTINUAR <ArrowRight /></button>
           </div>
         )
       case 5:
         return (
           <div className="space-y-6">
-            <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 block mb-2 text-center">Qual é seu limite de movimento diário?</label>
+            <div className="text-center mb-6">
+              <div className="flex justify-center mb-4">
+                <div className="p-4 bg-primary/10 rounded-2xl">{currentStepInfo.icon}</div>
+              </div>
+              <h2 className="text-2xl font-black text-gray-900 mb-2">{currentStepInfo.title}</h2>
+              <p className="text-sm text-gray-500 font-medium">{currentStepInfo.subtitle}</p>
+            </div>
             <select className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-xl outline-none focus:border-primary appearance-none" value={dailyLimit} onChange={e => setDailyLimit(e.target.value)}>
               <option value="">SELECIONE O VALOR</option>
-              <option value="1000">R$ 100,00 A R$ 1.000,00</option>
-              <option value="5000">R$ 1.000,00 A R$ 5.000,00</option>
-              <option value="10000">MAIS DE R$ 5.000,00</option>
+              <option value="1000">R$ 100,00 a R$ 1.000,00</option>
+              <option value="5000">R$ 1.000,00 a R$ 5.000,00</option>
+              <option value="10000">Mais de R$ 5.000,00</option>
             </select>
-            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2 uppercase tracking-tight">Próximo Passo <ArrowRight /></button>
+            <button onClick={nextStep} disabled={!dailyLimit} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">CONTINUAR <ArrowRight /></button>
           </div>
         )
       case 6:
         return (
-          <div className="space-y-4">
-            <div className="relative">
-              <input type={showPass ? 'text' : 'password'} className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-2xl outline-none focus:border-primary" value={password} onChange={e => setPassword(e.target.value)} placeholder="CRIAR SENHA" />
-              <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-5 top-6 text-gray-400">{showPass ? <EyeOff /> : <Eye />}</button>
+          <div className="space-y-5">
+            <div className="text-center mb-6">
+              <div className="flex justify-center mb-4">
+                <div className="p-4 bg-primary/10 rounded-2xl">{currentStepInfo.icon}</div>
+              </div>
+              <h2 className="text-2xl font-black text-gray-900 mb-2">{currentStepInfo.title}</h2>
+              <p className="text-sm text-gray-500 font-medium">{currentStepInfo.subtitle}</p>
             </div>
-            <input type={showPass ? 'text' : 'password'} className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-2xl outline-none focus:border-primary" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="CONFIRMAR SENHA" />
-            <button onClick={handleFinalRegister} className="w-full py-6 bg-primary text-white rounded-2xl font-black text-2xl shadow-xl mt-4 active:scale-95 transition-all">ABRIR CONTA AGORA</button>
+            <div className="relative">
+              <input type={showPass ? 'text' : 'password'} className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-xl outline-none focus:border-primary pr-14" value={password} onChange={e => setPassword(e.target.value)} placeholder="CRIAR SENHA" />
+              <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">{showPass ? <EyeOff size={24} /> : <Eye size={24} />}</button>
+            </div>
+            <input type={showPass ? 'text' : 'password'} className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-xl outline-none focus:border-primary" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="CONFIRMAR SENHA" />
+            <p className="text-xs text-gray-400 text-center">Minimo 8 caracteres</p>
+            <button onClick={handleFinalRegister} disabled={password.length < 8 || password !== confirmPassword} className="w-full py-6 bg-primary text-white rounded-2xl font-black text-xl shadow-xl mt-2 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">CRIAR MINHA CONTA</button>
           </div>
         )
       case 7:
         return (
-          <div className="flex flex-col items-center animate-in zoom-in duration-500">
-            <CheckCircle className="w-20 h-20 text-green-500 mb-6" />
-            <h1 className="text-3xl font-black text-gray-900 mb-2">CONTA ATIVA!</h1>
-            <p className="text-xl font-bold text-gray-500 mb-8 text-center uppercase tracking-tight">Bem-vindo, {name.split(' ')[0]}!</p>
-            <button onClick={() => onLogin(JSON.parse(localStorage.getItem(`bankpix_user_${phone}`)!))} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl">ENTRAR NO PAINEL</button>
+          <div className="flex flex-col items-center animate-in zoom-in duration-500 py-6">
+            <div className="p-5 bg-green-100 rounded-full mb-6">
+              <CheckCircle className="w-16 h-16 text-green-500" />
+            </div>
+            <h1 className="text-3xl font-black text-gray-900 mb-2">CONTA CRIADA!</h1>
+            <p className="text-lg font-bold text-gray-500 mb-8 text-center">Bem-vindo ao BankPix, {name.split(' ')[0]}!</p>
+            <button onClick={() => onLogin(JSON.parse(localStorage.getItem(`bankpix_user_${phone}`)!))} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl shadow-xl shadow-primary/30 active:scale-95 transition-all">ENTRAR NO PAINEL</button>
           </div>
         )
       default: return null
@@ -243,11 +333,26 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-[40px] shadow-2xl p-10 border border-gray-100">
+      <div className="w-full max-w-md bg-white rounded-[32px] shadow-2xl p-8 border border-gray-100">
         {step < 7 && mode === 'register' && (
-          <div className="flex justify-between items-center mb-8">
-            <div className="bg-primary/10 text-primary text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest">PASSO {step} DE {totalSteps}</div>
-            {step > 1 && <button onClick={() => setStep(step - 1)} className="text-gray-300 hover:text-gray-900 transition-colors"><ArrowLeft size={24}/></button>}
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-3">
+              {step > 1 && (
+                <button onClick={() => setStep(step - 1)} className="p-2 rounded-xl bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-900 transition-colors">
+                  <ArrowLeft size={20}/>
+                </button>
+              )}
+              <div className="bg-primary/10 text-primary text-xs font-black px-4 py-2 rounded-full uppercase tracking-wider">
+                Passo {step} de {totalSteps}
+              </div>
+            </div>
+            {/* Progress bar */}
+            <div className="flex-1 ml-4 h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-primary transition-all duration-500 rounded-full" 
+                style={{ width: `${(step / totalSteps) * 100}%` }}
+              />
+            </div>
           </div>
         )}
         {mode === 'register' ? renderStepContent() : null}
