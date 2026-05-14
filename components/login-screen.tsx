@@ -47,24 +47,22 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
   const handleActualLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    // Busca o usuário pelo número de telefone no banco local
     const savedData = localStorage.getItem(`bankpix_user_${phone}`)
 
     if (savedData) {
       const userData = JSON.parse(savedData)
       if (userData.password === password) {
-        setPreLinkLoading(true) // Tela azul "Conectando"
+        setPreLinkLoading(true) 
         await new Promise(r => setTimeout(r, 7000))
         onLogin(userData)
       } else {
         alert("Senha incorreta!")
       }
     } else {
-      alert("Conta não encontrada. Clique em 'CRIAR MINHA CONTA' abaixo.")
+      alert("Conta não encontrada. Clique no botão de destaque abaixo para criar.")
     }
   }
 
-  // Transição entre passos do cadastro
   const nextStep = async () => {
     setIsProcessing(true)
     await new Promise(r => setTimeout(r, 2000))
@@ -72,7 +70,6 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     setStep(s => s + 1)
   }
 
-  // Fluxo final de registro
   const handleFinalRegister = async () => {
     if (password !== confirmPassword) {
       alert("As senhas não coincidem!")
@@ -84,7 +81,7 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     setPreLinkLoading(false)
 
     setFinalLoading(true)
-    await new Promise(r => setTimeout(r, 17500)) // Tempo total das mensagens
+    await new Promise(r => setTimeout(r, 17500)) 
 
     const userData = { 
       name: name.trim(), 
@@ -104,12 +101,11 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     setFinalLoading(false)
   }
 
-  // Telas de Carregamento
   if (preLinkLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[#001a33] p-6 text-center">
         <div className="w-16 h-16 border-4 border-white/20 border-t-white rounded-full animate-spin mb-6"></div>
-        <h1 className="text-2xl font-bold text-white animate-pulse tracking-widest">CONECTANDO...</h1>
+        <h1 className="text-2xl font-bold text-white animate-pulse tracking-widest uppercase">Conectando...</h1>
       </div>
     )
   }
@@ -123,7 +119,6 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     )
   }
 
-  // Interface de LOGIN
   if (mode === 'login') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
@@ -144,17 +139,16 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
               className="w-full p-5 bg-gray-50 border-2 border-transparent focus:border-primary rounded-2xl text-black font-extrabold text-lg outline-none transition-all"
               value={password} onChange={e => setPassword(e.target.value)}
             />
-            <button type="submit" className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl shadow-xl shadow-primary/30 hover:scale-[1.02] active:scale-95 transition-all">
+            <button type="submit" className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl shadow-xl shadow-primary/30 active:scale-95 transition-all">
               ENTRAR NO APP
             </button>
           </form>
 
-          {/* Botão de Criar Conta com Destaque */}
-          <div className="mt-10 pt-6 border-t border-gray-100">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Novo por aqui?</p>
+          <div className="mt-10 pt-8 border-t border-gray-100">
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">Primeira vez no BankPix?</p>
             <button 
               onClick={() => { setMode('register'); setStep(1); }}
-              className="w-full py-4 bg-white border-2 border-primary text-primary rounded-2xl font-black text-lg hover:bg-primary hover:text-white transition-all duration-300 shadow-md"
+              className="w-full py-5 bg-white border-[3px] border-primary text-primary rounded-[20px] font-black text-lg hover:bg-primary hover:text-white transition-all duration-300 shadow-xl"
             >
               CRIAR MINHA CONTA AGORA
             </button>
@@ -164,7 +158,6 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     )
   }
 
-  // Conteúdo do Cadastro por Etapas
   const renderStepContent = () => {
     if (isProcessing) {
       return (
@@ -179,15 +172,15 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
       case 1:
         return (
           <div className="space-y-6">
-            <input autoFocus className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-2xl outline-none focus:border-primary" value={name} onChange={e => setName(e.target.value)} placeholder="NOME COMPLETO" />
-            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl shadow-lg flex items-center justify-center gap-2">SEGUINTE <ArrowRight /></button>
+            <input autoFocus className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-2xl outline-none focus:border-primary uppercase" value={name} onChange={e => setName(e.target.value)} placeholder="NOME COMPLETO" />
+            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2">SEGUINTE <ArrowRight /></button>
           </div>
         )
       case 2:
         return (
           <div className="space-y-6">
             <input type="date" className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-xl outline-none focus:border-primary" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
-            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl shadow-lg flex items-center justify-center gap-2">SEGUINTE <ArrowRight /></button>
+            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2">SEGUINTE <ArrowRight /></button>
           </div>
         )
       case 3:
@@ -201,26 +194,27 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
               <option value="Nampula">Nampula</option>
               <option value="Tete">Tete</option>
             </select>
-            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl shadow-lg flex items-center justify-center gap-2">SEGUINTE <ArrowRight /></button>
+            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2">SEGUINTE <ArrowRight /></button>
           </div>
         )
       case 4:
         return (
           <div className="space-y-6">
             <input type="tel" className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-2xl outline-none focus:border-primary" value={phone} onChange={e => setPhone(e.target.value)} placeholder="84XXXXXXX" />
-            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl shadow-lg flex items-center justify-center gap-2">SEGUINTE <ArrowRight /></button>
+            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2">SEGUINTE <ArrowRight /></button>
           </div>
         )
       case 5:
         return (
           <div className="space-y-6">
+            <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 block mb-2 text-center">Qual é seu limite de movimento diário?</label>
             <select className="w-full p-5 bg-gray-50 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-xl outline-none focus:border-primary appearance-none" value={dailyLimit} onChange={e => setDailyLimit(e.target.value)}>
-              <option value="">LIMITE DIÁRIO</option>
-              <option value="1000">ATÉ 1.000 MT</option>
-              <option value="5000">1.000 A 5.000 MT</option>
-              <option value="10000">MAIS DE 5.000 MT</option>
+              <option value="">SELECIONE O VALOR</option>
+              <option value="1000">R$ 100,00 A R$ 1.000,00</option>
+              <option value="5000">R$ 1.000,00 A R$ 5.000,00</option>
+              <option value="10000">MAIS DE R$ 5.000,00</option>
             </select>
-            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl shadow-lg flex items-center justify-center gap-2">ÚLTIMO PASSO <ArrowRight /></button>
+            <button onClick={nextStep} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2 uppercase tracking-tight">Próximo Passo <ArrowRight /></button>
           </div>
         )
       case 6:
@@ -239,7 +233,7 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
           <div className="flex flex-col items-center animate-in zoom-in duration-500">
             <CheckCircle className="w-20 h-20 text-green-500 mb-6" />
             <h1 className="text-3xl font-black text-gray-900 mb-2">CONTA ATIVA!</h1>
-            <p className="text-xl font-bold text-gray-500 mb-8 text-center uppercase">Bem-vindo ao BankPix, {name.split(' ')[0]}!</p>
+            <p className="text-xl font-bold text-gray-500 mb-8 text-center uppercase tracking-tight">Bem-vindo, {name.split(' ')[0]}!</p>
             <button onClick={() => onLogin(JSON.parse(localStorage.getItem(`bankpix_user_${phone}`)!))} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl">ENTRAR NO PAINEL</button>
           </div>
         )
@@ -249,7 +243,7 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-[40px] shadow-2xl p-10 border border-gray-100 relative">
+      <div className="w-full max-w-md bg-white rounded-[40px] shadow-2xl p-10 border border-gray-100">
         {step < 7 && mode === 'register' && (
           <div className="flex justify-between items-center mb-8">
             <div className="bg-primary/10 text-primary text-[10px] font-black px-4 py-2 rounded-full uppercase tracking-widest">PASSO {step} DE {totalSteps}</div>
