@@ -1,174 +1,215 @@
 'use client'
 
-import { Copy, Check, KeyRound, Hash, Mail, Phone, Shuffle, ArrowLeft, Plus } from 'lucide-react'
-import { useState } from 'react'
-import { type PixKey, getKeyTypeLabel } from '@/lib/store'
+import { useState, useEffect } from 'react'
+import { KeyRound, CheckCircle, Hash, Phone, ArrowLeft, Copy, Check, Lock, ShieldAlert, ArrowRight } from 'lucide-react'
+import { type PixKey, generateCPF, generateCelular } from '@/lib/store'
 
-interface MyKeysViewProps {
-  keys: PixKey[]
+interface CreateKeyViewProps {
+  userName: string
+  onAddKey: (key: PixKey) => void
   onBack: () => void
-  onCreateKey: () => void
 }
 
-const keyIcons: Record<PixKey['type'], React.ComponentType<{ className?: string }>> = {
-  cpf: Hash,
-  email: Mail,
-  celular: Phone,
-  aleatorio: Shuffle,
-}
+type KeyType = 'cpf' | 'celular'
 
-const keyColors: Record<PixKey['type'], string> = {
-  cpf: 'bg-blue-500/10 text-blue-500',
-  email: 'bg-purple-500/10 text-purple-500',
-  celular: 'bg-green-500/10 text-green-500',
-  aleatorio: 'bg-orange-500/10 text-orange-500',
-}
+const loadingMessages = [
+  'Conectando ao servidor de São Paulo (DDD 19)...',
+  'Gerando sua chave criptografada...',
+  'Ligando com o Banco Central do Brasil...',
+  'Validando informações de segurança...',
+  'Não saia do app, quase pronto...',
+  'Finalizando registro oficial...'
+]
 
-export function MyKeysView({ keys, onBack, onCreateKey }: MyKeysViewProps) {
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps) {
+  const [name, setName] = useState('')
+  const [keyType, setKeyType] = useState<KeyType>('cpf')
+  const [isLoading, setIsLoading] = useState(false)
+  const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
+  const [success, setSuccess] = useState<{ name: string; value: string; type: KeyType } | null>(null)
+  const [error, setError] = useState('')
 
-  const handleCopy = async (key: PixKey) => {
-    try {
-      const textToCopy = `${key.name}\n${key.type === 'cpf' ? 'CPF' : 'CELULAR'}: ${key.value}\nBANCO: BANKPIX SSA`
-      await navigator.clipboard.writeText(textToCopy)
-      setCopiedId(key.id)
-      setTimeout(() => setCopiedId(null), 2000)
-    } catch (err) {
-      console.error('Failed to copy:', err)
+  useEffect(() => {
+    if (isLoading) {
+      const interval = setInterval(() => {
+        setLoadingMessageIndex(prev => (prev + 1) % loadingMessages.length)
+      }, 2500)
+      return () => clearInterval(interval)
     }
+  }, [isLoading])
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
+
+    if (!name.trim() || name.trim().split(/\s+/).length < 2) {
+      setError('Digite nome e sobrenome')
+      return
+    }
+
+    setIsLoading(true)
+    setLoadingMessageIndex(0)
+
+    await new Promise(resolve => setTimeout(resolve, 15000))
+
+    const realValue = keyType === 'cpf' ? generateCPF() : generateCelular()
+    
+    // Lógica de Omissão para o formato solicitado
+    let maskedValue = ""
+    if (keyType === 'cpf') {
+        maskedValue = `${realValue.substring(0, 3)}.***.***-${realValue.substring(12, 14)}`
+    } else {
+        maskedValue = `1997***${realValue.substring(9, 11)}`
+    }
+
+    const newKey: PixKey = {
+      id: Math.random().toString(36).substr(2, 9),
+      name: name.trim().toUpperCase(),
+      type: keyType,
+      value: maskedValue,
+      createdAt: new Date()
+    }
+
+    onAddKey(newKey)
+    setIsLoading(false)
+    setSuccess({ name: name.trim().toUpperCase(), value: maskedValue, type: keyType })
   }
 
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(new Date(date))
+  const handleDismissSuccess = () => {
+    setSuccess(null)
+    onBack()
   }
 
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Header with back button */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onBack}
-            className="p-2 rounded-lg bg-card border border-border hover:bg-muted transition-colors"
-            aria-label="Voltar"
-          >
-            <ArrowLeft className="w-5 h-5 text-foreground" />
-          </button>
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-foreground">Minhas Chaves</h1>
-            <p className="text-muted-foreground mt-1">
-              Gerencie suas chaves Pix cadastradas
-            </p>
-          </div>
-        </div>
-        {keys.length > 0 && (
-          <button
-            onClick={onCreateKey}
-            className="hidden md:flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Nova Chave
-          </button>
-        )}
-      </div>
-
-      {keys.length === 0 ? (
-        <div className="bg-card rounded-2xl border border-border p-8 md:p-12 text-center">
-          <div className="flex items-center justify-center w-20 h-20 rounded-full bg-muted mx-auto mb-6">
-            <KeyRound className="w-10 h-10 text-muted-foreground" />
-          </div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">
-            Nenhuma chave cadastrada
-          </h3>
-          <p className="text-muted-foreground max-w-sm mx-auto mb-6">
-            Voce ainda nao possui chaves Pix. Crie sua primeira chave para comecar a receber transferencias.
-          </p>
-          <button
-            onClick={onCreateKey}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/25"
-          >
-            <Plus className="w-5 h-5" />
-            Criar primeira chave
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {/* Stats */}
-          <div className="bg-card rounded-xl border border-border p-4">
-            <div className="flex items-center justify-between">
-              <p className="text-muted-foreground">
-                Total de chaves: <span className="font-bold text-foreground">{keys.length}</span>
-              </p>
-              <button
-                onClick={onCreateKey}
-                className="md:hidden flex items-center gap-2 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Nova
-              </button>
-            </div>
-          </div>
-
-          {/* Keys List */}
-          <div className="space-y-3">
-            {keys.map((key) => {
-              const IconComponent = keyIcons[key.type]
-              const colorClass = keyColors[key.type]
-              const isCopied = copiedId === key.id
-
-              return (
-                <div
-                  key={key.id}
-                  className="bg-card rounded-xl border border-border p-5 hover:border-primary/30 transition-all duration-200 hover:shadow-lg"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className={`flex items-center justify-center w-12 h-12 rounded-xl shrink-0 ${colorClass}`}>
-                      <IconComponent className="w-6 h-6" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-bold text-foreground mb-2 uppercase">{key.name}</p>
-                          <p className="text-sm text-muted-foreground mb-1">
-                            {key.type === 'cpf' ? 'CPF' : 'CELULAR'}: <span className="font-mono text-foreground">{key.value}</span>
-                          </p>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            BANCO: <span className="font-semibold text-primary">BANKPIX SSA</span>
-                          </p>
-                          <p className="text-xs text-muted-foreground/70">
-                            Criada em {formatDate(key.createdAt)}
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => handleCopy(key)}
-                          className={`p-3 rounded-xl transition-all shrink-0 ${
-                            isCopied
-                              ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted hover:bg-primary/10 text-muted-foreground hover:text-primary'
-                          }`}
-                          aria-label={isCopied ? 'Copiado' : 'Copiar chave'}
-                        >
-                          {isCopied ? (
-                            <Check className="w-5 h-5" />
-                          ) : (
-                            <Copy className="w-5 h-5" />
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )
-            })}
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md">
+          <div className="flex flex-col items-center gap-6 p-8 rounded-2xl bg-[#1a1a1a] border border-white/10 shadow-2xl w-full max-w-sm mx-4 text-center">
+            <div className="h-16 w-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+            <h3 className="text-lg font-bold text-white uppercase tracking-tight">
+              {loadingMessages[loadingMessageIndex]}
+            </h3>
           </div>
         </div>
       )}
+
+      {/* Success Modal - Formato de Comprovante Bloqueado */}
+      {success && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4 text-center">
+          <div className="w-full max-w-md bg-[#1a1a1a] rounded-[32px] border border-white/10 p-8 shadow-2xl">
+            <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <Lock className="w-8 h-8 text-yellow-500" />
+            </div>
+            
+            <h3 className="text-2xl font-black text-white mb-2 uppercase italic">Chave Pré-Gerada!</h3>
+            <p className="text-gray-400 text-xs font-bold mb-6 uppercase tracking-widest">Aguardando Ativação de Nível</p>
+
+            {/* BOX DO COMPROVANTE (Formato solicitado) */}
+            <div className="w-full p-6 rounded-2xl bg-black/40 border border-white/5 mb-8 text-left space-y-3">
+               <div>
+                  <p className="text-[10px] font-black text-gray-500 uppercase">Titular:</p>
+                  <p className="font-black text-white text-lg uppercase leading-tight">{success.name}</p>
+               </div>
+               
+               <div>
+                  <p className="text-[10px] font-black text-gray-500 uppercase">
+                    Chave Pix {success.type === 'cpf' ? 'CPF' : 'Celular'}:
+                  </p>
+                  <p className="font-mono text-2xl text-gray-500 font-black tracking-tighter leading-tight">
+                    {success.value}
+                  </p>
+               </div>
+
+               <div>
+                  <p className="text-[10px] font-black text-gray-500 uppercase">Banco:</p>
+                  <p className="font-black text-primary text-lg">BANKPIX MZN</p>
+               </div>
+
+               <div className="pt-2 border-t border-white/5 flex justify-between items-center">
+                  <span className="text-[10px] font-black text-gray-500 uppercase">Status:</span>
+                  <span className="bg-red-500/20 text-red-500 text-[10px] font-black px-2 py-0.5 rounded animate-pulse">INATIVA</span>
+               </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="bg-yellow-500/10 p-4 rounded-xl border border-yellow-500/20 mb-2">
+                <p className="text-[11px] text-yellow-500 font-bold leading-relaxed">
+                  Esta chave está temporariamente bloqueada. Para desbloquear e começar a receber valores agora, ative sua licença de uso.
+                </p>
+              </div>
+
+              <a href="https://loteriasegredo.com/desbloquei-seu-app/" className="w-full py-5 bg-green-600 text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2 shadow-lg shadow-green-900/20 active:scale-95 transition-all">
+                DESBLOQUEAR CHAVE PIX <ArrowRight size={22}/>
+              </a>
+              
+              <button onClick={handleDismissSuccess} className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] hover:text-gray-300 transition-colors">Configurar Depois</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main View */}
+      <div className="flex items-center gap-4">
+        <button onClick={onBack} className="p-3 rounded-2xl bg-[#1a1a1a] border border-white/10 hover:bg-white/5 transition-all">
+          <ArrowLeft className="text-white" size={24}/>
+        </button>
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-black text-white tracking-tighter">Gerar Chave Pix</h1>
+          <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Conexão Segura</span>
+        </div>
+      </div>
+
+      <div className="bg-[#1a1a1a] rounded-[32px] border border-white/10 p-8 shadow-xl">
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div>
+            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 ml-1">Nome para o Registro</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="NOME COMPLETO"
+              className="w-full p-5 bg-black/40 border-2 border-transparent focus:border-primary rounded-2xl text-white font-black text-2xl uppercase outline-none transition-all placeholder:text-gray-800"
+            />
+            {error && <p className="text-red-500 text-xs font-black mt-2 ml-1">{error}</p>}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <button
+              type="button"
+              onClick={() => setKeyType('cpf')}
+              className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center gap-3 ${
+                keyType === 'cpf' ? 'border-primary bg-primary/5' : 'border-white/5 bg-white/5 grayscale opacity-40'
+              }`}
+            >
+              <Hash className={keyType === 'cpf' ? 'text-primary' : 'text-gray-500'} size={28} />
+              <span className="text-[10px] font-black text-white uppercase tracking-widest">CPF Brasil</span>
+            </button>
+            
+            <button
+              type="button"
+              onClick={() => setKeyType('celular')}
+              className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center gap-3 ${
+                keyType === 'celular' ? 'border-primary bg-primary/5' : 'border-white/5 bg-white/5 grayscale opacity-40'
+              }`}
+            >
+              <Phone className={keyType === 'celular' ? 'text-primary' : 'text-gray-500'} size={28} />
+              <span className="text-[10px] font-black text-white uppercase tracking-widest">Celular BR</span>
+            </button>
+          </div>
+
+          <button type="submit" disabled={isLoading} className="w-full py-6 bg-primary text-white rounded-[24px] font-black text-2xl shadow-xl shadow-primary/20 flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-95 transition-all">
+            <KeyRound size={28}/> GERAR CHAVE
+          </button>
+        </form>
+      </div>
+
+      <div className="bg-blue-900/10 border border-blue-500/20 p-5 rounded-3xl flex items-start gap-4">
+        <div className="bg-blue-500/20 p-2 rounded-xl text-blue-400">😎</div>
+        <p className="text-[11px] text-blue-400 font-bold leading-relaxed uppercase tracking-tighter">
+          Podes usar qualquer nome. Chaves geradas com este sistema estão ligadas ao servidor central de São Paulo (DDD 19).
+        </p>
+      </div>
     </div>
   )
 }
