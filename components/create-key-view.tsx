@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertTriangle, Play, Lock, Mail, Hash } from 'lucide-react'
-import { type PixKey, generateCPF } from '@/lib/store'
+import { type PixKey } from '@/lib/store'
 
 const loadingMessages = [
   'Gerando sua chave...',
@@ -17,6 +17,16 @@ interface CreateKeyViewProps {
   userName: string
   onAddKey: (key: PixKey) => void
   onBack: () => void
+}
+
+function generateCPF(): string {
+  const rand = (max: number) => Math.floor(Math.random() * max)
+  const n = Array.from({ length: 9 }, () => rand(9))
+  let d1 = n.reduce((acc, val, i) => acc + val * (10 - i), 0) % 11
+  d1 = d1 < 2 ? 0 : 11 - d1
+  let d2 = (n.reduce((acc, val, i) => acc + val * (11 - i), 0) + d1 * 2) % 11
+  d2 = d2 < 2 ? 0 : 11 - d2
+  return `${n.slice(0,3).join('')}.${n.slice(3,6).join('')}.${n.slice(6,9).join('')}-${d1}${d2}`
 }
 
 function generateBrazilianPhone(): string {
@@ -57,39 +67,22 @@ function maskRandomKey(key: string): string {
 export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps) {
   const [keyName, setKeyName] = useState('')
   const [keyType, setKeyType] = useState<'cpf' | 'celular' | 'aleatorio' | 'email'>('cpf')
-  const [isLoading, setIsLoading] = useState(false)
+  const [viewState, setViewState] = useState<'form' | 'loading' | 'success' | 'email-warning'>('form')
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
-  const [success, setSuccess] = useState<{ 
-    name: string
-    type: 'cpf' | 'celular' | 'aleatorio' | 'email'
-    value: string
-    maskedValue: string 
-  } | null>(null)
+  const [successData, setSuccessData] = useState<{ name: string; type: string; maskedValue: string } | null>(null)
   const [copied, setCopied] = useState(false)
   const [showLimitWarning, setShowLimitWarning] = useState(false)
-  const [showEmailWarning, setShowEmailWarning] = useState(false)
+  
+  const loadingTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const messageTimerRef = useRef<NodeJS.Timeout | null>(null)
 
+  // Cleanup timers
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null
-    if (isLoading) {
-      interval = setInterval(() => {
-        setLoadingMessageIndex(prev => (prev + 1) % loadingMessages.length)
-      }, 1600)
-    }
     return () => {
-      if (interval) clearInterval(interval)
+      if (loadingTimerRef.current) clearTimeout(loadingTimerRef.current)
+      if (messageTimerRef.current) clearInterval(messageTimerRef.current)
     }
-  }, [isLoading])
-
-  // Show warning 2 seconds after success
-  useEffect(() => {
-    if (success && !showLimitWarning) {
-      const timer = setTimeout(() => {
-        setShowLimitWarning(true)
-      }, 2000)
-      return () => clearTimeout(timer)
-    }
-  }, [success, showLimitWarning])
+  }, [])
 
   const handleActivateAccount = () => {
     if (typeof window !== 'undefined' && (window as any).fbq) {
@@ -101,72 +94,88 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
   const handleSelectKeyType = (type: 'cpf' | 'celular' | 'aleatorio' | 'email') => {
     setKeyType(type)
     if (type === 'email') {
-      setShowEmailWarning(true)
-    } else {
-      setShowEmailWarning(false)
+      setViewState('email-warning')
     }
   }
 
-  const handleGenerateKey = async () => {
+  const handleGenerateKey = () => {
     if (!keyName.trim()) {
       alert('Digite um nome para sua chave')
       return
     }
-    if (isLoading) return
-    if (keyType === 'email') return
 
-    setIsLoading(true)
+    // Start loading
+    setViewState('loading')
     setLoadingMessageIndex(0)
 
-    await new Promise(resolve => setTimeout(resolve, 10000))
+    // Cycle messages
+    messageTimerRef.current = setInterval(() => {
+      setLoadingMessageIndex(prev => (prev + 1) % loadingMessages.length)
+    }, 1500)
 
-    let value = ''
-    let maskedValue = ''
+    // Finish after 10 seconds
+    loadingTimerRef.current = setTimeout(() => {
+      if (messageTimerRef.current) clearInterval(messageTimerRef.current)
+      
+      let value = ''
+      let maskedValue = ''
 
-    if (keyType === 'cpf') {
-      value = generateCPF()
-      maskedValue = maskCPF(value)
-    } else if (keyType === 'celular') {
-      value = generateBrazilianPhone()
-      maskedValue = maskPhone(value)
-    } else if (keyType === 'aleatorio') {
-      value = generateRandomKey()
-      maskedValue = maskRandomKey(value)
-    }
+      if (keyType === 'cpf') {
+        value = generateCPF()
+        maskedValue = maskCPF(value)
+      } else if (keyType === 'celular') {
+        value = generateBrazilianPhone()
+        maskedValue = maskPhone(value)
+      } else {
+        value = generateRandomKey()
+        maskedValue = maskRandomKey(value)
+      }
 
-    const newKey: PixKey = {
-      id: `key-${Date.now()}`,
-      name: keyName.trim().toUpperCase(),
-      type: keyType,
-      value: value,
-      createdAt: new Date()
-    }
+      const newKey: PixKey = {
+        id: `key-${Date.now()}`,
+        name: keyName.trim().toUpperCase(),
+        type: keyType,
+        value: value,
+        createdAt: new Date()
+      }
 
-    onAddKey(newKey)
-    
-    setSuccess({
-      name: keyName.trim().toUpperCase(),
-      type: keyType,
-      value,
-      maskedValue
-    })
-    
-    setIsLoading(false)
+      onAddKey(newKey)
+      
+      setSuccessData({
+        name: keyName.trim().toUpperCase(),
+        type: keyType,
+        maskedValue
+      })
+      
+      setViewState('success')
+      
+      // Show warning after 2s
+      setTimeout(() => setShowLimitWarning(true), 2000)
+    }, 10000)
   }
 
-  const handleCopy = async () => {
-    if (!success) return
-    const typeLabel = success.type === 'cpf' ? 'CPF' : success.type === 'celular' ? 'CELULAR' : 'CHAVE'
-    const textToCopy = `${success.name}\n${typeLabel}: ${success.maskedValue}\nBANCO: BANKPIX SSA`
-    await navigator.clipboard.writeText(textToCopy)
+  const handleCopy = () => {
+    if (!successData) return
+    const typeLabel = successData.type === 'cpf' ? 'CPF' : successData.type === 'celular' ? 'CELULAR' : 'CHAVE'
+    const textToCopy = `${successData.name}\n${typeLabel}: ${successData.maskedValue}\nBANCO: BANKPIX SSA`
+    navigator.clipboard.writeText(textToCopy)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // ONLINE INDICATOR - Para confirmar atualizacao
+  const OnlineIndicator = () => (
+    <div className="fixed top-2 right-2 z-[999] flex items-center gap-1.5 px-2 py-1 bg-black/80 rounded-full">
+      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+      <span className="text-[10px] text-green-500 font-bold">ONLINE v2</span>
+    </div>
+  )
+
   // Loading
-  if (isLoading) {
+  if (viewState === 'loading') {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <OnlineIndicator />
         <div className="flex flex-col items-center gap-6 text-center">
           <div className="relative">
             <div className="h-20 w-20 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
@@ -186,31 +195,32 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
   }
 
   // Success
-  if (success) {
-    const typeLabel = success.type === 'cpf' ? 'CPF' : success.type === 'celular' ? 'CELULAR' : 'CHAVE ALEATORIA'
+  if (viewState === 'success' && successData) {
+    const typeLabel = successData.type === 'cpf' ? 'CPF' : successData.type === 'celular' ? 'CELULAR' : 'CHAVE ALEATORIA'
     
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4 pt-20 lg:pt-4">
+        <OnlineIndicator />
         <div className="w-full max-w-md">
           <div className="flex flex-col items-center text-center">
             <div className="flex items-center justify-center w-20 h-20 rounded-full bg-primary/20 mb-6">
               <CheckCircle className="w-10 h-10 text-primary" />
             </div>
-            <h3 className="text-2xl font-bold text-foreground mb-2">Chave cadastrada com sucesso!</h3>
+            <h3 className="text-2xl font-bold text-foreground mb-2">Chave cadastrada!</h3>
             <p className="text-muted-foreground mb-6">Sua chave PIX foi gerada</p>
 
             <div className="w-full p-5 rounded-xl bg-muted/50 border border-border mb-4 space-y-3 text-left">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">Tipo de Chave:</span>
+                <span className="text-sm text-muted-foreground">Tipo:</span>
                 <span className="font-semibold text-foreground">{typeLabel}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Titular:</span>
-                <span className="font-semibold text-foreground">{success.name}</span>
+                <span className="font-semibold text-foreground">{successData.name}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-muted-foreground">{typeLabel}:</span>
-                <span className="font-mono text-foreground text-sm">{success.maskedValue}</span>
+                <span className="text-sm text-muted-foreground">Chave:</span>
+                <span className="font-mono text-foreground text-xs">{successData.maskedValue}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-muted-foreground">Banco:</span>
@@ -227,7 +237,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
 
             <button
               onClick={handleCopy}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-muted border border-border text-foreground font-medium hover:bg-muted/80 transition-all mb-4"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-muted border border-border text-foreground font-medium mb-4"
             >
               <Copy className="w-4 h-4" />
               {copied ? 'Copiado!' : 'Copiar chave'}
@@ -236,17 +246,17 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             {showLimitWarning && (
               <div className="w-full p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 mb-4">
                 <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+                  <AlertTriangle className="w-6 h-6 text-yellow-500 flex-shrink-0" />
                   <div className="text-left">
-                    <h4 className="font-semibold text-yellow-500 mb-1">Conta com Limitacao</h4>
+                    <h4 className="font-semibold text-yellow-500 mb-1">Conta Limitada</h4>
                     <p className="text-sm text-muted-foreground">
-                      Sua conta esta no nivel BASICO. Ative sua conta para poder usar o aplicativo e as chaves PIX!
+                      Sua conta esta no nivel BASICO. Ative para usar suas chaves PIX!
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={handleActivateAccount}
-                  className="w-full flex items-center justify-center gap-2 mt-4 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all"
+                  className="w-full flex items-center justify-center gap-2 mt-4 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold"
                 >
                   <Play className="w-5 h-5" />
                   Ver video e ativar
@@ -256,10 +266,10 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
 
             <button
               onClick={onBack}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-border text-muted-foreground font-medium hover:bg-muted/50 transition-all"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-border text-muted-foreground font-medium"
             >
               <ArrowLeft className="w-4 h-4" />
-              Voltar ao menu principal
+              Voltar
             </button>
           </div>
         </div>
@@ -268,21 +278,22 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
   }
 
   // Email Warning
-  if (showEmailWarning) {
+  if (viewState === 'email-warning') {
     return (
       <div className="min-h-[80vh] flex items-center justify-center p-4 pt-20 lg:pt-4">
+        <OnlineIndicator />
         <div className="w-full max-w-md">
           <div className="flex flex-col items-center text-center">
             <div className="flex items-center justify-center w-20 h-20 rounded-full bg-yellow-500/20 mb-6">
               <AlertTriangle className="w-10 h-10 text-yellow-500" />
             </div>
-            <h3 className="text-2xl font-bold text-foreground mb-2">Chave Email Indisponivel</h3>
+            <h3 className="text-2xl font-bold text-foreground mb-2">Email Indisponivel</h3>
             <p className="text-muted-foreground mb-6">
-              Para cadastrar chave por Email, voce precisa ativar sua conta primeiro. Sua conta esta no nivel BASICO.
+              Ative sua conta para cadastrar chave por Email.
             </p>
 
             <div className="w-full p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 mb-6">
-              <p className="text-sm text-muted-foreground mb-4">Ative sua conta para desbloquear:</p>
+              <p className="text-sm text-muted-foreground mb-4">Ative para desbloquear:</p>
               <ul className="text-sm text-left text-muted-foreground space-y-2">
                 <li className="flex items-center gap-2">
                   <Lock className="w-4 h-4 text-yellow-500" />
@@ -294,14 +305,14 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
                 </li>
                 <li className="flex items-center gap-2">
                   <Lock className="w-4 h-4 text-yellow-500" />
-                  Saques via M-Pesa e e-Mola
+                  Saques M-Pesa e e-Mola
                 </li>
               </ul>
             </div>
 
             <button
               onClick={handleActivateAccount}
-              className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 mb-4"
+              className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-primary text-primary-foreground font-semibold shadow-lg mb-4"
             >
               <Play className="w-5 h-5" />
               Ver video e ativar
@@ -309,13 +320,13 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
 
             <button
               onClick={() => {
-                setShowEmailWarning(false)
+                setViewState('form')
                 setKeyType('cpf')
               }}
-              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-border text-muted-foreground font-medium hover:bg-muted/50 transition-all"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-border text-muted-foreground font-medium"
             >
               <ArrowLeft className="w-4 h-4" />
-              Voltar e escolher outro tipo
+              Voltar
             </button>
           </div>
         </div>
@@ -326,16 +337,15 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
   // Form
   return (
     <div className="p-4 lg:p-6 pt-20 lg:pt-6 pb-20">
+      <OnlineIndicator />
+      
       <div className="flex items-center gap-4 mb-8">
-        <button
-          onClick={onBack}
-          className="p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
-        >
+        <button onClick={onBack} className="p-2 rounded-lg bg-muted hover:bg-muted/80">
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
           <h1 className="text-2xl font-bold text-foreground">Cadastrar Chave PIX</h1>
-          <p className="text-muted-foreground">Crie uma nova chave para receber pagamentos</p>
+          <p className="text-muted-foreground">Crie uma nova chave</p>
         </div>
       </div>
 
@@ -347,9 +357,9 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             value={keyName}
             onChange={(e) => setKeyName(e.target.value)}
             placeholder="Escolha qualquer nome para sua chave"
-            className="w-full p-4 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all uppercase"
+            className="w-full p-4 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary uppercase"
           />
-          <p className="text-xs text-muted-foreground mt-2">Ex: MEU PIX PRINCIPAL, CONTA PESSOAL...</p>
+          <p className="text-xs text-muted-foreground mt-2">Ex: MEU PIX, CONTA PESSOAL...</p>
         </div>
 
         <div>
@@ -358,8 +368,8 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             <button
               type="button"
               onClick={() => handleSelectKeyType('cpf')}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                keyType === 'cpf' ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 ${
+                keyType === 'cpf' ? 'border-primary bg-primary/10' : 'border-border'
               }`}
             >
               <CreditCard className={`w-7 h-7 ${keyType === 'cpf' ? 'text-primary' : 'text-muted-foreground'}`} />
@@ -369,8 +379,8 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             <button
               type="button"
               onClick={() => handleSelectKeyType('celular')}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                keyType === 'celular' ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 ${
+                keyType === 'celular' ? 'border-primary bg-primary/10' : 'border-border'
               }`}
             >
               <Smartphone className={`w-7 h-7 ${keyType === 'celular' ? 'text-primary' : 'text-muted-foreground'}`} />
@@ -380,8 +390,8 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             <button
               type="button"
               onClick={() => handleSelectKeyType('aleatorio')}
-              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                keyType === 'aleatorio' ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 ${
+                keyType === 'aleatorio' ? 'border-primary bg-primary/10' : 'border-border'
               }`}
             >
               <Hash className={`w-7 h-7 ${keyType === 'aleatorio' ? 'text-primary' : 'text-muted-foreground'}`} />
@@ -391,8 +401,8 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             <button
               type="button"
               onClick={() => handleSelectKeyType('email')}
-              className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                keyType === 'email' ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
+              className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 ${
+                keyType === 'email' ? 'border-primary bg-primary/10' : 'border-border'
               }`}
             >
               <Lock className="w-3 h-3 text-yellow-500 absolute top-2 right-2" />
@@ -403,12 +413,12 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
         </div>
 
         <div className="p-4 rounded-xl bg-muted/50 border border-border">
-          <p className="text-xs text-muted-foreground mb-2">Formato da chave:</p>
+          <p className="text-xs text-muted-foreground mb-2">Formato:</p>
           <p className="font-mono text-sm text-foreground">
             {keyType === 'cpf' && 'XXX.***.***-XX'}
             {keyType === 'celular' && '+55XX*****XXXX'}
-            {keyType === 'aleatorio' && 'XXXX************************XXXX'}
-            {keyType === 'email' && 'Requer ativacao da conta'}
+            {keyType === 'aleatorio' && 'XXXX********************XXXX'}
+            {keyType === 'email' && 'Requer ativacao'}
           </p>
         </div>
 
@@ -416,14 +426,14 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
           type="button"
           onClick={handleGenerateKey}
           disabled={!keyName.trim() || keyType === 'email'}
-          className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-primary text-primary-foreground font-semibold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Key className="w-5 h-5" />
           Gerar Chave PIX
         </button>
 
         <p className="text-xs text-center text-muted-foreground">
-          Ao gerar a chave, ela sera vinculada ao Banco Central do Brasil
+          Vinculada ao Banco Central do Brasil
         </p>
       </div>
     </div>
