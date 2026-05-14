@@ -10,7 +10,6 @@ interface CreateKeyViewProps {
   onBack: () => void
 }
 
-// Funções Auxiliares (Mantidas)
 function generateCPF(): string {
   const n1 = Math.floor(Math.random() * 900) + 100
   const n2 = Math.floor(Math.random() * 900) + 100
@@ -56,9 +55,8 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
   const [showWarn, setShowWarn] = useState(false)
   const [counter, setCounter] = useState(5)
 
-  const msgs = ['Gerando chave...', 'Conectando...', 'Banco Central...', 'Validando...', 'Finalizando...']
+  const msgs = ['Gerando chave...', 'Conectando ao servidor...', 'Validando com Banco Central...', 'Registrando chave...', 'Finalizando...']
 
-  // Troca as mensagens de loading
   useEffect(() => {
     let interval: NodeJS.Timeout
     if (screen === 'loading') {
@@ -72,7 +70,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
 
   const handleGenerate = async () => {
     if (!keyName.trim()) {
-      alert('Digite um nome')
+      alert('Digite um nome para sua chave')
       return
     }
 
@@ -80,7 +78,6 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
     setMsgIndex(0)
     setScreen('loading')
 
-    // ESPERA DE 5 SEGUNDOS (O segredo está em não usar dependências complexas aqui)
     setTimeout(() => {
       let val = '', masked = ''
       
@@ -98,7 +95,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
       const newKey: PixKey = {
         id: `key-${Date.now()}`,
         name: keyName.trim().toUpperCase(),
-        type: keyType === 'email' ? 'cpf' : keyType, // Fallback caso seja email
+        type: keyType === 'email' ? 'cpf' : keyType,
         value: val,
         createdAt: new Date()
       }
@@ -125,184 +122,230 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const Online = () => (
-    <div className="fixed top-2 right-2 z-[999] flex items-center gap-1 px-2 py-1 bg-black rounded-full">
-      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-      <span className="text-[10px] text-green-400 font-bold">v3</span>
-    </div>
-  )
-
-  // RENDER LOADING
+  // LOADING
   if (screen === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background italic">
-        <Online />
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
         <div className="text-center">
-          <div className="relative mx-auto w-20 h-20 mb-6">
-            <div className="absolute inset-0 border-4 border-primary/30 border-t-primary rounded-full animate-spin" />
+          <div className="relative mx-auto w-24 h-24 mb-8">
+            <div className="absolute inset-0 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
             <div className="absolute inset-0 flex items-center justify-center">
-              <Key className="w-8 h-8 text-primary" />
+              <Key className="w-10 h-10 text-primary" />
             </div>
           </div>
-          <p className="text-lg font-black text-foreground mb-1 uppercase italic tracking-tighter">{msgs[msgIndex]}</p>
-          <p className="text-sm text-muted-foreground font-bold">Aguarde {counter}s...</p>
+          <p className="text-xl font-bold text-foreground mb-2">{msgs[msgIndex]}</p>
+          <p className="text-sm text-muted-foreground">Aguarde {counter} segundos</p>
+          <p className="text-xs text-muted-foreground mt-4">Nao feche o aplicativo</p>
         </div>
       </div>
     )
   }
 
-  // RENDER SUCCESS
+  // SUCCESS
   if (screen === 'success' && result) {
     const label = result.type === 'cpf' ? 'CPF' : result.type === 'celular' ? 'CELULAR' : 'ALEATORIA'
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Online />
-        <div className="w-full max-w-md animate-in zoom-in duration-300">
-          <div className="text-center mb-6">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-primary/20 flex items-center justify-center">
-              <CheckCircle className="w-8 h-8 text-primary" />
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-green-500/10 flex items-center justify-center">
+              <CheckCircle className="w-10 h-10 text-green-500" />
             </div>
-            <h2 className="text-2xl font-black text-foreground uppercase italic tracking-tighter">Chave Criada!</h2>
+            <h2 className="text-2xl font-bold text-foreground mb-1">Chave Criada com Sucesso!</h2>
+            <p className="text-sm text-muted-foreground">Sua chave PIX foi registrada</p>
           </div>
 
-          <div className="p-6 rounded-[32px] bg-muted border border-border mb-4 space-y-4 shadow-xl text-left">
-            <div className="flex justify-between border-b border-border pb-2">
-              <span className="text-xs font-black text-muted-foreground uppercase">Tipo:</span>
-              <span className="font-black text-foreground uppercase italic">{label}</span>
+          <div className="p-5 rounded-2xl bg-muted/50 border border-border mb-5 space-y-4">
+            <div className="flex justify-between items-center pb-3 border-b border-border">
+              <span className="text-sm text-muted-foreground">Tipo de Chave</span>
+              <span className="font-semibold text-foreground">{label}</span>
             </div>
-            <div className="flex justify-between border-b border-border pb-2">
-              <span className="text-xs font-black text-muted-foreground uppercase">Titular:</span>
-              <span className="font-black text-foreground uppercase italic">{result.name}</span>
+            <div className="flex justify-between items-center pb-3 border-b border-border">
+              <span className="text-sm text-muted-foreground">Titular</span>
+              <span className="font-semibold text-foreground">{result.name}</span>
             </div>
-            <div className="flex justify-between border-b border-border pb-2">
-              <span className="text-xs font-black text-muted-foreground uppercase">Chave:</span>
-              <span className="font-mono text-sm text-gray-500 font-bold tracking-tighter">{result.masked}</span>
+            <div className="flex justify-between items-center pb-3 border-b border-border">
+              <span className="text-sm text-muted-foreground">Chave</span>
+              <span className="font-mono text-sm text-foreground">{result.masked}</span>
             </div>
-            <div className="flex justify-between border-b border-border pb-2">
-              <span className="text-xs font-black text-muted-foreground uppercase">Banco:</span>
-              <span className="font-black text-primary uppercase italic">BANKPIX SSA</span>
+            <div className="flex justify-between items-center pb-3 border-b border-border">
+              <span className="text-sm text-muted-foreground">Instituicao</span>
+              <span className="font-semibold text-primary">BANKPIX SSA</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-xs font-black text-muted-foreground uppercase">Status:</span>
-              <span className="text-[10px] font-black text-red-500 bg-red-500/10 px-3 py-1 rounded-full animate-pulse">INATIVO</span>
+              <span className="text-sm text-muted-foreground">Status</span>
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20">
+                <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                <span className="text-xs font-semibold text-red-500">INATIVO</span>
+              </div>
             </div>
           </div>
 
-          <button onClick={handleCopy} className="w-full py-4 rounded-2xl bg-muted border border-border text-foreground font-black uppercase text-sm mb-4 active:scale-95 transition-all">
-            <Copy className="w-4 h-4 inline mr-2" />
+          <button 
+            onClick={handleCopy} 
+            className="w-full py-4 rounded-xl bg-muted border border-border text-foreground font-medium mb-4 flex items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
+          >
+            <Copy className="w-4 h-4" />
             {copied ? 'Copiado!' : 'Copiar Comprovante'}
           </button>
 
           {showWarn && (
-            <div className="p-5 rounded-[28px] bg-yellow-500/10 border border-yellow-500/30 mb-4 animate-in slide-in-from-bottom-4">
-              <div className="flex gap-3 mb-4">
+            <div className="p-5 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 mb-4">
+              <div className="flex gap-4 mb-4">
                 <AlertTriangle className="w-6 h-6 text-yellow-500 flex-shrink-0" />
-                <div className="text-left">
-                  <p className="font-black text-yellow-500 uppercase text-sm italic tracking-tighter">Conta Limitada</p>
-                  <p className="text-xs text-muted-foreground font-bold leading-tight">Sua chave está pronta, mas precisa de ativação para receber valores.</p>
+                <div>
+                  <p className="font-semibold text-yellow-600 mb-1">Conta com Limitacao</p>
+                  <p className="text-sm text-muted-foreground">Sua chave foi criada, mas precisa de ativacao para receber transferencias.</p>
                 </div>
               </div>
-              <button onClick={handleActivate} className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black uppercase shadow-lg shadow-primary/20 active:scale-95 transition-all">
-                <Play className="w-4 h-4 inline mr-2 fill-current" />
+              <button 
+                onClick={handleActivate} 
+                className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors"
+              >
+                <Play className="w-5 h-5" />
                 Ver video e ativar
               </button>
             </div>
           )}
 
-          <button onClick={onBack} className="w-full py-3 rounded-xl text-muted-foreground font-bold text-xs uppercase tracking-widest opacity-50 hover:opacity-100 transition-opacity">
-            Voltar
+          <button 
+            onClick={onBack} 
+            className="w-full py-3 rounded-xl border border-border text-muted-foreground font-medium flex items-center justify-center gap-2 hover:bg-muted/50 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar ao inicio
           </button>
         </div>
       </div>
     )
   }
 
-  // RENDER EMAIL/BLOCKED
+  // EMAIL WARNING
   if (screen === 'email') {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Online />
         <div className="w-full max-w-md text-center">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-yellow-500/20 flex items-center justify-center">
-            <AlertTriangle className="w-8 h-8 text-yellow-500" />
+          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-yellow-500/10 flex items-center justify-center">
+            <AlertTriangle className="w-10 h-10 text-yellow-500" />
           </div>
-          <h2 className="text-2xl font-black text-foreground uppercase italic mb-2 tracking-tighter">Email Bloqueado</h2>
-          <p className="text-sm text-muted-foreground font-bold mb-8 uppercase tracking-tighter leading-tight">Nível de conta insuficiente para chaves de email.</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Chave Email Indisponivel</h2>
+          <p className="text-muted-foreground mb-8">Para cadastrar chave por Email, voce precisa ativar sua conta primeiro.</p>
           
-          <button onClick={handleActivate} className="w-full py-5 rounded-2xl bg-primary text-primary-foreground font-black uppercase shadow-xl mb-4 active:scale-95 transition-all">
-            <Play className="w-4 h-4 inline mr-2 fill-current" />
-            Ativar Agora
+          <div className="p-5 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 mb-6 text-left">
+            <p className="text-sm font-medium text-foreground mb-3">Ative sua conta para desbloquear:</p>
+            <ul className="space-y-2">
+              <li className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Lock className="w-4 h-4 text-yellow-500" />
+                Chave PIX por Email
+              </li>
+              <li className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Lock className="w-4 h-4 text-yellow-500" />
+                Receber transferencias
+              </li>
+              <li className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Lock className="w-4 h-4 text-yellow-500" />
+                Saques via M-Pesa e e-Mola
+              </li>
+            </ul>
+          </div>
+          
+          <button 
+            onClick={handleActivate} 
+            className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 mb-4 hover:bg-primary/90 transition-colors"
+          >
+            <Play className="w-5 h-5" />
+            Ver video e ativar
           </button>
           
-          <button onClick={() => { setScreen('form'); setKeyType('cpf') }} className="w-full py-3 text-muted-foreground font-bold text-xs uppercase">
-            Voltar e escolher outro
+          <button 
+            onClick={() => { setScreen('form'); setKeyType('cpf') }} 
+            className="w-full py-3 rounded-xl border border-border text-muted-foreground font-medium flex items-center justify-center gap-2 hover:bg-muted/50 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar e escolher outro tipo
           </button>
         </div>
       </div>
     )
   }
 
-  // RENDER FORM (PADRÃO)
+  // FORM
   return (
-    <div className="min-h-screen p-4 pt-20 lg:pt-6 pb-20 bg-background text-left italic">
-      <Online />
-      
+    <div className="min-h-screen p-4 pt-20 lg:pt-6 pb-20 bg-background">
       <div className="flex items-center gap-4 mb-8">
-        <button onClick={onBack} className="p-3 rounded-2xl bg-muted border border-border">
+        <button 
+          onClick={onBack} 
+          className="p-2.5 rounded-xl bg-muted border border-border hover:bg-muted/80 transition-colors"
+        >
           <ArrowLeft className="w-5 h-5" />
         </button>
         <div>
-          <h1 className="text-2xl font-black text-foreground uppercase tracking-tighter italic">Criar Chave PIX</h1>
-          <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Conexão Servidor Brasil (SP)</p>
+          <h1 className="text-2xl font-bold text-foreground">Cadastrar Chave PIX</h1>
+          <p className="text-sm text-muted-foreground">Crie uma nova chave para receber pagamentos</p>
         </div>
       </div>
 
-      <div className="max-w-md mx-auto space-y-8">
+      <div className="max-w-md mx-auto space-y-6">
         <div>
-          <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-3 ml-1">Identificação da Chave</label>
+          <label className="block text-sm font-medium text-foreground mb-2">Nome da Chave</label>
           <input
             type="text"
             value={keyName}
             onChange={e => setKeyName(e.target.value)}
-            placeholder="EX: MINHA CONTA PRINCIPAL"
-            className="w-full p-5 rounded-[24px] bg-muted border border-border text-foreground font-black uppercase placeholder:text-gray-800 outline-none focus:border-primary transition-all shadow-inner"
+            placeholder="Escolha qualquer nome para sua chave"
+            className="w-full p-4 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all uppercase"
           />
+          <p className="text-xs text-muted-foreground mt-2">Ex: MEU PIX PRINCIPAL, CONTA PESSOAL...</p>
         </div>
 
         <div>
-          <label className="block text-[10px] font-black text-muted-foreground uppercase tracking-[0.2em] mb-4 ml-1">Tipo de Documento</label>
-          <div className="grid grid-cols-2 gap-4">
+          <label className="block text-sm font-medium text-foreground mb-3">Tipo de Chave</label>
+          <div className="grid grid-cols-2 gap-3">
             {[
-              { t: 'cpf', icon: CreditCard, label: 'CPF Brasil' },
+              { t: 'cpf', icon: CreditCard, label: 'CPF' },
               { t: 'celular', icon: Smartphone, label: 'Celular' },
-              { t: 'aleatorio', icon: Hash, label: 'Aleatória' },
+              { t: 'aleatorio', icon: Hash, label: 'Aleatoria' },
               { t: 'email', icon: Mail, label: 'Email', locked: true }
             ].map(({ t, icon: Icon, label, locked }) => (
               <button
                 key={t}
                 type="button"
                 onClick={() => t === 'email' ? setScreen('email') : setKeyType(t as any)}
-                className={`relative flex flex-col items-center gap-3 p-6 rounded-[32px] border-2 transition-all ${
-                  keyType === t ? 'border-primary bg-primary/10 scale-105 shadow-lg' : 'border-border grayscale opacity-60'
+                className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                  keyType === t ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
                 }`}
               >
-                {locked && <Lock className="w-3 h-3 text-yellow-500 absolute top-3 right-3" />}
+                {locked && <Lock className="w-3 h-3 text-yellow-500 absolute top-2 right-2" />}
                 <Icon className={`w-7 h-7 ${keyType === t ? 'text-primary' : 'text-muted-foreground'}`} />
-                <span className={`text-[10px] font-black uppercase tracking-widest ${keyType === t ? 'text-primary' : 'text-foreground'}`}>{label}</span>
+                <span className={`text-sm font-medium ${keyType === t ? 'text-primary' : 'text-foreground'}`}>{label}</span>
               </button>
             ))}
           </div>
+        </div>
+
+        <div className="p-4 rounded-xl bg-muted/50 border border-border">
+          <p className="text-xs text-muted-foreground mb-1">Formato da chave:</p>
+          <p className="font-mono text-sm text-foreground">
+            {keyType === 'cpf' && 'XXX.***.***-XX'}
+            {keyType === 'celular' && '+55XX*****XXXX'}
+            {keyType === 'aleatorio' && 'XXXX************************XXXX'}
+            {keyType === 'email' && 'Requer ativacao da conta'}
+          </p>
         </div>
 
         <button
           type="button"
           onClick={handleGenerate}
           disabled={!keyName.trim()}
-          className="w-full py-6 rounded-[28px] bg-primary text-white font-black uppercase text-xl shadow-xl shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+          className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
         >
-          <Key className="w-6 h-6" />
-          Gerar Chave Agora
+          <Key className="w-5 h-5" />
+          Gerar Chave PIX
         </button>
+
+        <p className="text-xs text-center text-muted-foreground">
+          Ao gerar a chave, ela sera vinculada ao Banco Central do Brasil
+        </p>
       </div>
     </div>
   )
