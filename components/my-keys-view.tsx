@@ -1,204 +1,280 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { KeyRound, Hash, Phone, ArrowLeft, Copy, Check, Lock, ShieldAlert, ArrowRight } from 'lucide-react'
+import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertTriangle, Play } from 'lucide-react'
 import { type PixKey, generateCPF, generateCelular } from '@/lib/store'
+
+const loadingMessages = [
+  'Gerando sua chave...',
+  'Conectando sua chave...',
+  'Ligando com o Banco Central...',
+  'Nao saia do app...',
+  'Validando informacoes...',
+  'Finalizando cadastro...'
+]
 
 interface CreateKeyViewProps {
   userName: string
-  onAddKey: (key: PixKey) => void
+  onCreateKey: (key: PixKey) => void
   onBack: () => void
 }
 
-type KeyType = 'cpf' | 'celular'
+// Function to mask CPF: 072.678.980-96 -> 072.***.***-96
+function maskCPF(cpf: string): string {
+  const parts = cpf.split('.')
+  if (parts.length === 3) {
+    const lastPart = parts[2].split('-')
+    return `${parts[0]}.***.***-${lastPart[1]}`
+  }
+  return cpf
+}
 
-const loadingMessages = [
-  'Conectando ao servidor de São Paulo (DDD 19)...',
-  'Gerando sua chave criptografada...',
-  'Ligando com o Banco Central do Brasil...',
-  'Validando informações de segurança...',
-  'Não saia do app, quase pronto...',
-  'Finalizando registro oficial...'
-]
+// Function to mask Celular: (84)927361054 -> (84)***361054
+function maskCelular(celular: string): string {
+  const match = celular.match(/$$(\d{2})$$(\d{9})/)
+  if (match) {
+    const ddd = match[1]
+    const number = match[2]
+    return `(${ddd})***${number.slice(3)}`
+  }
+  return celular
+}
 
-export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps) {
-  const [name, setName] = useState('')
-  const [keyType, setKeyType] = useState<KeyType>('cpf')
+export function CreateKeyView({ userName, onCreateKey, onBack }: CreateKeyViewProps) {
+  const [keyType, setKeyType] = useState<'cpf' | 'celular'>('cpf')
   const [isLoading, setIsLoading] = useState(false)
   const [loadingMessageIndex, setLoadingMessageIndex] = useState(0)
-  const [success, setSuccess] = useState<{ name: string; value: string; type: KeyType } | null>(null)
-  const [error, setError] = useState('')
+  const [success, setSuccess] = useState<{ name: string; type: 'cpf' | 'celular'; value: string; maskedValue: string } | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [showLimitWarning, setShowLimitWarning] = useState(false)
 
+  // Cycle through loading messages every 2.5 seconds for 15 second total
   useEffect(() => {
-    let interval: NodeJS.Timeout;
     if (isLoading) {
-      interval = setInterval(() => {
-        setLoadingMessageIndex((prev) => (prev + 1) % loadingMessages.length)
+      const interval = setInterval(() => {
+        setLoadingMessageIndex(prev => (prev + 1) % loadingMessages.length)
       }, 2500)
+      return () => clearInterval(interval)
     }
-    return () => clearInterval(interval)
   }, [isLoading])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError('')
-
-    if (!name.trim() || name.trim().split(/\s+/).length < 2) {
-      setError('Digite nome e sobrenome')
-      return
-    }
-
+  const handleGenerateKey = async () => {
     setIsLoading(true)
     setLoadingMessageIndex(0)
 
-    await new Promise((resolve) => setTimeout(resolve, 15000))
+    // Simulate processing (15 seconds)
+    await new Promise(resolve => setTimeout(resolve, 15000))
 
-    const realValue = keyType === 'cpf' ? generateCPF() : generateCelular()
+    const value = keyType === 'cpf' ? generateCPF() : generateCelular()
+    const maskedValue = keyType === 'cpf' ? maskCPF(value) : maskCelular(value)
     
-    let maskedValue = ""
-    if (keyType === 'cpf') {
-        maskedValue = `${realValue.substring(0, 3)}.***.***-${realValue.substring(12, 14)}`
-    } else {
-        maskedValue = `1997***${realValue.substring(9, 11)}`
-    }
-
     const newKey: PixKey = {
-      id: Math.random().toString(36).substring(2, 9),
-      name: name.trim().toUpperCase(),
+      id: `key-${Date.now()}`,
+      name: userName.toUpperCase(),
       type: keyType,
-      value: maskedValue,
+      value: value,
       createdAt: new Date()
     }
 
-    onAddKey(newKey)
+    onCreateKey(newKey)
+    setSuccess({ name: userName.toUpperCase(), type: keyType, value, maskedValue })
     setIsLoading(false)
-    setSuccess({ name: name.trim().toUpperCase(), value: maskedValue, type: keyType })
+    
+    // Show limit warning after 2 seconds
+    setTimeout(() => {
+      setShowLimitWarning(true)
+    }, 2000)
   }
 
-  const handleDismissSuccess = () => {
-    setSuccess(null)
-    onBack()
+  const handleCopy = async () => {
+    if (success) {
+      const textToCopy = `${success.name}\n${success.type === 'cpf' ? 'CPF' : 'CELULAR'}: ${success.maskedValue}\nBANCO: BANKPIX SSA`
+      await navigator.clipboard.writeText(textToCopy)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
   }
 
-  return (
-    <div className="space-y-6 animate-fade-in">
-      {isLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md">
-          <div className="flex flex-col items-center gap-6 p-8 rounded-2xl bg-[#1a1a1a] border border-white/10 shadow-2xl w-full max-w-sm mx-4 text-center">
-            <div className="h-16 w-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-            <h3 className="text-lg font-bold text-white uppercase tracking-tight">
-              {loadingMessages[loadingMessageIndex]}
-            </h3>
-          </div>
-        </div>
-      )}
+  const handleActivateAccount = () => {
+    // Fire Meta Pixel custom event
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      (window as any).fbq('trackCustom', 'clicou_ativar')
+    }
+    // Redirect to VSL page
+    window.location.href = 'https://loteriasegredo.com/desbloquei-seu-app/'
+  }
 
-      {success && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-md p-4 text-center">
-          <div className="w-full max-w-md bg-[#1a1a1a] rounded-[32px] border border-white/10 p-8 shadow-2xl">
-            <div className="w-16 h-16 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Lock className="w-8 h-8 text-yellow-500" />
-            </div>
-            <h3 className="text-2xl font-black text-white mb-2 uppercase italic">Chave Pré-Gerada!</h3>
-            <p className="text-gray-400 text-xs font-bold mb-6 uppercase tracking-widest">Aguardando Ativação de Nível</p>
-
-            <div className="w-full p-6 rounded-2xl bg-black/40 border border-white/5 mb-8 text-left space-y-3">
-               <div>
-                  <p className="text-[10px] font-black text-gray-500 uppercase">Titular:</p>
-                  <p className="font-black text-white text-lg uppercase leading-tight">{success.name}</p>
-               </div>
-               <div>
-                  <p className="text-[10px] font-black text-gray-500 uppercase">
-                    Chave Pix {success.type === 'cpf' ? 'CPF' : 'Celular'}:
-                  </p>
-                  <p className="font-mono text-2xl text-gray-500 font-black tracking-tighter leading-tight">
-                    {success.value}
-                  </p>
-               </div>
-               <div>
-                  <p className="text-[10px] font-black text-gray-500 uppercase">Banco:</p>
-                  <p className="font-black text-primary text-lg">BANKPIX MZN</p>
-               </div>
-               <div className="pt-2 border-t border-white/5 flex justify-between items-center">
-                  <span className="text-[10px] font-black text-gray-500 uppercase">Status:</span>
-                  <span className="bg-red-500/20 text-red-500 text-[10px] font-black px-2 py-0.5 rounded animate-pulse">INATIVA</span>
-               </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="bg-yellow-500/10 p-4 rounded-xl border border-yellow-500/20 mb-2 text-left">
-                <p className="text-[11px] text-yellow-500 font-bold leading-relaxed">
-                  Esta chave está temporariamente bloqueada. Para desbloquear e começar a receber valores agora, ative sua licença de uso.
-                </p>
-              </div>
-              <a href="https://loteriasegredo.com/desbloquei-seu-app/" className="w-full py-5 bg-green-600 text-white rounded-2xl font-black text-xl flex items-center justify-center gap-2 shadow-lg active:scale-95 transition-all">
-                DESBLOQUEAR CHAVE PIX <ArrowRight size={22}/>
-              </a>
-              <button onClick={handleDismissSuccess} className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] hover:text-gray-300">Configurar Depois</button>
+  // Loading State
+  if (isLoading) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <div className="flex flex-col items-center gap-6 text-center">
+          <div className="relative">
+            <div className="h-20 w-20 rounded-full border-4 border-primary/30 border-t-primary animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Key className="w-8 h-8 text-primary animate-pulse" />
             </div>
           </div>
-        </div>
-      )}
-
-      <div className="flex items-center gap-4">
-        <button onClick={onBack} className="p-3 rounded-2xl bg-[#1a1a1a] border border-white/10 hover:bg-white/5 transition-all">
-          <ArrowLeft className="text-white" size={24}/>
-        </button>
-        <div className="flex flex-col">
-          <h1 className="text-2xl font-black text-white tracking-tighter">Gerar Chave Pix</h1>
-          <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">Conexão Segura</span>
-        </div>
-      </div>
-
-      <div className="bg-[#1a1a1a] rounded-[32px] border border-white/10 p-8 shadow-xl text-left">
-        <form onSubmit={handleSubmit} className="space-y-8">
           <div>
-            <label className="block text-[10px] font-black text-gray-500 uppercase tracking-widest mb-3 ml-1">Nome para o Registro</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="NOME COMPLETO"
-              className="w-full p-5 bg-black/40 border-2 border-transparent focus:border-primary rounded-2xl text-white font-black text-2xl uppercase outline-none transition-all"
-            />
-            {error && <p className="text-red-500 text-xs font-black mt-2 ml-1">{error}</p>}
+            <p className="text-lg font-semibold text-foreground mb-2">
+              {loadingMessages[loadingMessageIndex]}
+            </p>
+            <p className="text-sm text-muted-foreground">Nao feche o aplicativo</p>
           </div>
+        </div>
+      </div>
+    )
+  }
 
-          <div className="grid grid-cols-2 gap-4">
+  // Success State with Limit Warning
+  if (success) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          {/* Success Card */}
+          <div className="flex flex-col items-center text-center animate-slide-up">
+            <div className="flex items-center justify-center w-20 h-20 rounded-full bg-primary/20 mb-6">
+              <CheckCircle className="w-10 h-10 text-primary" />
+            </div>
+            <h3 className="text-2xl font-bold text-foreground mb-2">
+              Chave cadastrada com sucesso!
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              Sua chave PIX foi gerada
+            </p>
+
+            {/* Key Details */}
+            <div className="w-full p-5 rounded-xl bg-muted/50 border border-border mb-4 space-y-3 text-left">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Tipo de Chave:</span>
+                <span className="font-semibold text-foreground">{success.type === 'cpf' ? 'CPF' : 'CELULAR'}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Titular:</span>
+                <span className="font-semibold text-foreground">{success.name}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">{success.type === 'cpf' ? 'CPF' : 'CELULAR'}:</span>
+                <span className="font-mono text-foreground">{success.maskedValue}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Banco:</span>
+                <span className="font-semibold text-primary">BANKPIX SSA</span>
+              </div>
+            </div>
+
+            {/* Copy Button */}
             <button
-              type="button"
-              onClick={() => setKeyType('cpf')}
-              className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center gap-3 ${
-                keyType === 'cpf' ? 'border-primary bg-primary/5' : 'border-white/5 bg-white/5 grayscale opacity-40'
-              }`}
+              onClick={handleCopy}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-muted border border-border text-foreground font-medium hover:bg-muted/80 transition-all mb-4"
             >
-              <Hash className={keyType === 'cpf' ? 'text-primary' : 'text-gray-500'} size={28} />
-              <span className="text-[10px] font-black text-white uppercase tracking-widest text-center">CPF Brasil</span>
+              <Copy className="w-4 h-4" />
+              {copied ? 'Copiado!' : 'Copiar chave'}
             </button>
-            
+
+            {/* Limit Warning */}
+            {showLimitWarning && (
+              <div className="w-full p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 mb-4 animate-fade-in">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-6 h-6 text-yellow-500 flex-shrink-0 mt-0.5" />
+                  <div className="text-left">
+                    <h4 className="font-semibold text-yellow-500 mb-1">Conta com Limitacao</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Sua conta esta no nivel BASICO. Ative sua conta para poder usar o aplicativo e as chaves PIX!
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleActivateAccount}
+                  className="w-full flex items-center justify-center gap-2 mt-4 px-6 py-3 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all"
+                >
+                  <Play className="w-5 h-5" />
+                  Ver video e ativar
+                </button>
+              </div>
+            )}
+
+            {/* Back Button */}
             <button
-              type="button"
-              onClick={() => setKeyType('celular')}
-              className={`p-6 rounded-3xl border-2 transition-all flex flex-col items-center gap-3 ${
-                keyType === 'celular' ? 'border-primary bg-primary/5' : 'border-white/5 bg-white/5 grayscale opacity-40'
-              }`}
+              onClick={onBack}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-border text-muted-foreground font-medium hover:bg-muted/50 transition-all"
             >
-              <Phone className={keyType === 'celular' ? 'text-primary' : 'text-gray-400'} size={28} />
-              <span className="text-[10px] font-black text-white uppercase tracking-widest text-center">Celular BR</span>
+              <ArrowLeft className="w-4 h-4" />
+              Voltar ao menu principal
             </button>
           </div>
+        </div>
+      </div>
+    )
+  }
 
-          <button type="submit" disabled={isLoading} className="w-full py-6 bg-primary text-white rounded-[24px] font-black text-2xl shadow-xl flex items-center justify-center gap-3 active:scale-95 transition-all">
-            <KeyRound size={28}/> GERAR CHAVE
-          </button>
-        </form>
+  // Form State
+  return (
+    <div className="p-4 lg:p-6 pt-20 lg:pt-6">
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <button
+          onClick={onBack}
+          className="p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </button>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Cadastrar Chave PIX</h1>
+          <p className="text-muted-foreground">Crie uma nova chave para receber pagamentos</p>
+        </div>
       </div>
 
-      <div className="bg-blue-900/10 border border-blue-500/20 p-5 rounded-3xl flex items-start gap-4 text-left">
-        <div className="bg-blue-500/20 p-2 rounded-xl text-blue-400">😎</div>
-        <p className="text-[11px] text-blue-400 font-bold leading-relaxed uppercase tracking-tighter">
-          Podes usar qualquer nome. Chaves geradas com este sistema estão ligadas ao servidor central de São Paulo (DDD 19).
-        </p>
+      <div className="max-w-md mx-auto space-y-6">
+        {/* Key Type Selection */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-3">
+            Tipo de Chave
+          </label>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setKeyType('cpf')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                keyType === 'cpf'
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              <CreditCard className={`w-8 h-8 ${keyType === 'cpf' ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className={`font-medium ${keyType === 'cpf' ? 'text-primary' : 'text-foreground'}`}>CPF</span>
+            </button>
+            <button
+              onClick={() => setKeyType('celular')}
+              className={`flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
+                keyType === 'celular'
+                  ? 'border-primary bg-primary/10'
+                  : 'border-border hover:border-primary/50'
+              }`}
+            >
+              <Smartphone className={`w-8 h-8 ${keyType === 'celular' ? 'text-primary' : 'text-muted-foreground'}`} />
+              <span className={`font-medium ${keyType === 'celular' ? 'text-primary' : 'text-foreground'}`}>Celular</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Titular Name Display */}
+        <div>
+          <label className="block text-sm font-medium text-foreground mb-2">
+            Titular
+          </label>
+          <div className="p-4 rounded-xl bg-muted border border-border">
+            <p className="font-semibold text-foreground uppercase">{userName}</p>
+          </div>
+        </div>
+
+        {/* Generate Button */}
+        <button
+          onClick={handleGenerateKey}
+          className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-primary text-primary-foreground font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25"
+        >
+          <Key className="w-5 h-5" />
+          Gerar Chave PIX
+        </button>
       </div>
     </div>
   )
