@@ -155,10 +155,10 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
               className="w-full p-4 bg-gray-100 border-2 border-gray-200 rounded-2xl text-black font-extrabold text-xl outline-none focus:border-primary appearance-none"
               value={dailyLimit} onChange={e => setDailyLimit(e.target.value)}
             >
-              <option value="">Limite de Movimento</option>
-              <option value="1000">Até 1.000 MT</option>
-              <option value="5000">1.000 a 5.000 MT</option>
-              <option value="10000">Mais de 5.000 MT</option>
+              <option value="">Qual o Limite de Movimento</option>
+              <option value="1000">Até R$ 1.000,00 </option>
+              <option value="5000"> R$ 1.000 a 5.000 </option>
+              <option value="10000">Mais de R$5.000 </option>
             </select>
             <button onClick={nextStep} className="w-full py-4 bg-primary text-white rounded-2xl font-black text-lg shadow-lg flex items-center justify-center gap-2">PRÓXIMO <ArrowRight size={20} /></button>
           </div>
