@@ -69,12 +69,12 @@ export function CreateKeyView({ userName, onCreateKey, onBack }: CreateKeyViewPr
   const [showLimitWarning, setShowLimitWarning] = useState(false)
   const [showEmailWarning, setShowEmailWarning] = useState(false)
 
-  // Cycle through loading messages every 2.5 seconds for 15 second total
+  // Cycle through loading messages every 1.6 seconds for 10 second total
   useEffect(() => {
     if (isLoading) {
       const interval = setInterval(() => {
         setLoadingMessageIndex(prev => (prev + 1) % loadingMessages.length)
-      }, 2500)
+      }, 1600)
       return () => clearInterval(interval)
     }
   }, [isLoading])
@@ -108,8 +108,8 @@ export function CreateKeyView({ userName, onCreateKey, onBack }: CreateKeyViewPr
     setIsLoading(true)
     setLoadingMessageIndex(0)
 
-    // Simulate processing (15 seconds)
-    await new Promise(resolve => setTimeout(resolve, 15000))
+    // Simulate processing (10 seconds)
+    await new Promise(resolve => setTimeout(resolve, 10000))
 
     let value = ''
     let maskedValue = ''
