@@ -2,24 +2,15 @@
   "name": "BankPix - Banco Digital",
   "short_name": "BankPix",
   "description": "Sua plataforma financeira digital completa",
-  "start_url": "/?source=pwa",
-  "id": "bankpix-app",
+  "start_url": "/",
+  "id": "/",
   "display": "standalone",
-  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "display_override": ["standalone", "fullscreen"],
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "orientation": "portrait",
   "scope": "/",
   "prefer_related_applications": false,
-  "categories": ["finance", "business"],
-  "shortcuts": [
-    {
-      "name": "Abrir BankPix",
-      "short_name": "Abrir",
-      "url": "/",
-      "icons": [{"src": "/icon-192.png", "sizes": "192x192"}]
-    }
-  ],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -44,14 +35,6 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "form_factor": "narrow"
     }
   ]
 }
