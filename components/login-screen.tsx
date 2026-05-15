@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ArrowRight, ArrowLeft, Phone, User, Lock, CheckCircle, Wallet, Calendar, BarChart3, MapPin, Eye, EyeOff } from 'lucide-react'
 import { formatPhoneInput, validatePhone, validatePassword } from '@/lib/store'
+import { showInstallPrompt } from './install-prompt' // NOVO: Import do disparador do App
 
 export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login')
@@ -114,6 +115,20 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     localStorage.setItem(`bankpix_user_${phone}`, JSON.stringify(userData))
     setStep(7)
     setFinalLoading(false)
+  }
+
+  // NOVO: Função para disparar o prompt e entrar no App
+  const handleCompleteRegistration = () => {
+    const data = localStorage.getItem(`bankpix_user_${phone}`);
+    if (data) {
+      const userData = JSON.parse(data);
+      
+      // DISPARA O MODAL PARA BAIXAR O APP
+      showInstallPrompt();
+      
+      // LOGA O USUÁRIO
+      onLogin(userData);
+    }
   }
 
   if (preLinkLoading) {
@@ -339,7 +354,8 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
             </div>
             <h1 className="text-3xl font-black text-gray-900 mb-2">CONTA CRIADA!</h1>
             <p className="text-lg font-bold text-gray-500 mb-8 text-center">Bem-vindo ao BankPix, {name.split(' ')[0]}!</p>
-            <button onClick={() => onLogin(JSON.parse(localStorage.getItem(`bankpix_user_${phone}`)!))} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl shadow-xl shadow-primary/30 active:scale-95 transition-all">ENTRAR NO PAINEL</button>
+            {/* NOVO: Aqui chamamos a função que dispara o App e loga */}
+            <button onClick={handleCompleteRegistration} className="w-full py-5 bg-primary text-white rounded-2xl font-black text-xl shadow-xl shadow-primary/30 active:scale-95 transition-all">ENTRAR NO PAINEL</button>
           </div>
         )
       default: return null
