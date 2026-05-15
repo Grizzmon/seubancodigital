@@ -3,82 +3,72 @@
 import { useState, useEffect } from 'react'
 import { X, Download, Smartphone } from 'lucide-react'
 
+// Interface para o evento do Chrome
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-let installPromptEvent: BeforeInstallPromptEvent | null = null
-
 export function InstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showModal, setShowModal] = useState(false)
   const [showTopBar, setShowTopBar] = useState(false)
-  const [isStandalone, setIsStandalone] = useState(true)
-  const [canInstall, setCanInstall] = useState(false)
+  const [isStandalone, setIsStandalone] = useState(false)
 
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
+    // 1. Verifica se já está instalado
+    const checkStandalone = () => {
+      const isStandaloneMode = window.matchMedia('(display-mode: standalone)').matches || 
+                               (window.navigator as any).standalone === true
+      setIsStandalone(isStandaloneMode)
+    }
+    checkStandalone()
+
+    // 2. Escuta o evento oficial do Chrome (O MAIS IMPORTANTE)
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault() // Impede a barra padrão feia do Chrome
+      setDeferredPrompt(e as BeforeInstallPromptEvent) // Guarda o evento no Estado do React
+      
+      // Só mostra a barra se NÃO estiver instalado e NÃO tiver fechado antes
+      const wasClosed = localStorage.getItem('bankpix_prompt_closed')
+      if (!wasClosed) setShowTopBar(true)
     }
 
-    const standalone = window.matchMedia('(display-mode: standalone)').matches || 
-                       (window.navigator as any).standalone === true
-    setIsStandalone(standalone)
-
-    if (standalone) return
-
-    if (installPromptEvent) setCanInstall(true)
-
-    const installed = localStorage.getItem('bankpix_installed')
-    if (!installed) setShowTopBar(true)
-
-    const handleBeforeInstall = (e: Event) => {
-      e.preventDefault()
-      installPromptEvent = e as BeforeInstallPromptEvent
-      setCanInstall(true)
+    // 3. Escuta o comando de mostrar modal após o cadastro
+    const handleManualShow = () => {
+      setShowModal(true)
     }
 
-    const handleShow = () => {
-      if (!standalone) setTimeout(() => setShowModal(true), 1500)
-    }
-
-    const handleInstalled = () => {
-      localStorage.setItem('bankpix_installed', 'true')
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('bankpix_show_install', handleManualShow)
+    window.addEventListener('appinstalled', () => {
+      setIsStandalone(true)
       setShowTopBar(false)
       setShowModal(false)
-      setCanInstall(false)
-      installPromptEvent = null
-    }
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall)
-    window.addEventListener('bankpix_show_install', handleShow)
-    window.addEventListener('appinstalled', handleInstalled)
+    })
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
-      window.removeEventListener('bankpix_show_install', handleShow)
-      window.removeEventListener('appinstalled', handleInstalled)
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      window.removeEventListener('bankpix_show_install', handleManualShow)
     }
   }, [])
 
   const handleInstall = async () => {
-    if (installPromptEvent) {
-      await installPromptEvent.prompt()
-      const { outcome } = await installPromptEvent.userChoice
-      if (outcome === 'accepted') {
-        localStorage.setItem('bankpix_installed', 'true')
-        setShowTopBar(false)
-        setShowModal(false)
-      }
-      installPromptEvent = null
-      setCanInstall(false)
-    } else {
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
-      if (isIOS) {
-        alert('Para instalar:\n\n1. Toque no icone compartilhar\n2. Toque em "Adicionar a Tela de Inicio"')
-      } else {
-        alert('Para instalar:\n\n1. Toque nos 3 pontinhos\n2. Toque em "Adicionar a tela inicial"')
-      }
+    if (!deferredPrompt) {
+      // Se chegamos aqui sem o evento, o Chrome ainda não validou o PWA
+      alert('O sistema está preparando o instalador. Tente novamente em 3 segundos ou use o menu do navegador.')
+      return
+    }
+
+    // DISPARA A JANELA OFICIAL DE INSTALAÇÃO (A que você quer!)
+    deferredPrompt.prompt()
+
+    const { outcome } = await deferredPrompt.userChoice
+    if (outcome === 'accepted') {
+      console.log('Usuário aceitou a instalação')
+      setDeferredPrompt(null)
+      setShowTopBar(false)
+      setShowModal(false)
     }
   }
 
@@ -86,60 +76,43 @@ export function InstallPrompt() {
 
   return (
     <>
+      {/* BARRA NO TOPO */}
       {showTopBar && (
-        <div className="fixed top-0 left-0 right-0 z-[9000] bg-gradient-to-r from-primary to-primary/80 px-4 py-2.5 shadow-lg">
-          <div className="flex items-center justify-between max-w-md mx-auto">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-white/20">
-                <Smartphone className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-white">Instale o App BankPix</p>
-                <p className="text-xs text-white/70">Acesso rapido</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <button onClick={handleInstall} className="px-4 py-1.5 rounded-lg bg-white text-primary text-sm font-bold active:scale-95 transition-transform">
-                BAIXAR
-              </button>
-              <button onClick={() => setShowTopBar(false)} className="p-1 text-white/70">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
+        <div className="fixed top-0 left-0 right-0 z-[9999] bg-primary p-3 flex items-center justify-between shadow-2xl animate-in slide-in-from-top duration-500">
+           <div className="flex items-center gap-3">
+             <div className="bg-white/20 p-2 rounded-lg">
+                <Smartphone className="text-white w-5 h-5" />
+             </div>
+             <span className="text-white font-bold text-sm uppercase italic">Instalar BankPix App</span>
+           </div>
+           <div className="flex gap-2">
+             <button onClick={handleInstall} className="bg-white text-primary px-4 py-1.5 rounded-full font-black text-xs">BAIXAR</button>
+             <button onClick={() => { setShowTopBar(false); localStorage.setItem('bankpix_prompt_closed', 'true'); }} className="text-white/70 p-1"><X size={20}/></button>
+           </div>
         </div>
       )}
 
+      {/* MODAL DE SUCESSO (Aparece após cadastro) */}
       {showModal && (
-        <>
-          <div className="fixed inset-0 z-[9998] bg-black/70" onClick={() => setShowModal(false)} />
-          <div className="fixed inset-x-4 bottom-6 z-[9999] max-w-sm mx-auto">
-            <div className="bg-[#0f172a] rounded-3xl border border-white/10 shadow-2xl p-6">
-              <button onClick={() => setShowModal(false)} className="absolute top-4 right-4 p-1 text-white/50">
-                <X className="w-5 h-5" />
-              </button>
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center">
-                  <Download className="w-8 h-8 text-primary" />
-                </div>
-              </div>
-              <h2 className="text-xl font-bold text-white text-center mb-2">Baixar o App BankPix</h2>
-              <p className="text-sm text-white/60 text-center mb-6">Adicione na sua tela inicial</p>
-              <button onClick={handleInstall} className="w-full py-4 rounded-xl bg-primary text-white font-bold text-lg active:scale-95 transition-transform">
-                BAIXAR AGORA
-              </button>
-              <button onClick={() => setShowModal(false)} className="w-full mt-3 py-2 text-white/50 text-sm">
-                Agora nao
-              </button>
+        <div className="fixed inset-0 z-[10000] flex items-end justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-[#0f172a] w-full max-w-sm rounded-[32px] p-8 border border-white/10 shadow-2xl text-center">
+            <div className="w-20 h-20 bg-primary/20 rounded-3xl flex items-center justify-center mx-auto mb-6">
+              <Download className="text-primary w-10 h-10 animate-bounce" />
             </div>
+            <h2 className="text-2xl font-black text-white uppercase italic mb-2 italic tracking-tighter">Conta Criada!</h2>
+            <p className="text-white/60 mb-8 text-sm uppercase font-bold tracking-widest">Para continuar, baixe o nosso App Oficial.</p>
+            
+            <button onClick={handleInstall} className="w-full bg-primary text-white py-5 rounded-2xl font-black text-xl uppercase italic shadow-lg shadow-primary/30 active:scale-95 transition-all">
+               BAIXAR AGORA
+            </button>
+            <button onClick={() => setShowModal(false)} className="mt-4 text-white/30 text-xs uppercase font-bold">Instalar mais tarde</button>
           </div>
-        </>
+        </div>
       )}
     </>
   )
 }
 
 export function showInstallPrompt() {
-  localStorage.setItem('bankpix_first_registration', 'true')
   window.dispatchEvent(new CustomEvent('bankpix_show_install'))
 }
