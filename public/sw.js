@@ -1,13 +1,3 @@
-const CACHE_NAME = 'bankpix-v1'
-
-self.addEventListener('install', (event) => {
-  self.skipWaiting()
-})
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(clients.claim())
-})
-
-self.addEventListener('fetch', (event) => {
-  event.respondWith(fetch(event.request))
-})
+self.addEventListener('install', () => self.skipWaiting())
+self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()))
+self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)))
