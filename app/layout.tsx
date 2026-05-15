@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
-import { InstallPrompt } from '@/components/install-prompt' // Importação do novo componente
+import { InstallPrompt } from '@/components/install-prompt'
 import './globals.css'
 
 const inter = Inter({ 
@@ -9,15 +9,14 @@ const inter = Inter({
   variable: '--font-inter'
 })
 
-// Metadata atualizado com suporte a PWA e iOS
 export const metadata: Metadata = {
   title: 'BankPix - Banco Digital',
   description: 'Sua plataforma financeira digital completa',
   generator: 'v0.app',
-  manifest: '/manifest.json', // Link para o arquivo que remove o símbolo do Chrome
+  manifest: '/manifest.json',
   icons: {
     icon: '/favicon.png',
-    apple: '/icon-192.png', // Ícone para dispositivos Apple
+    apple: '/icon-192.png',
   },
   appleWebApp: {
     capable: true,
@@ -31,7 +30,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false, // Melhora a experiência de "App" evitando zoom acidental
+  userScalable: false,
 }
 
 export default function RootLayout({
@@ -42,6 +41,15 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="dark">
       <head>
+        {/* PWA Meta Tags - Remove simbolo do Chrome */}
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="BankPix" />
+        <meta name="application-name" content="BankPix" />
+        <meta name="msapplication-TileColor" content="#0f172a" />
+        <link rel="apple-touch-icon" href="/icon-192.png" />
+        
         {/* Meta Pixel Code */}
         <script
           dangerouslySetInnerHTML={{
@@ -55,7 +63,6 @@ export default function RootLayout({
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
               fbq('init', '829061486173119');
-              // PageView automático removido para controle manual no funil
             `
           }}
         />
@@ -70,7 +77,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         {children}
-        <InstallPrompt /> {/* O modal de instalação fica ativo em todo o site */}
+        <InstallPrompt />
         <Analytics />
       </body>
     </html>
