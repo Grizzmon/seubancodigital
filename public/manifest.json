@@ -1,58 +1,57 @@
-'use client'
-
-import { useState, useEffect } from 'react'
-import { Download } from 'lucide-react'
-
-export function PWAInstall() {
-  const [installPrompt, setInstallPrompt] = useState<any>(null)
-  const [isInstalled, setIsInstalled] = useState(false)
-
-  useEffect(() => {
-    // Verifica se já está instalado ou em modo standalone
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setIsInstalled(true)
+{
+  "name": "BankPix - Banco Digital",
+  "short_name": "BankPix",
+  "description": "Sua plataforma financeira digital completa",
+  "start_url": "/?source=pwa",
+  "id": "bankpix-app",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "scope": "/",
+  "prefer_related_applications": false,
+  "categories": ["finance", "business"],
+  "shortcuts": [
+    {
+      "name": "Abrir BankPix",
+      "short_name": "Abrir",
+      "url": "/",
+      "icons": [{"src": "/icon-192.png", "sizes": "192x192"}]
     }
-
-    // Captura o evento oficial de instalação do Chrome
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault()
-      setInstallPrompt(e)
-    })
-
-    window.addEventListener('appinstalled', () => {
-      setIsInstalled(true)
-      setInstallPrompt(null)
-    })
-  }, [])
-
-  const handleInstallClick = async () => {
-    if (!installPrompt) {
-      // Se o prompt não apareceu, avisamos como fazer manualmente (fallback)
-      alert("Para instalar, clique nos 3 pontos do navegador e 'Instalar Aplicativo'")
-      return
+  ],
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
-
-    // Abre a janelinha oficial de confirmação do Android/Chrome
-    installPrompt.prompt()
-    
-    const { outcome } = await installPrompt.userChoice
-    if (outcome === 'accepted') {
-      setInstallPrompt(null)
+  ],
+  "screenshots": [
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "form_factor": "narrow"
     }
-  }
-
-  // Se já estiver instalado ou o navegador não suportar o prompt agora, não mostra a barra
-  if (isInstalled || !installPrompt) return null
-
-  return (
-    <div className="fixed bottom-20 left-4 right-4 z-[100] animate-bounce">
-      <button 
-        onClick={handleInstallClick}
-        className="w-full bg-primary text-white p-4 rounded-2xl font-black flex items-center justify-center gap-3 shadow-2xl border-2 border-white/20 uppercase italic italic tracking-tighter"
-      >
-        <Download className="w-6 h-6" />
-        Baixar Aplicativo BankPix
-      </button>
-    </div>
-  )
+  ]
 }
