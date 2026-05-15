@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X, Download, Smartphone } from 'lucide-react'
 
 interface BeforeInstallPromptEvent extends Event {
@@ -8,22 +8,23 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-let deferredPrompt: BeforeInstallPromptEvent | null = null
-
-// Captura o evento de instalacao assim que a pagina carrega
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault()
-    deferredPrompt = e as BeforeInstallPromptEvent
-  })
-}
-
 export function InstallPrompt() {
   const [showModal, setShowModal] = useState(false)
   const [showTopBar, setShowTopBar] = useState(false)
-  const [isStandalone, setIsStandalone] = useState(true) // Comeca como true para nao piscar
+  const [isStandalone, setIsStandalone] = useState(true)
+  const [isIOS, setIsIOS] = useState(false)
+  const deferredPromptRef = useRef<BeforeInstallPromptEvent | null>(null)
 
   useEffect(() => {
+    // Registra o Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {})
+    }
+
+    // Verifica se e iOS
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    setIsIOS(iOS)
+
     // Verifica se ja esta instalado
     const standalone = window.matchMedia('(display-mode: standalone)').matches || 
                        (window.navigator as any).standalone === true
@@ -37,6 +38,14 @@ export function InstallPrompt() {
       }
     }
 
+    // Captura o evento de instalacao
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault()
+      deferredPromptRef.current = e as BeforeInstallPromptEvent
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall)
+
     // Escuta evento para mostrar modal (apos cadastro)
     const handleShow = () => {
       if (standalone) return
@@ -44,20 +53,41 @@ export function InstallPrompt() {
     }
 
     window.addEventListener('bankpix_show_install', handleShow)
-    return () => window.removeEventListener('bankpix_show_install', handleShow)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall)
+      window.removeEventListener('bankpix_show_install', handleShow)
+    }
   }, [])
 
   const handleInstall = async () => {
-    if (deferredPrompt) {
-      await deferredPrompt.prompt()
-      const { outcome } = await deferredPrompt.userChoice
-      if (outcome === 'accepted') {
-        localStorage.setItem('bankpix_installed', 'true')
-        setShowTopBar(false)
+    // Se tem o prompt do Chrome, usa ele
+    if (deferredPromptRef.current) {
+      try {
+        await deferredPromptRef.current.prompt()
+        const { outcome } = await deferredPromptRef.current.userChoice
+        if (outcome === 'accepted') {
+          localStorage.setItem('bankpix_installed', 'true')
+          setShowTopBar(false)
+          setShowModal(false)
+        }
+        deferredPromptRef.current = null
+      } catch (err) {
+        // Se falhar, mostra instrucoes manuais
+        showManualInstructions()
       }
-      deferredPrompt = null
+    } else {
+      // Se nao tem o prompt, mostra instrucoes manuais
+      showManualInstructions()
     }
-    setShowModal(false)
+  }
+
+  const showManualInstructions = () => {
+    if (isIOS) {
+      alert('Para instalar o BankPix:\n\n1. Toque no icone de compartilhar (quadrado com seta)\n2. Role para baixo e toque em "Adicionar a Tela de Inicio"\n3. Toque em "Adicionar"')
+    } else {
+      alert('Para instalar o BankPix:\n\n1. Toque nos 3 pontinhos no canto superior direito do Chrome\n2. Toque em "Adicionar a tela inicial"\n3. Toque em "Adicionar"')
+    }
   }
 
   const handleCloseModal = () => {
@@ -73,7 +103,7 @@ export function InstallPrompt() {
 
   return (
     <>
-      {/* BARRA FIXA NO TOPO - Sempre visivel ate instalar */}
+      {/* BARRA FIXA NO TOPO */}
       {showTopBar && (
         <div className="fixed top-0 left-0 right-0 z-[9000] bg-gradient-to-r from-primary to-primary/80 px-4 py-2.5 shadow-lg">
           <div className="flex items-center justify-between max-w-md mx-auto">
@@ -101,34 +131,28 @@ export function InstallPrompt() {
         </div>
       )}
 
-      {/* MODAL - Aparece apos cadastro */}
+      {/* MODAL */}
       {showModal && (
         <>
-          {/* Fundo escuro */}
           <div className="fixed inset-0 z-[9998] bg-black/70" onClick={handleCloseModal} />
           
-          {/* Modal */}
           <div className="fixed inset-x-4 bottom-6 z-[9999] max-w-sm mx-auto">
             <div className="bg-[#0f172a] rounded-3xl border border-white/10 shadow-2xl p-6">
-              {/* Botao fechar */}
               <button onClick={handleCloseModal} className="absolute top-4 right-4 p-1 text-white/50 hover:text-white">
                 <X className="w-5 h-5" />
               </button>
               
-              {/* Icone */}
               <div className="flex justify-center mb-4">
                 <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center">
                   <Download className="w-8 h-8 text-primary" />
                 </div>
               </div>
               
-              {/* Texto */}
               <h2 className="text-xl font-bold text-white text-center mb-2">Baixar o App BankPix</h2>
               <p className="text-sm text-white/60 text-center mb-6">
                 Adicione o BankPix na sua tela inicial para acesso rapido
               </p>
               
-              {/* Botao instalar */}
               <button
                 onClick={handleInstall}
                 className="w-full py-4 rounded-xl bg-primary text-white font-bold text-lg shadow-lg shadow-primary/30 active:scale-95 transition-transform"
@@ -136,7 +160,6 @@ export function InstallPrompt() {
                 BAIXAR AGORA
               </button>
               
-              {/* Link cancelar */}
               <button onClick={handleCloseModal} className="w-full mt-3 py-2 text-white/50 text-sm">
                 Agora nao
               </button>
@@ -148,7 +171,6 @@ export function InstallPrompt() {
   )
 }
 
-// Funcao para chamar o modal de qualquer lugar
 export function showInstallPrompt() {
   localStorage.setItem('bankpix_first_registration', 'true')
   window.dispatchEvent(new CustomEvent('bankpix_show_install'))
