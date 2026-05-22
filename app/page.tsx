@@ -8,6 +8,7 @@ import { CreateKeyView } from '@/components/create-key-view'
 import { MyKeysView } from '@/components/my-keys-view'
 import { WithdrawalView } from '@/components/withdrawal-view'
 import { AccountMenu } from '@/components/account-menu'
+import { InactiveAccountBar } from '@/components/inactive-account-bar'
 import { type PixKey, type Transaction } from '@/lib/store'
 
 type View = 'dashboard' | 'create-key' | 'my-keys' | 'withdrawal'
@@ -95,6 +96,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Barra de conta inativa no topo */}
+      <InactiveAccountBar />
+
       {/* Account Menu Modal */}
       <AccountMenu
         isOpen={showAccountMenu}
@@ -112,7 +116,7 @@ export default function Home() {
         onOpenAccountMenu={() => setShowAccountMenu(true)}
       />
 
-      <main className="lg:pl-64 min-h-screen pt-16 lg:pt-0">
+      <main className="lg:pl-64 min-h-screen pt-24 lg:pt-16">
         <div className="p-4 md:p-6 lg:p-8">
           {currentView === 'dashboard' && (
             <DashboardView
