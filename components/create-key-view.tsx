@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertTriangle, Play, Lock, Mail, Hash } from 'lucide-react'
+import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertTriangle, Play, Lock, Mail, Hash, Eye, EyeOff } from 'lucide-react'
 import { type PixKey } from '@/lib/store'
 
 interface CreateKeyViewProps {
@@ -21,7 +21,7 @@ function generateCPF(): string {
 function generatePhone(): string {
   const ddd = ['11', '19', '21', '31', '41', '51'][Math.floor(Math.random() * 6)]
   const num = Math.floor(Math.random() * 900000000) + 100000000
-  return `+55${ddd}${num}`
+  return `(${ddd})${num.toString().slice(0, 5)}-${num.toString().slice(5)}`
 }
 
 function generateRandom(): string {
@@ -38,7 +38,7 @@ function maskCPF(v: string): string {
 }
 
 function maskPhone(v: string): string {
-  return v.length >= 13 ? `${v.slice(0, 5)}*****${v.slice(-4)}` : v
+  return v.length >= 14 ? `${v.slice(0, 5)}*****${v.slice(-4)}` : v
 }
 
 function maskRandom(v: string): string {
@@ -50,10 +50,11 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
   const [keyType, setKeyType] = useState<'cpf' | 'celular' | 'aleatorio' | 'email'>('cpf')
   const [screen, setScreen] = useState<'form' | 'loading' | 'success' | 'email'>('form')
   const [msgIndex, setMsgIndex] = useState(0)
-  const [result, setResult] = useState<{ name: string; type: string; masked: string } | null>(null)
+  const [result, setResult] = useState<{ name: string; type: string; raw: string; masked: string } | null>(null)
   const [copied, setCopied] = useState(false)
   const [showWarn, setShowWarn] = useState(false)
   const [counter, setCounter] = useState(5)
+  const [showKey, setShowKey] = useState(false)
 
   const msgs = ['Gerando chave...', 'Conectando ao servidor...', 'Validando com Banco Central...', 'Registrando chave...', 'Finalizando...']
 
@@ -101,7 +102,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
       }
 
       onAddKey(newKey)
-      setResult({ name: keyName.trim().toUpperCase(), type: keyType, masked })
+      setResult({ name: keyName.trim().toUpperCase(), type: keyType, raw: val, masked })
       setScreen('success')
       
       setTimeout(() => setShowWarn(true), 1500)
@@ -117,7 +118,12 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
 
   const handleCopy = () => {
     if (!result) return
-    navigator.clipboard.writeText(`${result.name}\n${result.type.toUpperCase()}: ${result.masked}\nBANCO: BANKPIX SSA`)
+    const label = result.type === 'cpf' ? 'CHAVE CPF' : result.type === 'celular' ? 'CHAVE CELULAR' : 'CHAVE ALEATORIA'
+    
+    // Formato idêntico ao solicitado no exemplo da imagem
+    const textToCopy = `${result.name}\n\n${label}:${result.raw}\n\nBANCO:BANKPIX MZN`
+    
+    navigator.clipboard.writeText(textToCopy)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -135,7 +141,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
           </div>
           <p className="text-xl font-bold text-foreground mb-2">{msgs[msgIndex]}</p>
           <p className="text-sm text-muted-foreground">Aguarde {counter} segundos</p>
-          <p className="text-xs text-muted-foreground mt-4">Nao feche o aplicativo</p>
+          <p className="text-xs text-muted-foreground mt-4">Não feche o aplicativo</p>
         </div>
       </div>
     )
@@ -143,7 +149,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
 
   // SUCCESS
   if (screen === 'success' && result) {
-    const label = result.type === 'cpf' ? 'CPF' : result.type === 'celular' ? 'CELULAR' : 'ALEATORIA'
+    const label = result.type === 'cpf' ? 'CPF' : result.type === 'celular' ? 'CELULAR' : 'ALEATÓRIA'
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
         <div className="w-full max-w-md">
@@ -166,11 +172,22 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             </div>
             <div className="flex justify-between items-center pb-3 border-b border-border">
               <span className="text-sm text-muted-foreground">Chave</span>
-              <span className="font-mono text-sm text-foreground">{result.masked}</span>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm text-foreground">
+                  {showKey ? result.raw : result.masked}
+                </span>
+                <button 
+                  type="button" 
+                  onClick={() => setShowKey(!showKey)} 
+                  className="p-1 hover:bg-muted rounded text-muted-foreground transition-colors"
+                >
+                  {showKey ? <EyeOff className="w-4 h-4" /> : <img src="" alt="" /> && <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
             <div className="flex justify-between items-center pb-3 border-b border-border">
-              <span className="text-sm text-muted-foreground">Instituicao</span>
-              <span className="font-semibold text-primary">BANKPIX SSA</span>
+              <span className="text-sm text-muted-foreground">Instituição</span>
+              <span className="font-semibold text-primary">BANKPIX MZN</span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Status</span>
@@ -183,10 +200,10 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
 
           <button 
             onClick={handleCopy} 
-            className="w-full py-4 rounded-xl bg-muted border border-border text-foreground font-medium mb-4 flex items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
+            className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold mb-4 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all active:scale-[0.98]"
           >
             <Copy className="w-4 h-4" />
-            {copied ? 'Copiado!' : 'Copiar Comprovante'}
+            {copied ? 'Copiado com Sucesso!' : 'Copiar Dados da Chave'}
           </button>
 
           {showWarn && (
@@ -194,8 +211,8 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
               <div className="flex gap-4 mb-4">
                 <AlertTriangle className="w-6 h-6 text-yellow-500 flex-shrink-0" />
                 <div>
-                  <p className="font-semibold text-yellow-600 mb-1">Conta com Limitacao</p>
-                  <p className="text-sm text-muted-foreground">Sua chave foi criada, mas precisa de ativacao para receber transferencias.</p>
+                  <p className="font-semibold text-yellow-600 mb-1">Conta com Limitação</p>
+                  <p className="text-sm text-muted-foreground">Sua chave foi criada, mas precisa de ativação para receber transferências.</p>
                 </div>
               </div>
               <button 
@@ -203,7 +220,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
                 className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors"
               >
                 <Play className="w-5 h-5" />
-                Ver video e ativar
+                Ver vídeo e ativar
               </button>
             </div>
           )}
@@ -213,7 +230,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             className="w-full py-3 rounded-xl border border-border text-muted-foreground font-medium flex items-center justify-center gap-2 hover:bg-muted/50 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Voltar ao inicio
+            Voltar ao início
           </button>
         </div>
       </div>
@@ -228,8 +245,8 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
           <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-yellow-500/10 flex items-center justify-center">
             <AlertTriangle className="w-10 h-10 text-yellow-500" />
           </div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Chave Email Indisponivel</h2>
-          <p className="text-muted-foreground mb-8">Para cadastrar chave por Email, voce precisa ativar sua conta primeiro.</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">Chave Email Indisponível</h2>
+          <p className="text-muted-foreground mb-8">Para cadastrar chave por Email, você precisa ativar sua conta primeiro.</p>
           
           <div className="p-5 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 mb-6 text-left">
             <p className="text-sm font-medium text-foreground mb-3">Ative sua conta para desbloquear:</p>
@@ -240,7 +257,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
               </li>
               <li className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Lock className="w-4 h-4 text-yellow-500" />
-                Receber transferencias
+                Receber transferências
               </li>
               <li className="flex items-center gap-3 text-sm text-muted-foreground">
                 <Lock className="w-4 h-4 text-yellow-500" />
@@ -254,7 +271,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 mb-4 hover:bg-primary/90 transition-colors"
           >
             <Play className="w-5 h-5" />
-            Ver video e ativar
+            Ver vídeo e ativar
           </button>
           
           <button 
@@ -304,7 +321,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             {[
               { t: 'cpf', icon: CreditCard, label: 'CPF' },
               { t: 'celular', icon: Smartphone, label: 'Celular' },
-              { t: 'aleatorio', icon: Hash, label: 'Aleatoria' },
+              { t: 'aleatorio', icon: Hash, label: 'Aleatória' },
               { t: 'email', icon: Mail, label: 'Email', locked: true }
             ].map(({ t, icon: Icon, label, locked }) => (
               <button
@@ -327,9 +344,9 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
           <p className="text-xs text-muted-foreground mb-1">Formato da chave:</p>
           <p className="font-mono text-sm text-foreground">
             {keyType === 'cpf' && 'XXX.***.***-XX'}
-            {keyType === 'celular' && '+55XX*****XXXX'}
+            {keyType === 'celular' && '(XX)XXXXX-XXXX'}
             {keyType === 'aleatorio' && 'XXXX************************XXXX'}
-            {keyType === 'email' && 'Requer ativacao da conta'}
+            {keyType === 'email' && 'Requer ativação da conta'}
           </p>
         </div>
 
@@ -344,7 +361,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
         </button>
 
         <p className="text-xs text-center text-muted-foreground">
-          Ao gerar a chave, ela sera vinculada ao Banco Central do Brasil
+          Ao gerar a chave, ela será vinculada ao Banco Central do Brasil
         </p>
       </div>
     </div>
