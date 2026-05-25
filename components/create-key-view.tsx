@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertTriangle, Play, Lock, Mail, Hash, Eye, EyeOff } from 'lucide-react'
+import { useState } from 'react'
+import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertTriangle, Play, Lock, Mail, Hash, Eye, EyeOff, ArrowRight } from 'lucide-react'
 import { type PixKey } from '@/lib/store'
 
 interface CreateKeyViewProps {
@@ -52,22 +52,17 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
   const [msgIndex, setMsgIndex] = useState(0)
   const [result, setResult] = useState<{ name: string; type: string; raw: string; masked: string } | null>(null)
   const [copied, setCopied] = useState(false)
-  const [showWarn, setShowWarn] = useState(false)
-  const [counter, setCounter] = useState(5)
   const [showKey, setShowKey] = useState(false)
+  // Novo estado para controlar o aviso de recarga ao clicar no olho
+  const [showRecargaWarn, setShowRecargaWarn] = useState(false)
 
   const msgs = ['Gerando chave...', 'Conectando ao servidor...', 'Validando com Banco Central...', 'Registrando chave...', 'Finalizando...']
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout
-    if (screen === 'loading') {
-      interval = setInterval(() => {
-        setMsgIndex(i => (i + 1) % msgs.length)
-        setCounter(c => (c > 0 ? c - 1 : 0))
-      }, 1000)
-    }
-    return () => clearInterval(interval)
-  }, [screen])
+  // Função para lidar com o clique no ícone de "olho"
+  const handleViewKey = () => {
+    // Ao clicar no olho, não mostramos a chave, mas ativamos o aviso de recarga
+    setShowRecargaWarn(true)
+  }
 
   const handleGenerate = async () => {
     if (!keyName.trim()) {
@@ -75,7 +70,6 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
       return
     }
 
-    setCounter(5)
     setMsgIndex(0)
     setScreen('loading')
 
@@ -104,16 +98,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
       onAddKey(newKey)
       setResult({ name: keyName.trim().toUpperCase(), type: keyType, raw: val, masked })
       setScreen('success')
-      
-      setTimeout(() => setShowWarn(true), 1500)
     }, 5000)
-  }
-
-  const handleActivate = () => {
-    if (typeof window !== 'undefined' && (window as any).fbq) {
-      (window as any).fbq('trackCustom', 'clicou_ativar')
-    }
-    window.location.href = 'https://loteriasegredo.com/desbloquei-seu-app/'
   }
 
   const handleCopy = () => {
@@ -140,7 +125,6 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             </div>
           </div>
           <p className="text-xl font-bold text-foreground mb-2">{msgs[msgIndex]}</p>
-          <p className="text-sm text-muted-foreground">Aguarde {counter} segundos</p>
           <p className="text-xs text-muted-foreground mt-4">Não feche o aplicativo</p>
         </div>
       </div>
@@ -178,10 +162,10 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
                 </span>
                 <button 
                   type="button" 
-                  onClick={() => setShowKey(!showKey)} 
+                  onClick={handleViewKey} // Chama a função modificada
                   className="p-1 hover:bg-muted rounded text-muted-foreground transition-colors"
                 >
-                  {showKey ? <EyeOff className="w-4 h-4" /> : <img src="" alt="" /> && <Eye className="w-4 h-4" />}
+                  <Eye className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -206,21 +190,23 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             {copied ? 'Copiado com Sucesso!' : 'Copiar Dados da Chave'}
           </button>
 
-          {showWarn && (
+          {/* NOVO AVISO DE RECARGA CONDICIONAL */}
+          {showRecargaWarn && (
             <div className="p-5 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 mb-4">
               <div className="flex gap-4 mb-4">
                 <AlertTriangle className="w-6 h-6 text-yellow-500 flex-shrink-0" />
                 <div>
                   <p className="font-semibold text-yellow-600 mb-1">Conta com Limitação</p>
-                  <p className="text-sm text-muted-foreground">Sua chave foi criada, mas precisa de ativação para receber transferências.</p>
+                  <p className="text-sm text-muted-foreground">Para visualizar sua chave PIX completa, você precisa recarregar sua conta.</p>
                 </div>
               </div>
               <button 
-                onClick={handleActivate} 
+                // onClick={handleActivate}  // Botão antigo removido
+                onClick={() => {window.location.href = 'SUA_PAGINA_DE_RECARGA'}} // Link para a sua página de recarga
                 className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors"
               >
-                <Play className="w-5 h-5" />
-                Ver vídeo e ativar
+                <ArrowRight className="w-5 h-5" />
+                Ver como recarregar
               </button>
             </div>
           )}
@@ -265,14 +251,6 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
               </li>
             </ul>
           </div>
-          
-          <button 
-            onClick={handleActivate} 
-            className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 mb-4 hover:bg-primary/90 transition-colors"
-          >
-            <Play className="w-5 h-5" />
-            Ver vídeo e ativar
-          </button>
           
           <button 
             onClick={() => { setScreen('form'); setKeyType('cpf') }} 
