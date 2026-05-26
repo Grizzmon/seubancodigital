@@ -218,7 +218,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
               </h3>
               
               <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                Você ainda ativou a sua conta.É necessário recarregar para conseguir visualizar e desbloquear esta chave PIX. Veja o video para saber como recarregar de forma simples!
+                Você ainda nao ativou a sua conta. É necessário recarregar para conseguir visualizar e desbloquear esta chave PIX. Veja o video para saber como recarregar de forma simples!
               </p>
 
               <button 
