@@ -11,7 +11,7 @@ interface CreateKeyViewProps {
 }
 
 function generateCPF(): string {
-  const n1 = Math.floor(Math.random() * 900) + 100
+  const n1 = Math.floor(Math.random() * 900) + 1002
   const n2 = Math.floor(Math.random() * 900) + 100
   const n3 = Math.floor(Math.random() * 900) + 100
   const d = Math.floor(Math.random() * 90) + 10
@@ -218,7 +218,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
               </h3>
               
               <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                Você ainda não efetuou nenhuma recarga na sua conta. É necessário saldo ativo para conseguir visualizar e desbloquear esta chave PIX.
+                Você ainda ativou a sua conta.É necessário recarregar para conseguir visualizar e desbloquear esta chave PIX. Veja o video para saber como recarregar de forma simples!
               </p>
 
               <button 
