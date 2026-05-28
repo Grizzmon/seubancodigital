@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from 'react'
-import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertTriangle, Lock, Mail, Hash, Eye, X } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertTriangle, Lock, Mail, Hash, Eye, X, Clock, PlayCircle } from 'lucide-react'
 import { type PixKey } from '@/lib/store'
 
 interface CreateKeyViewProps {
@@ -11,7 +11,7 @@ interface CreateKeyViewProps {
 }
 
 function generateCPF(): string {
-  const n1 = Math.floor(Math.random() * 900) + 1002
+  const n1 = Math.floor(Math.random() * 900) + 100
   const n2 = Math.floor(Math.random() * 900) + 100
   const n3 = Math.floor(Math.random() * 900) + 100
   const d = Math.floor(Math.random() * 90) + 10
@@ -53,8 +53,46 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
   const [result, setResult] = useState<{ name: string; type: string; raw: string; masked: string } | null>(null)
   const [copied, setCopied] = useState(false)
   const [showRecargaModal, setShowRecargaModal] = useState(false)
+  const [timeLeft, setTimeLeft] = useState(300)
+
+  // Inicializa o Pixel do Meta Ads se ele ainda não estiver na página
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !(window as any).fbq) {
+      /* eslint-disable */
+      ;(function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+      n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}
+      )(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+      ;(window as any).fbq('init', '829061486173119');
+      ;(window as any).fbq('track', 'PageView');
+    }
+  }, [])
+
+  // Efeito do Cronômetro Regressivo
+  useEffect(() => {
+    if (screen !== 'success') return
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => (prev > 0 ? prev - 1 : 0))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [screen])
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
 
   const msgs = ['Gerando chave...', 'Conectando ao servidor...', 'Validando com Banco Central...', 'Registrando chave...', 'Finalizando...']
+
+  useEffect(() => {
+    if (screen !== 'loading') return
+    const interval = setInterval(() => {
+      setMsgIndex((prev) => (prev < msgs.length - 1 ? prev + 1 : prev))
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [screen])
 
   const handleGenerate = async () => {
     if (!keyName.trim()) {
@@ -96,7 +134,6 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
   const handleCopy = () => {
     if (!result) return
     const label = result.type === 'cpf' ? 'CHAVE CPF' : result.type === 'celular' ? 'CHAVE CELULAR' : 'CHAVE ALEATORIA'
-    
     const textToCopy = `${result.name}\n\n${label}:${result.raw}\n\nBANCO:BANKPIX MZN`
     
     navigator.clipboard.writeText(textToCopy)
@@ -104,11 +141,22 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleRecargaRedirect = () => {
-    window.location.href = 'https://loteriasegredo.com/desbloquei-seu-app/'
+  // FUNÇÃO DE REDIRECIONAMENTO COM DISPARO DO EVENTO DO FACEBOOK (META ADS)
+  const handleRecargaRedirect = (origemBotao: string) => {
+    if (typeof window !== 'undefined' && (window as any).fbq) {
+      // Dispara o evento de Lead (Você pode mudar para InitiateCheckout ou outro se preferir)
+      ;(window as any).fbq('track', 'Lead', {
+        content_name: 'Ativacao Conta BankPix',
+        button_clicked: origemBotao,
+        status: 'Pendente Ativacao'
+      });
+    }
+    
+    // Redireciona para o link novo
+    window.location.href = 'https://loteriasegredo.com/bankpixativarhoje/'
   }
 
-  // LOADING
+  // LOADING SCREEN
   if (screen === 'loading') {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
@@ -126,21 +174,33 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
     )
   }
 
-  // SUCCESS
+  // SUCCESS SCREEN
   if (screen === 'success' && result) {
     const label = result.type === 'cpf' ? 'CPF' : result.type === 'celular' ? 'CELULAR' : 'ALEATÓRIA'
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background relative">
         <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-green-500/10 flex items-center justify-center">
-              <CheckCircle className="w-10 h-10 text-green-500" />
+          
+          {/* CRONÔMETRO DE URGÊNCIA TOPO */}
+          <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-between animate-pulse">
+            <div className="flex items-center gap-2 text-red-500">
+              <Clock className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-wider">Atenção! Prazo de Ativação:</span>
             </div>
-            <h2 className="text-2xl font-bold text-foreground mb-1">Chave Criada com Sucesso!</h2>
-            <p className="text-sm text-muted-foreground">Sua chave PIX foi registrada</p>
+            <span className="font-mono font-bold text-red-500 bg-red-500/20 px-2.5 py-0.5 rounded-md text-sm">
+              {timeLeft > 0 ? formatTime(timeLeft) : "EXPIRADO"}
+            </span>
           </div>
 
-          <div className="p-5 rounded-2xl bg-muted/50 border border-border mb-5 space-y-4">
+          <div className="text-center mb-6">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-500/10 flex items-center justify-center">
+              <CheckCircle className="w-8 h-8 text-green-500" />
+            </div>
+            <h2 className="text-2xl font-bold text-foreground mb-1">Chave Criada com Sucesso!</h2>
+            <p className="text-sm text-muted-foreground">Sua chave PIX foi registrada no sistema</p>
+          </div>
+
+          <div className="p-5 rounded-2xl bg-muted/50 border border-border mb-4 space-y-4">
             <div className="flex justify-between items-center pb-3 border-b border-border">
               <span className="text-sm text-muted-foreground">Tipo de Chave</span>
               <span className="font-semibold text-foreground">{label}</span>
@@ -155,7 +215,6 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
                 <span className="font-mono text-sm text-foreground">
                   {result.masked}
                 </span>
-                {/* Botão do olho aumentado e com maior área de clique para celular */}
                 <button 
                   type="button" 
                   onClick={() => setShowRecargaModal(true)} 
@@ -181,7 +240,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
 
           <button 
             onClick={handleCopy} 
-            className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold mb-6 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all active:scale-[0.98]"
+            className="w-full py-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold mb-3 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all active:scale-[0.98]"
           >
             <Copy className="w-4 h-4" />
             {copied ? 'Copiado com Sucesso!' : 'Copiar Dados da Chave'}
@@ -189,19 +248,37 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
 
           <button 
             onClick={onBack} 
-            className="w-full py-3 rounded-xl border border-border text-muted-foreground font-medium flex items-center justify-center gap-2 hover:bg-muted/50 transition-colors"
+            className="w-full py-3 rounded-xl border border-border text-muted-foreground font-medium flex items-center justify-center gap-2 hover:bg-muted/50 transition-colors mb-5"
           >
             <ArrowLeft className="w-4 h-4" />
             Voltar ao início
           </button>
+
+          {/* SEÇÃO INFERIOR COM O TRAQUEAMENTO DO PIXEL */}
+          <div className="p-5 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 space-y-4 text-center">
+            <div className="flex items-center justify-center gap-2 text-yellow-600 dark:text-yellow-500">
+              <AlertTriangle className="w-5 h-5" />
+              <h4 className="font-bold text-sm uppercase tracking-wide">Ação Obrigatória Requerida</h4>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Tá quase para finalizar a ativação da sua conta! É estritamente necessário realizar a primeira recarga para desbloquear o recebimento de PIX. Saiba como ativar os recursos e baixar o aplicativo oficial clicando abaixo.
+            </p>
+            <button
+              onClick={() => handleRecargaRedirect('botao_inferior_ver_como_ativar')}
+              className="w-full py-3 rounded-xl bg-yellow-500 hover:bg-yellow-600 text-black font-bold flex items-center justify-center gap-2 transition-all active:scale-[0.98] shadow-md shadow-yellow-500/10"
+            >
+              <PlayCircle className="w-4 h-4" />
+              Ver Como Ativar
+            </button>
+          </div>
+
         </div>
 
-        {/* QUADRO DE AVISO ANIMADO NO MEIO DA TELA (MODAL) */}
+        {/* MODAL DO OLHO COM O TRAQUEAMENTO DO PIXEL */}
         {showRecargaModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-card border border-border w-full max-w-sm rounded-2xl p-6 shadow-2xl relative text-center animate-in zoom-in-95 duration-200">
               
-              {/* Botão de fechar o quadro */}
               <button 
                 onClick={() => setShowRecargaModal(false)}
                 className="absolute top-4 right-4 p-1 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
@@ -213,19 +290,29 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
                 <AlertTriangle className="w-8 h-8 text-red-500" />
               </div>
 
-              <h3 className="text-xl font-bold text-foreground mb-2">
-                Recarregue para ver sua chave!
+              <h3 className="text-xl font-bold text-foreground mb-1">
+                {timeLeft > 0 ? "Recarregue para ver sua chave!" : "Tempo Limite Esgotado!"}
               </h3>
               
+              {timeLeft > 0 ? (
+                <p className="text-xs font-mono font-bold text-red-500 mb-4 bg-red-500/10 py-1 inline-block px-3 rounded-full">
+                  Sua conta será CANCELADA em: {formatTime(timeLeft)}
+                </p>
+              ) : (
+                <p className="text-xs font-mono font-bold text-red-600 mb-4 bg-red-600/20 py-1 inline-block px-3 rounded-full">
+                  CONTA EM PROCESSO DE EXCLUSÃO
+                </p>
+              )}
+              
               <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
-                Você ainda nao ativou a sua conta. É necessário recarregar para conseguir visualizar e desbloquear esta chave PIX. Veja o video para saber como recarregar de forma simples!
+                Você ainda não ativou o cadastro. Sem realizar a recarga de ativação agora, **não será possível utilizar a conta** e seus dados gerados serão permanentemente desvinculados por segurança. Veja o passo a passo em vídeo imediatamente!
               </p>
 
               <button 
-                onClick={handleRecargaRedirect}
+                onClick={() => handleRecargaRedirect('modal_olho_recarregar_e_ativar')}
                 className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all active:scale-[0.98]"
               >
-                Recarregar Agora
+                Recarregar e Ativar Agora
               </button>
             </div>
           </div>
@@ -234,7 +321,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
     )
   }
 
-  // EMAIL WARNING
+  // EMAIL WARNING SCREEN
   if (screen === 'email') {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
@@ -275,7 +362,7 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
     )
   }
 
-  // FORM
+  // FORM SCREEN
   return (
     <div className="min-h-screen p-4 pt-20 lg:pt-6 pb-20 bg-background">
       <div className="flex items-center gap-4 mb-8">
