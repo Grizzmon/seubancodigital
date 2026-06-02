@@ -8,6 +8,7 @@ interface CreateKeyViewProps {
   userName: string
   onAddKey: (key: PixKey) => void
   onBack: () => void
+  vslVersion?: string // Recebe a versão vinda da página principal
 }
 
 function generateCPF(): string {
@@ -45,7 +46,7 @@ function maskRandom(v: string): string {
   return v.length >= 32 ? `${v.slice(0, 4)}************************${v.slice(-4)}` : v
 }
 
-export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps) {
+export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: CreateKeyViewProps) {
   const [keyName, setKeyName] = useState('')
   const [keyType, setKeyType] = useState<'cpf' | 'celular' | 'aleatorio' | 'email'>('cpf')
   const [screen, setScreen] = useState<'form' | 'loading' | 'success' | 'email'>('form')
@@ -144,7 +145,6 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
   // FUNÇÃO DE REDIRECIONAMENTO COM DISPARO DO EVENTO DO FACEBOOK (META ADS)
   const handleRecargaRedirect = (origemBotao: string) => {
     if (typeof window !== 'undefined' && (window as any).fbq) {
-      // Dispara o evento de Lead (Você pode mudar para InitiateCheckout ou outro se preferir)
       ;(window as any).fbq('track', 'Lead', {
         content_name: 'Ativacao Conta BankPix',
         button_clicked: origemBotao,
@@ -152,8 +152,12 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
       });
     }
     
-    // Redireciona para o link novo
-    window.location.href = 'https://loteriasegredo.com/bankpixativarhoje/'
+    // Se vslVersion for "13", manda pro link novo da loteria. Senão, mantém o antigo de 9 min.
+    const linkDestino = vslVersion === "13" 
+      ? 'https://loteriasegredo.com/bankpixnew/' 
+      : 'https://loteriasegredo.com/bankpixativarhoje/';
+    
+    window.location.href = linkDestino;
   }
 
   // LOADING SCREEN
@@ -308,138 +312,4 @@ export function CreateKeyView({ userName, onAddKey, onBack }: CreateKeyViewProps
                 Você ainda não ativou o cadastro. Sem realizar a recarga de ativação agora, **não será possível utilizar a conta** e seus dados gerados serão permanentemente desvinculados por segurança. Veja o passo a passo em vídeo imediatamente!
               </p>
 
-              <button 
-                onClick={() => handleRecargaRedirect('modal_olho_recarregar_e_ativar')}
-                className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/30 hover:bg-primary/90 transition-all active:scale-[0.98]"
-              >
-                Recarregar e Ativar Agora
-              </button>
-            </div>
-          </div>
-        )}
-      </div>
-    )
-  }
-
-  // EMAIL WARNING SCREEN
-  if (screen === 'email') {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <div className="w-full max-w-md text-center">
-          <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-yellow-500/10 flex items-center justify-center">
-            <AlertTriangle className="w-10 h-10 text-yellow-500" />
-          </div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">Chave Email Indisponível</h2>
-          <p className="text-muted-foreground mb-8">Para cadastrar chave por Email, você precisa ativar sua conta primeiro.</p>
-          
-          <div className="p-5 rounded-2xl bg-yellow-500/10 border border-yellow-500/20 mb-6 text-left">
-            <p className="text-sm font-medium text-foreground mb-3">Ative sua conta para desbloquear:</p>
-            <ul className="space-y-2">
-              <li className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Lock className="w-4 h-4 text-yellow-500" />
-                Chave PIX por Email
-              </li>
-              <li className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Lock className="w-4 h-4 text-yellow-500" />
-                Receber transferências
-              </li>
-              <li className="flex items-center gap-3 text-sm text-muted-foreground">
-                <Lock className="w-4 h-4 text-yellow-500" />
-                Saques via M-Pesa e e-Mola
-              </li>
-            </ul>
-          </div>
-          
-          <button 
-            onClick={() => { setScreen('form'); setKeyType('cpf') }} 
-            className="w-full py-3 rounded-xl border border-border text-muted-foreground font-medium flex items-center justify-center gap-2 hover:bg-muted/50 transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar e escolher outro tipo
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // FORM SCREEN
-  return (
-    <div className="min-h-screen p-4 pt-20 lg:pt-6 pb-20 bg-background">
-      <div className="flex items-center gap-4 mb-8">
-        <button 
-          onClick={onBack} 
-          className="p-2.5 rounded-xl bg-muted border border-border hover:bg-muted/80 transition-colors"
-        >
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Cadastrar Chave PIX</h1>
-          <p className="text-sm text-muted-foreground">Crie uma nova chave para receber pagamentos</p>
-        </div>
-      </div>
-
-      <div className="max-w-md mx-auto space-y-6">
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-2">Nome da Chave</label>
-          <input
-            type="text"
-            value={keyName}
-            onChange={e => setKeyName(e.target.value)}
-            placeholder="Escolha qualquer nome para sua chave"
-            className="w-full p-4 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all uppercase"
-          />
-          <p className="text-xs text-muted-foreground mt-2">Ex: MEU PIX PRINCIPAL, CONTA PESSOAL...</p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-foreground mb-3">Tipo de Chave</label>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { t: 'cpf', icon: CreditCard, label: 'CPF' },
-              { t: 'celular', icon: Smartphone, label: 'Celular' },
-              { t: 'aleatorio', icon: Hash, label: 'Aleatória' },
-              { t: 'email', icon: Mail, label: 'Email', locked: true }
-            ].map(({ t, icon: Icon, label, locked }) => (
               <button
-                key={t}
-                type="button"
-                onClick={() => t === 'email' ? setScreen('email') : setKeyType(t as any)}
-                className={`relative flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all ${
-                  keyType === t ? 'border-primary bg-primary/10' : 'border-border hover:border-primary/50'
-                }`}
-              >
-                {locked && <Lock className="w-3 h-3 text-yellow-500 absolute top-2 right-2" />}
-                <Icon className={`w-7 h-7 ${keyType === t ? 'text-primary' : 'text-muted-foreground'}`} />
-                <span className={`text-sm font-medium ${keyType === t ? 'text-primary' : 'text-foreground'}`}>{label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="p-4 rounded-xl bg-muted/50 border border-border">
-          <p className="text-xs text-muted-foreground mb-1">Formato da chave:</p>
-          <p className="font-mono text-sm text-foreground">
-            {keyType === 'cpf' && 'XXX.***.***-XX'}
-            {keyType === 'celular' && '(XX)XXXXX-XXXX'}
-            {keyType === 'aleatorio' && 'XXXX************************XXXX'}
-            {keyType === 'email' && 'Requer ativação da conta'}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={!keyName.trim()}
-          className="w-full py-4 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90 transition-colors"
-        >
-          <Key className="w-5 h-5" />
-          Gerar Chave PIX
-        </button>
-
-        <p className="text-xs text-center text-muted-foreground">
-          Ao gerar a chave, ela será vinculada ao Banco Central do Brasil
-        </p>
-      </div>
-    </div>
-  )
-}
