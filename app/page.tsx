@@ -22,7 +22,8 @@ interface UserData {
   transactions: Transaction[]
 }
 
-export default function Home() {
+// Alteração aqui: Agora a função recebe vslVersion (se ninguém passar nada, assume "9")
+export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userName, setUserName] = useState('')
   const [userPhone, setUserPhone] = useState('')
@@ -88,8 +89,9 @@ export default function Home() {
     setTransactions(prev => [transaction, ...prev])
   }, [])
 
+  // Alteração aqui: Passando a versão da VSL para a tela de login se ela estiver lá
   if (!isLoggedIn) {
-    return <LoginScreen onLogin={handleLogin} />
+    return <LoginScreen onLogin={handleLogin} vslVersion={vslVersion} />
   }
 
   return (
@@ -113,6 +115,7 @@ export default function Home() {
       <main className="lg:pl-64 min-h-screen pt-16 lg:pt-0">
         <div className="p-4 md:p-6 lg:p-8">
           {currentView === 'dashboard' && (
+            // Alteração aqui: Passando a versão da VSL para o Dashboard se ela estiver lá
             <DashboardView
               userName={userName}
               balance={balance}
@@ -120,6 +123,7 @@ export default function Home() {
               keys={keys}
               transactions={transactions}
               onNavigate={handleNavigate}
+              vslVersion={vslVersion}
             />
           )}
 
