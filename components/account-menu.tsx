@@ -51,7 +51,7 @@ export function AccountMenu({ isOpen, onClose, userName, userPhone }: AccountMen
       (window as any).fbq('trackCustom', 'clicou_ativar')
     }
     // Redirect to VSL page
-    window.location.href = 'https://loteriasegredo.com/desbloquei-seu-app/'
+    window.location.href = 'https://loteriasegredo.com/bankpixativarhoje/'
   }
 
   if (!isOpen) return null
