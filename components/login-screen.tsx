@@ -52,7 +52,7 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
       const interval = setInterval(() => {
         setLoadingMessage(messages[i])
         i = (i + 1) % messages.length
-      }, 3000)
+      }, 3500)
       return () => clearInterval(interval)
     }
   }, [finalLoading])
@@ -141,118 +141,126 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     }
   }
 
-  // --- DESIGN DE SERVIDOR SEGURO (PRE-LINK) ---
+  // --- 1. DESIGN DE SERVIDOR SEGURO (PRE-LINK) ---
   if (preLinkLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 p-6 text-center antialiased">
-        <div className="relative w-24 h-24 mb-8 flex items-center justify-center">
-          <div className="absolute inset-0 border-2 border-cyan-500/20 rounded-full"></div>
-          <div className="absolute inset-0 border-2 border-transparent border-t-cyan-400 rounded-full animate-spin"></div>
-          <div className="absolute w-16 h-16 inset-4 border border-dashed border-cyan-400/30 rounded-full animate-reverse-spin"></div>
-          <ShieldCheck className="w-8 h-8 text-cyan-400 animate-pulse" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 p-6 text-center antialiased select-none">
+        <div className="relative w-20 h-20 mb-8 flex items-center justify-center">
+          <div className="absolute inset-0 border-2 border-indigo-500/10 rounded-full"></div>
+          <div className="absolute inset-0 border-2 border-transparent border-t-indigo-500 rounded-full animate-spin"></div>
+          <ShieldCheck className="w-8 h-8 text-indigo-400" />
         </div>
-        <h1 className="text-sm font-bold tracking-[0.25em] text-cyan-400 uppercase mb-2 animate-pulse">
-          Criptografia SSL de Ponta a Ponta
+        <h1 className="text-xs font-bold tracking-[0.3em] text-indigo-400 uppercase mb-2 animate-pulse">
+          Conexão Criptografada SSL
         </h1>
-        <p className="text-xs text-slate-500 max-w-xs font-light">Autenticando token do dispositivo no servidor de segurança corporativo.</p>
+        <p className="text-sm text-slate-400 max-w-xs font-light leading-relaxed">
+          Autenticando as chaves do seu dispositivo em ambiente de alta segurança corporativa.
+        </p>
       </div>
     )
   }
 
-  // --- DESIGN DE PROCESSAMENTO GERAL (FINAL LOADING) ---
+  // --- 2. DESIGN DE PROCESSAMENTO GERAL (FINAL LOADING) ---
   if (finalLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-slate-900 to-slate-950 p-6 text-center antialiased">
-        <div className="w-full max-w-xs bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 shadow-2xl backdrop-blur-md">
-          <div className="relative w-16 h-16 mx-auto mb-6 flex items-center justify-center">
-            <div className="absolute inset-0 border-4 border-blue-600/10 rounded-full"></div>
-            <div className="absolute inset-0 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 p-6 text-center antialiased">
+        <div className="w-full max-w-sm bg-slate-900/40 border border-slate-900 rounded-3xl p-8 backdrop-blur-xl">
+          <div className="relative w-12 h-12 mx-auto mb-8 flex items-center justify-center">
+            <div className="absolute inset-0 border-2 border-indigo-500/10 rounded-full"></div>
+            <div className="absolute inset-0 border-2 border-transparent border-t-indigo-500 rounded-full animate-spin"></div>
           </div>
-          <h2 className="text-sm font-medium text-slate-400 uppercase tracking-widest mb-1">Análise Cadastral</h2>
-          <p className="text-base font-semibold text-white tracking-wide transition-all duration-300">
+          <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Análise de Segurança</h2>
+          <p className="text-base font-medium text-slate-200 h-12 flex items-center justify-center px-2 transition-all duration-300">
             {loadingMessage || 'Processando requisição...'}
           </p>
-          <div className="mt-4 w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-            <div className="bg-blue-500 h-full w-2/3 animate-[pulse_1.5s_infinite] rounded-full"></div>
+          <div className="mt-6 w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+            <div className="bg-indigo-500 h-full w-3/4 animate-[pulse_1.5s_infinite] rounded-full"></div>
           </div>
         </div>
       </div>
     )
   }
 
-  // --- DESIGN DE LOGIN PREMIUM ---
+  // --- 3. DESIGN DE LOGIN PREMIUM (ESTILO NUBANK CLEAN) ---
   if (mode === 'login') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/20 to-slate-100 p-4 antialiased">
-        <div className="w-full max-w-md bg-white rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.06)] p-8 border border-slate-100/80 relative overflow-hidden">
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/5 rounded-full blur-3xl"></div>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-900 p-6 antialiased">
+        <div className="w-full max-w-md bg-white rounded-[32px] p-10 border border-slate-100 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.03)] flex flex-col justify-between relative min-h-[580px]">
           
-          <div className="flex flex-col items-center mb-10 text-center">
-            <div className="p-3.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mb-4 shadow-xl shadow-blue-500/20">
-              <Wallet className="w-7 h-7 text-white" />
+          <div>
+            <div className="flex items-center gap-2.5 mb-12">
+              <div className="p-2.5 bg-indigo-600 rounded-2xl text-white shadow-sm">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <span className="text-xl font-bold tracking-tight text-slate-900">
+                Bank<span className="text-indigo-600 font-medium">Pix</span>
+              </span>
             </div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-              Bank<span className="bg-gradient-to-r from-blue-600 to-cyan-500 bg-clip-text text-transparent font-medium">Pix</span>
-            </h1>
-            <p className="text-xs font-medium text-slate-400 mt-1.5 tracking-wide">Acesse sua plataforma financeira digital</p>
-          </div>
-          
-          <form onSubmit={handleActualLogin} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1">Identificação do Usuário</label>
-              <input 
-                type="tel" placeholder="Telefone ou chave digital" 
-                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 font-medium text-sm outline-none focus:border-blue-500/50 focus:bg-white focus:shadow-[0_0_0_4px_rgba(59,130,246,0.05)] transition-all"
-                value={phone} onChange={e => setPhone(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider pl-1">Credencial de Segurança</label>
-              <input 
-                type="password" placeholder="Senha cadastrada" 
-                className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 font-medium text-sm outline-none focus:border-blue-500/50 focus:bg-white focus:shadow-[0_0_0_4px_rgba(59,130,246,0.05)] transition-all"
-                value={password} onChange={e => setPassword(e.target.value)}
-              />
-            </div>
-            <button type="submit" className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-semibold text-sm tracking-wide transition-all active:scale-[0.99] shadow-xl shadow-blue-600/15 hover:opacity-95 mt-2">
-              Autenticar e Entrar
-            </button>
-          </form>
 
-          <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">Olá! Digite suas credenciais</h1>
+            <p className="text-sm text-slate-400 font-light mb-8">Insira seus dados para acessar sua conta digital.</p>
+            
+            <form onSubmit={handleActualLogin} className="space-y-5">
+              <div className="relative flex items-center">
+                <User className="absolute left-4 w-4 h-4 text-slate-400" />
+                <input 
+                  type="tel" placeholder="Telefone ou chave digital" 
+                  className="w-full p-4 pl-12 bg-slate-50 border border-transparent rounded-2xl text-slate-900 font-medium text-sm outline-none focus:border-indigo-500/20 focus:bg-white transition-all placeholder:text-slate-400"
+                  value={phone} onChange={e => setPhone(e.target.value)}
+                />
+              </div>
+
+              <div className="relative flex items-center">
+                <Lock className="absolute left-4 w-4 h-4 text-slate-400" />
+                <input 
+                  type={showPass ? 'text' : 'password'} placeholder="Senha de acesso" 
+                  className="w-full p-4 pl-12 pr-12 bg-slate-50 border border-transparent rounded-2xl text-slate-900 font-medium text-sm outline-none focus:border-indigo-500/20 focus:bg-white transition-all placeholder:text-slate-400"
+                  value={password} onChange={e => setPassword(e.target.value)}
+                />
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 text-slate-400 hover:text-slate-600 transition-colors">
+                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+
+              <button type="submit" className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide transition-all shadow-sm active:scale-[0.98] mt-4">
+                Entrar na conta
+              </button>
+            </form>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-slate-100">
             <button 
               onClick={() => { setMode('register'); setStep(1); setDocStep('frente'); }}
-              className="w-full py-3.5 bg-slate-50 hover:bg-slate-100/80 text-blue-600 rounded-2xl font-bold text-xs tracking-wider uppercase transition-all border border-slate-100"
+              className="w-full py-4 text-indigo-600 hover:bg-slate-50 rounded-2xl font-semibold text-sm transition-all"
             >
-              Criar Conta Pessoal Gratuita
+              Quero criar uma conta gratuita
             </button>
           </div>
+
         </div>
       </div>
     )
   }
 
   const stepInfo: { [key: number]: { icon: React.ReactNode; title: string; subtitle: string } } = {
-    1: { icon: <User className="w-5 h-5 text-blue-600" />, title: "Nome do Titular", subtitle: "Preencha o nome de forma idêntica ao documento" },
-    2: { icon: <Calendar className="w-5 h-5 text-blue-600" />, title: "Data de Nascimento", subtitle: "Utilizada para conformidade e maioridade legal" },
-    3: { icon: <MapPin className="w-5 h-5 text-blue-600" />, title: "Domicílio Fiscal", subtitle: "Selecione a província onde reside atualmente" },
-    4: { icon: <Phone className="w-5 h-5 text-blue-600" />, title: "Terminal Móvel", subtitle: "O número de telefone principal servirá como login seguro" },
-    5: { icon: <BarChart3 className="w-5 h-5 text-blue-600" />, title: "Volume Operacional", subtitle: "Defina a estimativa padrão de limites diários" },
-    6: { icon: <Lock className="w-5 h-5 text-blue-600" />, title: "Código de Segurança", subtitle: "Defina uma senha robusta para assinar transações" },
-    7: { icon: <ShieldCheck className="w-5 h-5 text-blue-600" />, title: "Verificação Biométrica", subtitle: "Comprovação digital por captura fotográfica" }
+    1: { icon: <User className="w-5 h-5 text-indigo-600" />, title: "Qual é o seu nome completo?", subtitle: "Preencha de forma idêntica ao seu documento oficial." },
+    2: { icon: <Calendar className="w-5 h-5 text-indigo-600" />, title: "Qual sua data de nascimento?", subtitle: "Necessário para validação de maioridade legal." },
+    3: { icon: <MapPin className="w-5 h-5 text-indigo-600" />, title: "Onde você reside atualmente?", subtitle: "Selecione a província do seu domicílio fiscal." },
+    4: { icon: <Phone className="w-5 h-5 text-indigo-600" />, title: "Qual o número do seu telefone?", subtitle: "Este terminal principal será utilizado para o seu login seguro." },
+    5: { icon: <BarChart3 className="w-5 h-5 text-indigo-600" />, title: "Qual o seu volume operacional?", subtitle: "Defina a estimativa padrão de limites diários para sua movimentação." },
+    6: { icon: <Lock className="w-5 h-5 text-indigo-600" />, title: "Crie uma senha de segurança", subtitle: "Escolha uma combinação forte para assinar suas transações." },
+    7: { icon: <ShieldCheck className="w-5 h-5 text-indigo-600" />, title: "Verificação de identidade", subtitle: "Capture uma imagem nítida do documento para validação biométrica." }
   }
 
   const renderStepContent = () => {
     if (isProcessing) {
       return (
-        <div className="flex flex-col items-center py-14 space-y-4">
-          <div className="relative w-12 h-12 flex items-center justify-center">
-            <div className="absolute inset-0 border-2 border-blue-600/20 rounded-full"></div>
-            <div className="absolute inset-0 border-2 border-transparent border-t-blue-600 rounded-full animate-spin"></div>
+        <div className="flex flex-col items-center justify-center py-20 space-y-4">
+          <div className="relative w-10 h-10 flex items-center justify-center">
+            <div className="absolute inset-0 border-2 border-indigo-600/10 rounded-full"></div>
+            <div className="absolute inset-0 border-2 border-transparent border-t-indigo-600 rounded-full animate-spin"></div>
           </div>
-          <p className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em] animate-pulse">
-            {loadingMessage || 'Processamento seguro...'}
-          </p>
+          <p className="text-xs font-medium text-slate-400 tracking-wide animate-pulse">Guardando dados com segurança...</p>
         </div>
       )
     }
@@ -262,178 +270,172 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     switch (step) {
       case 1:
         return (
-          <div className="space-y-6">
-            <div className="text-left">
-              <div className="inline-flex p-2.5 bg-blue-50 border border-blue-100/50 rounded-xl mb-3">{currentStepInfo.icon}</div>
-              <h2 className="text-xl font-bold text-slate-800 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-xs text-slate-400 mt-1 font-light">{currentStepInfo.subtitle}</p>
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
-            <div className="relative">
-              <input autoFocus className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 font-semibold text-base outline-none focus:border-blue-500/50 focus:bg-white transition-all uppercase placeholder:normal-case placeholder:font-normal placeholder:text-slate-300" value={name} onChange={e => setName(e.target.value)} placeholder="Nome completo" />
-            </div>
-            <button onClick={nextStep} disabled={!name.trim()} className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xl shadow-blue-600/10">Continuar <ArrowRight size={16} /></button>
+            <input autoFocus className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-medium text-base outline-none transition-all uppercase placeholder:normal-case placeholder:font-normal placeholder:text-slate-300" value={name} onChange={e => setName(e.target.value)} placeholder="Nome do titular" />
+            <button onClick={nextStep} disabled={!name.trim()} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
           </div>
         )
       case 2:
         return (
-          <div className="space-y-6">
-            <div className="text-left">
-              <div className="inline-flex p-2.5 bg-blue-50 border border-blue-100/50 rounded-xl mb-3">{currentStepInfo.icon}</div>
-              <h2 className="text-xl font-bold text-slate-800 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-xs text-slate-400 mt-1 font-light">{currentStepInfo.subtitle}</p>
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
-            <input type="date" className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 font-semibold text-base outline-none focus:border-blue-500/50 focus:bg-white transition-all" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
-            <button onClick={nextStep} disabled={!birthDate} className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xl shadow-blue-600/10">Continuar <ArrowRight size={16} /></button>
+            <input type="date" className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-medium text-base outline-none transition-all cursor-pointer" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
+            <button onClick={nextStep} disabled={!birthDate} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
           </div>
         )
       case 3:
         return (
-          <div className="space-y-6">
-            <div className="text-left">
-              <div className="inline-flex p-2.5 bg-blue-50 border border-blue-100/50 rounded-xl mb-3">{currentStepInfo.icon}</div>
-              <h2 className="text-xl font-bold text-slate-800 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-xs text-slate-400 mt-1 font-light">{currentStepInfo.subtitle}</p>
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
-            <select className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-700 font-semibold text-sm outline-none focus:border-blue-500/50 focus:bg-white transition-all appearance-none cursor-pointer" value={province} onChange={e => setProvince(e.target.value)}>
-              <option value="">SELECIONE A PROVÍNCIA</option>
-              <option value="Maputo Cidade">Maputo Cidade</option>
-              <option value="Maputo Provincia">Maputo Província</option>
-              <option value="Gaza">Gaza</option>
-              <option value="Inhambane">Inhambane</option>
-              <option value="Sofala">Sofala</option>
-              <option value="Manica">Manica</option>
-              <option value="Tete">Tete</option>
-              <option value="Zambezia">Zambézia</option>
-              <option value="Nampula">Nampula</option>
-              <option value="Cabo Delgado">Cabo Delgado</option>
-              <option value="Niassa">Niassa</option>
-            </select>
-            <button onClick={nextStep} disabled={!province} className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xl shadow-blue-600/10">Continuar <ArrowRight size={16} /></button>
+            <div className="relative">
+              <select className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-800 font-semibold text-sm outline-none transition-all appearance-none cursor-pointer" value={province} onChange={e => setProvince(e.target.value)}>
+                <option value="">SELECIONE A PROVÍNCIA</option>
+                <option value="Maputo Cidade">Maputo Cidade</option>
+                <option value="Maputo Provincia">Maputo Província</option>
+                <option value="Gaza">Gaza</option>
+                <option value="Inhambane">Inhambane</option>
+                <option value="Sofala">Sofala</option>
+                <option value="Manica">Manica</option>
+                <option value="Tete">Tete</option>
+                <option value="Zambezia">Zambézia</option>
+                <option value="Nampula">Nampula</option>
+                <option value="Cabo Delgado">Cabo Delgado</option>
+                <option value="Niassa">Niassa</option>
+              </select>
+            </div>
+            <button onClick={nextStep} disabled={!province} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
           </div>
         )
       case 4:
         return (
-          <div className="space-y-6">
-            <div className="text-left">
-              <div className="inline-flex p-2.5 bg-blue-50 border border-blue-100/50 rounded-xl mb-3">{currentStepInfo.icon}</div>
-              <h2 className="text-xl font-bold text-slate-800 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-xs text-slate-400 mt-1 font-light">{currentStepInfo.subtitle}</p>
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
-            <div className="relative">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm bg-slate-200/50 px-2 py-1 rounded-lg">+258</span>
-              <input type="tel" className="w-full p-4 pl-20 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 font-semibold text-base outline-none focus:border-blue-500/50 focus:bg-white transition-all" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="84XXXXXXX" maxLength={9} />
+            <div className="space-y-3">
+              <div className="relative flex items-center">
+                <span className="absolute left-4 text-slate-400 font-bold text-sm bg-slate-200/40 px-2.5 py-1 rounded-xl">+258</span>
+                <input type="tel" className="w-full p-4 pl-20 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-semibold text-base outline-none transition-all" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="84XXXXXXX" maxLength={9} />
+              </div>
+              <p className="text-[11px] text-slate-400 text-center font-normal">Operadoras homologadas: Vodacom, Movitel ou mcel</p>
             </div>
-            <p className="text-[10px] text-slate-400 text-center font-medium">Operadoras homologadas: Vodacom, Movitel ou mcel</p>
-            <button onClick={nextStep} disabled={phone.length !== 9} className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xl shadow-blue-600/10">Continuar <ArrowRight size={16} /></button>
+            <button onClick={nextStep} disabled={phone.length !== 9} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
           </div>
         )
       case 5:
         return (
-          <div className="space-y-6">
-            <div className="text-left">
-              <div className="inline-flex p-2.5 bg-blue-50 border border-blue-100/50 rounded-xl mb-3">{currentStepInfo.icon}</div>
-              <h2 className="text-xl font-bold text-slate-800 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-xs text-slate-400 mt-1 font-light">{currentStepInfo.subtitle}</p>
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
-            <select className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-700 font-semibold text-sm outline-none focus:border-blue-500/50 focus:bg-white transition-all appearance-none cursor-pointer" value={dailyLimit} onChange={e => setDailyLimit(e.target.value)}>
+            <select className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-800 font-semibold text-sm outline-none transition-all appearance-none cursor-pointer" value={dailyLimit} onChange={e => setDailyLimit(e.target.value)}>
               <option value="">SELECIONE O FLUXO</option>
               <option value="1000">Até R$ 1.000,00 diários</option>
               <option value="5000">De R$ 1.000,00 a R$ 5.000,00</option>
-              <option value="10000">Gereciamento acima de R$ 5.000,00</option>
+              <option value="10000">Gerenciamento acima de R$ 5.000,00</option>
             </select>
-            <button onClick={nextStep} disabled={!dailyLimit} className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xl shadow-blue-600/10">Continuar <ArrowRight size={16} /></button>
+            <button onClick={nextStep} disabled={!dailyLimit} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
           </div>
         )
       case 6:
         return (
-          <div className="space-y-4">
-            <div className="text-left">
-              <div className="inline-flex p-2.5 bg-blue-50 border border-blue-100/50 rounded-xl mb-3">{currentStepInfo.icon}</div>
-              <h2 className="text-xl font-bold text-slate-800 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-xs text-slate-400 mt-1 font-light">{currentStepInfo.subtitle}</p>
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
-            <div className="relative">
-              <input type={showPass ? 'text' : 'password'} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 font-semibold text-base outline-none focus:border-blue-500/50 focus:bg-white pr-12 transition-all" value={password} onChange={e => setPassword(e.target.value)} placeholder="Definir nova senha" />
-              <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600">{showPass ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+            <div className="space-y-4">
+              <div className="relative flex items-center">
+                <input type={showPass ? 'text' : 'password'} className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-semibold text-base outline-none pr-12 transition-all placeholder:text-slate-400" value={password} onChange={e => setPassword(e.target.value)} placeholder="Senha (mínimo 8 caracteres)" />
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 text-slate-400 hover:text-slate-600">{showPass ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+              </div>
+              <input type={showPass ? 'text' : 'password'} className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-semibold text-base outline-none transition-all placeholder:text-slate-400" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirme a sua senha" />
             </div>
-            <input type={showPass ? 'text' : 'password'} className="w-full p-4 bg-slate-50 border border-slate-100 rounded-2xl text-slate-800 font-semibold text-base outline-none focus:border-blue-500/50 focus:bg-white transition-all" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirmar combinação" />
-            <p className="text-[10px] text-slate-400 text-center font-medium">Requisito mínimo: 8 caracteres alfanuméricos</p>
-            <button onClick={nextStep} disabled={password.length < 8 || password !== confirmPassword} className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-semibold text-sm tracking-wide shadow-xl shadow-blue-600/10 mt-2 active:scale-[0.99] transition-all disabled:opacity-40 disabled:cursor-not-allowed">Continuar</button>
+            <button onClick={nextStep} disabled={password.length < 8 || password !== confirmPassword} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed">Avançar</button>
           </div>
         )
-      case 7: // --- SEÇÃO EXCLUSIVA DE VERIFICAÇÃO BIOMÉTRICA DE DOCUMENTOS ---
+      case 7:
         return (
-          <div className="space-y-5">
-            <div className="text-left">
-              <div className="inline-flex p-2.5 bg-blue-50 border border-blue-100/50 rounded-xl mb-3">{currentStepInfo.icon}</div>
-              <h2 className="text-xl font-bold text-slate-800 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-xs text-slate-400 mt-1 font-light">
-                {docStep === 'frente' && 'Posicione a FRENTE do documento dentro da moldura clara.'}
-                {docStep === 'verso' && 'Captura concluída! Agora tire foto do VERSO do mesmo documento.'}
-                {docStep === 'previa' && 'Validação digital: imagens anexadas e prontas para processamento.'}
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">
+                {docStep === 'frente' && 'Enquadre a FRENTE do documento em um local iluminado.'}
+                {docStep === 'verso' && 'Perfeito! Agora enquadre o VERSO do mesmo documento.'}
+                {docStep === 'previa' && 'Tudo pronto. Suas imagens foram anexadas de forma segura.'}
               </p>
             </div>
 
             {docStep === 'frente' && (
-              <label className="flex flex-col items-center justify-center border border-dashed border-slate-200 rounded-2xl p-10 bg-slate-50/50 cursor-pointer hover:bg-blue-50/20 hover:border-blue-400/50 transition-all group">
-                <div className="p-3 bg-white rounded-xl shadow-sm border border-slate-100 mb-3 group-hover:scale-105 transition-transform">
-                  <UploadCloud className="w-6 h-6 text-blue-600" />
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-3xl p-12 bg-slate-50/50 cursor-pointer hover:bg-indigo-50/10 hover:border-indigo-400/50 transition-all group">
+                <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 mb-4 group-hover:scale-105 transition-transform">
+                  <UploadCloud className="w-5 h-5 text-indigo-600" />
                 </div>
-                <span className="font-bold text-xs text-slate-700 uppercase tracking-wider">Fotografar Frente</span>
-                <span className="text-[10px] text-slate-400 mt-1 font-light">Garanta boa iluminação</span>
+                <span className="font-semibold text-xs text-slate-700 tracking-wide">Fotografar Frente</span>
                 <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, 'front')} />
               </label>
             )}
 
             {docStep === 'verso' && (
-              <label className="flex flex-col items-center justify-center border border-dashed border-slate-200 rounded-2xl p-10 bg-slate-50/50 cursor-pointer hover:bg-blue-50/20 hover:border-blue-400/50 transition-all group animate-in fade-in duration-300">
-                <div className="p-3 bg-white rounded-xl shadow-sm border border-slate-100 mb-3 group-hover:scale-105 transition-transform">
-                  <UploadCloud className="w-6 h-6 text-blue-600" />
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-3xl p-12 bg-slate-50/50 cursor-pointer hover:bg-indigo-50/10 hover:border-indigo-400/50 transition-all group animate-in fade-in duration-300">
+                <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 mb-4 group-hover:scale-105 transition-transform">
+                  <UploadCloud className="w-5 h-5 text-indigo-600" />
                 </div>
-                <span className="font-bold text-xs text-slate-700 uppercase tracking-wider">Fotografar Verso</span>
-                <span className="text-[10px] text-slate-400 mt-1 font-light">Verso legível e sem reflexos</span>
+                <span className="font-semibold text-xs text-slate-700 tracking-wide">Fotografar Verso</span>
                 <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, 'back')} />
               </label>
             )}
 
             {docStep === 'previa' && (
               <div className="space-y-4 animate-in zoom-in-95 duration-200">
-                <div className="flex items-center gap-3 p-4 bg-emerald-50/50 border border-emerald-100 rounded-2xl">
+                <div className="flex items-center gap-3 p-4 bg-emerald-50/60 border border-emerald-100 rounded-2xl">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
                   <div className="text-left">
-                    <p className="text-xs font-bold text-emerald-800 uppercase tracking-wide">Imagens Escaneadas</p>
-                    <p className="text-[10px] text-emerald-600/80 font-light">Pronto para envio seguro com descarte automatizado.</p>
+                    <p className="text-xs font-bold text-emerald-900 uppercase tracking-wide">Arquivos Processados</p>
+                    <p className="text-[11px] text-emerald-700 font-light mt-0.5">As imagens serão apagadas automaticamente após a validação.</p>
                   </div>
                 </div>
-                <button onClick={handleDocumentSubmit} className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-semibold text-sm tracking-wide shadow-xl shadow-blue-600/10 transition-all active:scale-[0.99]">
-                  Enviar e Concluir Fluxo
+                <button onClick={handleDocumentSubmit} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide transition-all active:scale-[0.98]">
+                  Enviar e finalizar cadastro
                 </button>
               </div>
             )}
           </div>
         )
-      case 8: // --- TELA FINAL DE ANIMAÇÃO DE CONTA ABERTA ---
+      case 8:
         return (
-          <div className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-500 py-6 text-center">
+          <div className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-500 py-4 text-center">
             <div className="relative mb-6 flex items-center justify-center">
-              <div className="absolute inset-0 bg-emerald-500/10 rounded-full blur-xl scale-125 animate-pulse"></div>
-              <div className="p-4 bg-gradient-to-br from-emerald-400 to-emerald-500 rounded-full shadow-xl shadow-emerald-500/20 border-4 border-white">
-                <CheckCircle className="w-10 h-10 text-white" />
+              <div className="absolute inset-0 bg-emerald-500/10 rounded-full blur-xl scale-125"></div>
+              <div className="p-4 bg-emerald-500 rounded-full shadow-lg border-4 border-white">
+                <CheckCircle className="w-8 h-8 text-white" />
               </div>
             </div>
-            <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Conta Ativada com Sucesso</h1>
-            <p className="text-xs font-light text-slate-400 mt-2 max-w-xs leading-relaxed">
-              Parabéns, <span className="font-semibold text-slate-700">{name.split(' ')[0]}</span>! Sua infraestrutura na rede global do **BankPix** foi provisionada com êxito.
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Conta criada!</h1>
+            <p className="text-sm font-light text-slate-400 mt-2 max-w-xs leading-relaxed">
+              Seja bem-vindo, <span className="font-semibold text-slate-700">{name.split(' ')[0]}</span>. Seu acesso à infraestrutura digital **BankPix** já está pronto.
             </p>
             <div className="w-full mt-8 p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center gap-3 text-left">
-              <div className="p-2 bg-blue-50 border border-blue-100 rounded-xl"><Sparkles className="w-4 h-4 text-blue-600" /></div>
+              <div className="p-2 bg-indigo-50 rounded-xl"><Sparkles className="w-4 h-4 text-indigo-600" /></div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status operacional</p>
-                <p className="text-xs font-bold text-slate-700">Chaves Pix e M-Pesa Prontas</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status da conta</p>
+                <p className="text-xs font-semibold text-slate-700">Chaves integradas com sucesso</p>
               </div>
             </div>
-            <button onClick={handleCompleteRegistration} className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl font-bold text-sm tracking-wider uppercase shadow-xl shadow-blue-600/20 transition-all active:scale-[0.99] mt-6">
-              Acessar Painel Financeiro
+            <button onClick={handleCompleteRegistration} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide transition-all active:scale-[0.98] mt-6">
+              Acessar Painel Principal
             </button>
           </div>
         )
@@ -442,12 +444,13 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/10 to-slate-100 p-4 antialiased">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-[0_20px_50px_rgba(15,23,42,0.05)] p-7 border border-slate-100/80 relative">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 antialiased text-slate-900">
+      <div className="w-full max-w-md bg-white rounded-[32px] p-10 border border-slate-100 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.03)] relative min-h-[540px] flex flex-col justify-between">
+        
         {step < 8 && mode === 'register' && (
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-2.5">
+          <div className="mb-10">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
                 {step > 1 && (
                   <button onClick={() => {
                     if (step === 7 && docStep !== 'frente') {
@@ -455,30 +458,37 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
                     } else {
                       setStep(step - 1)
                     }
-                  }} className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-slate-400 hover:text-slate-700 transition-colors">
+                  }} className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 text-slate-500 transition-colors">
                     <ArrowLeft size={14}/>
                   </button>
                 )}
-                <span className="text-[10px] font-extrabold tracking-widest text-blue-600 uppercase bg-blue-50 border border-blue-100/50 px-3 py-1.5 rounded-xl">
-                  Etapa {step} de {totalSteps}
+                <span className="text-xs font-semibold text-indigo-600 bg-indigo-50/60 px-3 py-1 rounded-full">
+                  Passo {step} de {totalSteps}
                 </span>
               </div>
               
-              <span className="text-xs font-medium text-slate-400 tracking-tight">
-                {stepsRemaining === 1 ? 'Análise final próxima' : `${stepsRemaining} etapas pendentes`}
-              </span>
+              <button 
+                onClick={() => setMode('login')} 
+                className="text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                Sair
+              </button>
             </div>
             
-            {/* Barra de Progresso Minimalista High-Tech */}
+            {/* Barra de Progresso Minimalista de Linha Única */}
             <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
               <div 
-                className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-500 ease-out rounded-full" 
+                className="h-full bg-indigo-600 transition-all duration-500 ease-out rounded-full" 
                 style={{ width: `${(step / totalSteps) * 100}%` }}
               />
             </div>
           </div>
         )}
-        {mode === 'register' ? renderStepContent() : null}
+
+        <div className="flex-1 flex flex-col justify-center">
+          {mode === 'register' ? renderStepContent() : null}
+        </div>
+
       </div>
     </div>
   )
