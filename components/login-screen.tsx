@@ -28,6 +28,7 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
   const [backImage, setBackImage] = useState<string | null>(null)
 
   const totalSteps = 7
+  const stepsRemaining = totalSteps - step
 
   const trackLead = () => {
     if (typeof window !== 'undefined' && (window as any).fbq) {
@@ -51,7 +52,7 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
       const interval = setInterval(() => {
         setLoadingMessage(messages[i])
         i = (i + 1) % messages.length
-      }, 3000)
+      }, 3500)
       return () => clearInterval(interval)
     }
   }, [finalLoading])
@@ -140,305 +141,355 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     }
   }
 
-  // --- 1. PROCESSO SEGURO (PRE-LINK) ---
+  // --- 1. DESIGN DE SERVIDOR SEGURO (PRE-LINK) ---
   if (preLinkLoading) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-black text-white p-6 text-center antialiased">
-        <div className="relative w-16 h-16 mb-6 flex items-center justify-center">
-          <div className="absolute inset-0 border-2 border-purple-500/20 rounded-full"></div>
-          <div className="absolute inset-0 border-2 border-transparent border-t-purple-600 rounded-full animate-spin"></div>
-          <ShieldCheck className="w-6 h-6 text-purple-500" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 p-6 text-center antialiased select-none">
+        <div className="relative w-20 h-20 mb-8 flex items-center justify-center">
+          <div className="absolute inset-0 border-2 border-indigo-500/10 rounded-full"></div>
+          <div className="absolute inset-0 border-2 border-transparent border-t-indigo-500 rounded-full animate-spin"></div>
+          <ShieldCheck className="w-8 h-8 text-indigo-400" />
         </div>
-        <h1 className="text-xs font-bold tracking-[0.2em] text-purple-500 uppercase mb-2">
-          Ambiente Criptografado
+        <h1 className="text-xs font-bold tracking-[0.3em] text-indigo-400 uppercase mb-2 animate-pulse">
+          Conexão Criptografada SSL
         </h1>
-        <p className="text-sm text-neutral-400 max-w-xs font-light">
-          Estabelecendo conexão segura com os servidores centrais.
+        <p className="text-sm text-slate-400 max-w-xs font-light leading-relaxed">
+          Autenticando as chaves do seu dispositivo em ambiente de alta segurança corporativa.
         </p>
       </div>
     )
   }
 
-  // --- 2. PROCESSAMENTO FINAL ---
+  // --- 2. DESIGN DE PROCESSAMENTO GERAL (FINAL LOADING) ---
   if (finalLoading) {
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-black p-6 text-center antialiased">
-        <div className="w-full max-w-sm space-y-8">
-          <div className="relative w-10 h-10 mx-auto flex items-center justify-center">
-            <div className="absolute inset-0 border-2 border-purple-600/20 rounded-full"></div>
-            <div className="absolute inset-0 border-2 border-transparent border-t-purple-500 rounded-full animate-spin"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 p-6 text-center antialiased">
+        <div className="w-full max-w-sm bg-slate-900/40 border border-slate-900 rounded-3xl p-8 backdrop-blur-xl">
+          <div className="relative w-12 h-12 mx-auto mb-8 flex items-center justify-center">
+            <div className="absolute inset-0 border-2 border-indigo-500/10 rounded-full"></div>
+            <div className="absolute inset-0 border-2 border-transparent border-t-indigo-500 rounded-full animate-spin"></div>
           </div>
-          <div className="space-y-2">
-            <h2 className="text-xs font-bold text-neutral-500 uppercase tracking-widest">Análise do Sistema</h2>
-            <p className="text-lg font-medium text-white h-14 flex items-center justify-center px-4 transition-all duration-300">
-              {loadingMessage || 'Processando requisição...'}
-            </p>
-          </div>
-          <div className="w-full bg-neutral-900 h-1 rounded-full overflow-hidden">
-            <div className="bg-purple-600 h-full w-2/3 animate-[pulse_1.5s_infinite] rounded-full"></div>
+          <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Análise de Segurança</h2>
+          <p className="text-base font-medium text-slate-200 h-12 flex items-center justify-center px-2 transition-all duration-300">
+            {loadingMessage || 'Processando requisição...'}
+          </p>
+          <div className="mt-6 w-full bg-slate-800 h-1 rounded-full overflow-hidden">
+            <div className="bg-indigo-500 h-full w-3/4 animate-[pulse_1.5s_infinite] rounded-full"></div>
           </div>
         </div>
       </div>
     )
   }
 
-  // --- 3. LOGIN INTERFACE ---
+  // --- 3. DESIGN DE LOGIN PREMIUM (ESTILO NUBANK CLEAN) ---
   if (mode === 'login') {
     return (
-      <div className="min-h-screen w-full bg-white text-black antialiased flex flex-col justify-between p-6 md:max-w-md md:mx-auto md:shadow-2xl md:my-4 md:rounded-[40px] md:min-h-[850px]">
-        <div>
-          <div className="flex justify-between items-center pt-4 mb-16">
-            <span className="text-xl font-bold tracking-tight text-black">
-              Bank<span className="text-purple-600">Pix</span>
-            </span>
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-900 p-6 antialiased">
+        <div className="w-full max-w-md bg-white rounded-[32px] p-10 border border-slate-100 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.03)] flex flex-col justify-between relative min-h-[580px]">
+          
+          <div>
+            <div className="flex items-center gap-2.5 mb-12">
+              <div className="p-2.5 bg-indigo-600 rounded-2xl text-white shadow-sm">
+                <Wallet className="w-5 h-5" />
+              </div>
+              <span className="text-xl font-bold tracking-tight text-slate-900">
+                Bank<span className="text-indigo-600 font-medium">Pix</span>
+              </span>
+            </div>
+
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">Olá! Digite suas credenciais</h1>
+            <p className="text-sm text-slate-400 font-light mb-8">Insira seus dados para acessar sua conta digital.</p>
+            
+            <form onSubmit={handleActualLogin} className="space-y-5">
+              <div className="relative flex items-center">
+                <User className="absolute left-4 w-4 h-4 text-slate-400" />
+                <input 
+                  type="tel" placeholder="Telefone ou chave digital" 
+                  className="w-full p-4 pl-12 bg-slate-50 border border-transparent rounded-2xl text-slate-900 font-medium text-sm outline-none focus:border-indigo-500/20 focus:bg-white transition-all placeholder:text-slate-400"
+                  value={phone} onChange={e => setPhone(e.target.value)}
+                />
+              </div>
+
+              <div className="relative flex items-center">
+                <Lock className="absolute left-4 w-4 h-4 text-slate-400" />
+                <input 
+                  type={showPass ? 'text' : 'password'} placeholder="Senha de acesso" 
+                  className="w-full p-4 pl-12 pr-12 bg-slate-50 border border-transparent rounded-2xl text-slate-900 font-medium text-sm outline-none focus:border-indigo-500/20 focus:bg-white transition-all placeholder:text-slate-400"
+                  value={password} onChange={e => setPassword(e.target.value)}
+                />
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 text-slate-400 hover:text-slate-600 transition-colors">
+                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+
+              <button type="submit" className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide transition-all shadow-sm active:scale-[0.98] mt-4">
+                Entrar na conta
+              </button>
+            </form>
           </div>
 
-          <h1 className="text-3xl font-bold tracking-tight text-neutral-900 mb-8">Olá! Digite seu telefone e senha para entrar.</h1>
-          
-          <form onSubmit={handleActualLogin} className="space-y-6">
-            <div className="border-b border-neutral-200 focus-within:border-purple-600 transition-colors py-2">
-              <input 
-                type="tel" placeholder="Telefone ou chave digital" 
-                className="w-full bg-transparent text-lg font-medium outline-none placeholder:text-neutral-300"
-                value={phone} onChange={e => setPhone(e.target.value)}
-              />
-            </div>
+          <div className="mt-8 pt-6 border-t border-slate-100">
+            <button 
+              onClick={() => { setMode('register'); setStep(1); setDocStep('frente'); }}
+              className="w-full py-4 text-indigo-600 hover:bg-slate-50 rounded-2xl font-semibold text-sm transition-all"
+            >
+              Quero criar uma conta gratuita
+            </button>
+          </div>
 
-            <div className="border-b border-neutral-200 focus-within:border-purple-600 transition-colors py-2 flex items-center justify-between">
-              <input 
-                type={showPass ? 'text' : 'password'} placeholder="Senha de acesso" 
-                className="w-full bg-transparent text-lg font-medium outline-none placeholder:text-neutral-300"
-                value={password} onChange={e => setPassword(e.target.value)}
-              />
-              <button type="button" onClick={() => setShowPass(!showPass)} className="text-neutral-400 hover:text-neutral-600 px-2">
-                {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
-              </button>
-            </div>
-          </form>
-        </div>
-
-        <div className="space-y-4 pt-6">
-          <button 
-            onClick={handleActualLogin}
-            disabled={!phone || !password}
-            className="w-full py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-neutral-100 text-white disabled:text-neutral-400 rounded-full font-semibold text-base transition-all flex items-center justify-center gap-2"
-          >
-            Continuar
-          </button>
-          
-          <button 
-            onClick={() => { setMode('register'); setStep(1); setDocStep('frente'); }}
-            className="w-full py-4 text-purple-600 hover:bg-neutral-50 rounded-full font-semibold text-sm transition-all"
-          >
-            Criar conta nova
-          </button>
         </div>
       </div>
     )
   }
 
-  const stepTitles: { [key: number]: { title: string; subtitle: string } } = {
-    1: { title: "Qual é o seu nome completo?", subtitle: "Deve ser igual ao que está impresso no seu documento." },
-    2: { title: "Qual é a sua data de nascimento?", subtitle: "Precisamos disso para confirmar sua maioridade." },
-    3: { title: "Em qual província você mora?", subtitle: "Selecione a sua localização atual de residência." },
-    4: { title: "Qual é o número do seu celular?", subtitle: "Use o seu número principal para proteger a conta." },
-    5: { title: "Qual seu fluxo diário estimado?", subtitle: "Escolha o limite ideal para as suas movimentações." },
-    6: { title: "Crie uma senha de acesso", subtitle: "Defina uma combinação segura com no mínimo 8 caracteres." },
-    7: { title: "Agora, tire uma foto do documento", subtitle: "Precisamos validar suas fotos biométricas para ativação." }
+  const stepInfo: { [key: number]: { icon: React.ReactNode; title: string; subtitle: string } } = {
+    1: { icon: <User className="w-5 h-5 text-indigo-600" />, title: "Qual é o seu nome completo?", subtitle: "Preencha de forma idêntica ao seu documento oficial." },
+    2: { icon: <Calendar className="w-5 h-5 text-indigo-600" />, title: "Qual sua data de nascimento?", subtitle: "Necessário para validação de maioridade legal." },
+    3: { icon: <MapPin className="w-5 h-5 text-indigo-600" />, title: "Onde você reside atualmente?", subtitle: "Selecione a província do seu domicílio fiscal." },
+    4: { icon: <Phone className="w-5 h-5 text-indigo-600" />, title: "Qual o número do seu telefone?", subtitle: "Este terminal principal será utilizado para o seu login seguro." },
+    5: { icon: <BarChart3 className="w-5 h-5 text-indigo-600" />, title: "Qual o seu volume operacional?", subtitle: "Defina a estimativa padrão de limites diários para sua movimentação." },
+    6: { icon: <Lock className="w-5 h-5 text-indigo-600" />, title: "Crie uma senha de segurança", subtitle: "Escolha uma combinação forte para assinar suas transações." },
+    7: { icon: <ShieldCheck className="w-5 h-5 text-indigo-600" />, title: "Verificação de identidade", subtitle: "Capture uma imagem nítida do documento para validação biométrica." }
+  }
+
+  const renderStepContent = () => {
+    if (isProcessing) {
+      return (
+        <div className="flex flex-col items-center justify-center py-20 space-y-4">
+          <div className="relative w-10 h-10 flex items-center justify-center">
+            <div className="absolute inset-0 border-2 border-indigo-600/10 rounded-full"></div>
+            <div className="absolute inset-0 border-2 border-transparent border-t-indigo-600 rounded-full animate-spin"></div>
+          </div>
+          <p className="text-xs font-medium text-slate-400 tracking-wide animate-pulse">Guardando dados com segurança...</p>
+        </div>
+      )
+    }
+
+    const currentStepInfo = stepInfo[step]
+
+    switch (step) {
+      case 1:
+        return (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
+            </div>
+            <input autoFocus className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-medium text-base outline-none transition-all uppercase placeholder:normal-case placeholder:font-normal placeholder:text-slate-300" value={name} onChange={e => setName(e.target.value)} placeholder="Nome do titular" />
+            <button onClick={nextStep} disabled={!name.trim()} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
+          </div>
+        )
+      case 2:
+        return (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
+            </div>
+            <input type="date" className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-medium text-base outline-none transition-all cursor-pointer" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
+            <button onClick={nextStep} disabled={!birthDate} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
+          </div>
+        )
+      case 3:
+        return (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
+            </div>
+            <div className="relative">
+              <select className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-800 font-semibold text-sm outline-none transition-all appearance-none cursor-pointer" value={province} onChange={e => setProvince(e.target.value)}>
+                <option value="">SELECIONE A PROVÍNCIA</option>
+                <option value="Maputo Cidade">Maputo Cidade</option>
+                <option value="Maputo Provincia">Maputo Província</option>
+                <option value="Gaza">Gaza</option>
+                <option value="Inhambane">Inhambane</option>
+                <option value="Sofala">Sofala</option>
+                <option value="Manica">Manica</option>
+                <option value="Tete">Tete</option>
+                <option value="Zambezia">Zambézia</option>
+                <option value="Nampula">Nampula</option>
+                <option value="Cabo Delgado">Cabo Delgado</option>
+                <option value="Niassa">Niassa</option>
+              </select>
+            </div>
+            <button onClick={nextStep} disabled={!province} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
+          </div>
+        )
+      case 4:
+        return (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
+            </div>
+            <div className="space-y-3">
+              <div className="relative flex items-center">
+                <span className="absolute left-4 text-slate-400 font-bold text-sm bg-slate-200/40 px-2.5 py-1 rounded-xl">+258</span>
+                <input type="tel" className="w-full p-4 pl-20 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-semibold text-base outline-none transition-all" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="84XXXXXXX" maxLength={9} />
+              </div>
+              <p className="text-[11px] text-slate-400 text-center font-normal">Operadoras homologadas: Vodacom, Movitel ou mcel</p>
+            </div>
+            <button onClick={nextStep} disabled={phone.length !== 9} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
+          </div>
+        )
+      case 5:
+        return (
+          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
+            </div>
+            <select className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-800 font-semibold text-sm outline-none transition-all appearance-none cursor-pointer" value={dailyLimit} onChange={e => setDailyLimit(e.target.value)}>
+              <option value="">SELECIONE O FLUXO</option>
+              <option value="1000">Até R$ 1.000,00 diários</option>
+              <option value="5000">De R$ 1.000,00 a R$ 5.000,00</option>
+              <option value="10000">Gerenciamento acima de R$ 5.000,00</option>
+            </select>
+            <button onClick={nextStep} disabled={!dailyLimit} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
+          </div>
+        )
+      case 6:
+        return (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
+            </div>
+            <div className="space-y-4">
+              <div className="relative flex items-center">
+                <input type={showPass ? 'text' : 'password'} className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-semibold text-base outline-none pr-12 transition-all placeholder:text-slate-400" value={password} onChange={e => setPassword(e.target.value)} placeholder="Senha (mínimo 8 caracteres)" />
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 text-slate-400 hover:text-slate-600">{showPass ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+              </div>
+              <input type={showPass ? 'text' : 'password'} className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-semibold text-base outline-none transition-all placeholder:text-slate-400" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirme a sua senha" />
+            </div>
+            <button onClick={nextStep} disabled={password.length < 8 || password !== confirmPassword} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed">Avançar</button>
+          </div>
+        )
+      case 7:
+        return (
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
+            <div className="space-y-2">
+              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
+              <p className="text-sm text-slate-400 font-light leading-relaxed">
+                {docStep === 'frente' && 'Enquadre a FRENTE do documento em um local iluminado.'}
+                {docStep === 'verso' && 'Perfeito! Agora enquadre o VERSO do mesmo documento.'}
+                {docStep === 'previa' && 'Tudo pronto. Suas imagens foram anexadas de forma segura.'}
+              </p>
+            </div>
+
+            {docStep === 'frente' && (
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-3xl p-12 bg-slate-50/50 cursor-pointer hover:bg-indigo-50/10 hover:border-indigo-400/50 transition-all group">
+                <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 mb-4 group-hover:scale-105 transition-transform">
+                  <UploadCloud className="w-5 h-5 text-indigo-600" />
+                </div>
+                <span className="font-semibold text-xs text-slate-700 tracking-wide">Fotografar Frente</span>
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, 'front')} />
+              </label>
+            )}
+
+            {docStep === 'verso' && (
+              <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-3xl p-12 bg-slate-50/50 cursor-pointer hover:bg-indigo-50/10 hover:border-indigo-400/50 transition-all group animate-in fade-in duration-300">
+                <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 mb-4 group-hover:scale-105 transition-transform">
+                  <UploadCloud className="w-5 h-5 text-indigo-600" />
+                </div>
+                <span className="font-semibold text-xs text-slate-700 tracking-wide">Fotografar Verso</span>
+                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, 'back')} />
+              </label>
+            )}
+
+            {docStep === 'previa' && (
+              <div className="space-y-4 animate-in zoom-in-95 duration-200">
+                <div className="flex items-center gap-3 p-4 bg-emerald-50/60 border border-emerald-100 rounded-2xl">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <div className="text-left">
+                    <p className="text-xs font-bold text-emerald-900 uppercase tracking-wide">Arquivos Processados</p>
+                    <p className="text-[11px] text-emerald-700 font-light mt-0.5">As imagens serão apagadas automaticamente após a validação.</p>
+                  </div>
+                </div>
+                <button onClick={handleDocumentSubmit} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide transition-all active:scale-[0.98]">
+                  Enviar e finalizar cadastro
+                </button>
+              </div>
+            )}
+          </div>
+        )
+      case 8:
+        return (
+          <div className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-500 py-4 text-center">
+            <div className="relative mb-6 flex items-center justify-center">
+              <div className="absolute inset-0 bg-emerald-500/10 rounded-full blur-xl scale-125"></div>
+              <div className="p-4 bg-emerald-500 rounded-full shadow-lg border-4 border-white">
+                <CheckCircle className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Conta criada!</h1>
+            <p className="text-sm font-light text-slate-400 mt-2 max-w-xs leading-relaxed">
+              Seja bem-vindo, <span className="font-semibold text-slate-700">{name.split(' ')[0]}</span>. Seu acesso à infraestrutura digital **BankPix** já está pronto.
+            </p>
+            <div className="w-full mt-8 p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center gap-3 text-left">
+              <div className="p-2 bg-indigo-50 rounded-xl"><Sparkles className="w-4 h-4 text-indigo-600" /></div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status da conta</p>
+                <p className="text-xs font-semibold text-slate-700">Chaves integradas com sucesso</p>
+              </div>
+            </div>
+            <button onClick={handleCompleteRegistration} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide transition-all active:scale-[0.98] mt-6">
+              Acessar Painel Principal
+            </button>
+          </div>
+        )
+      default: return null
+    }
   }
 
   return (
-    <div className="min-h-screen w-full bg-white text-black antialiased flex flex-col justify-between p-6 md:max-w-md md:mx-auto md:shadow-2xl md:my-4 md:rounded-[40px] md:min-h-[850px]">
-      
-      {/* Cabeçalho e Progresso */}
-      {step < 8 && (
-        <div>
-          <div className="flex justify-between items-center pt-4 mb-8">
-            {step > 1 ? (
-              <button onClick={() => {
-                if (step === 7 && docStep !== 'frente') {
-                  setDocStep(docStep === 'previa' ? 'verso' : 'frente')
-                } else {
-                  setStep(step - 1)
-                }
-              }} className="text-neutral-800 p-1">
-                <ArrowLeft size={24}/>
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 antialiased text-slate-900">
+      <div className="w-full max-w-md bg-white rounded-[32px] p-10 border border-slate-100 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.03)] relative min-h-[540px] flex flex-col justify-between">
+        
+        {step < 8 && mode === 'register' && (
+          <div className="mb-10">
+            <div className="flex justify-between items-center mb-6">
+              <div className="flex items-center gap-3">
+                {step > 1 && (
+                  <button onClick={() => {
+                    if (step === 7 && docStep !== 'frente') {
+                      setDocStep(docStep === 'previa' ? 'verso' : 'frente')
+                    } else {
+                      setStep(step - 1)
+                    }
+                  }} className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 text-slate-500 transition-colors">
+                    <ArrowLeft size={14}/>
+                  </button>
+                )}
+                <span className="text-xs font-semibold text-indigo-600 bg-indigo-50/60 px-3 py-1 rounded-full">
+                  Passo {step} de {totalSteps}
+                </span>
+              </div>
+              
+              <button 
+                onClick={() => setMode('login')} 
+                className="text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors"
+              >
+                Sair
               </button>
-            ) : (
-              <button onClick={() => setMode('login')} className="text-neutral-800 p-1">
-                <ArrowLeft size={24}/>
-              </button>
-            )}
+            </div>
             
-            <span className="text-xs font-semibold text-neutral-400">
-              {step} de {totalSteps}
-            </span>
-          </div>
-
-          <div className="w-full h-[3px] bg-neutral-100 mb-12 rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-purple-600 transition-all duration-300 ease-out" 
-              style={{ width: `${(step / totalSteps) * 100}%` }}
-            />
-          </div>
-
-          {/* Conteúdo Dinâmico dos Passos */}
-          {isProcessing ? (
-            <div className="py-20 flex flex-col items-center justify-center space-y-4">
-              <div className="w-8 h-8 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div>
-            </div>
-          ) : (
-            <div className="space-y-8 animate-in fade-in duration-200">
-              <div className="space-y-3">
-                <h1 className="text-2xl font-bold tracking-tight text-neutral-900 leading-tight">
-                  {stepTitles[step]?.title}
-                </h1>
-                <p className="text-sm text-neutral-400 font-light">
-                  {step === 7 && docStep === 'frente' && 'Posicione a FRENTE do documento.'}
-                  {step === 7 && docStep === 'verso' && 'Ótimo! Agora capture o VERSO.'}
-                  {step === 7 && docStep === 'previa' && 'Imagens salvas localmente.'}
-                  {step !== 7 && stepTitles[step]?.subtitle}
-                </p>
-              </div>
-
-              {/* INPUTS ESTILO APLICATIVO NATIVO */}
-              {step === 1 && (
-                <div className="border-b border-neutral-200 focus-within:border-purple-600 transition-colors py-2">
-                  <input autoFocus className="w-full bg-transparent text-xl font-medium outline-none uppercase placeholder:normal-case placeholder:text-neutral-300" value={name} onChange={e => setName(e.target.value)} placeholder="Nome completo" />
-                </div>
-              )}
-
-              {step === 2 && (
-                <div className="border-b border-neutral-200 focus-within:border-purple-600 transition-colors py-2">
-                  <input type="date" className="w-full bg-transparent text-xl font-medium outline-none cursor-pointer text-neutral-800" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
-                </div>
-              )}
-
-              {step === 3 && (
-                <div className="border-b border-neutral-200 focus-within:border-purple-600 transition-colors py-2">
-                  <select className="w-full bg-transparent text-lg font-medium outline-none cursor-pointer text-neutral-800 appearance-none" value={province} onChange={e => setProvince(e.target.value)}>
-                    <option value="">Selecione sua província</option>
-                    <option value="Maputo Cidade">Maputo Cidade</option>
-                    <option value="Maputo Provincia">Maputo Província</option>
-                    <option value="Gaza">Gaza</option>
-                    <option value="Inhambane">Inhambane</option>
-                    <option value="Sofala">Sofala</option>
-                    <option value="Manica">Manica</option>
-                    <option value="Tete">Tete</option>
-                    <option value="Zambezia">Zambézia</option>
-                    <option value="Nampula">Nampula</option>
-                    <option value="Cabo Delgado">Cabo Delgado</option>
-                    <option value="Niassa">Niassa</option>
-                  </select>
-                </div>
-              )}
-
-              {step === 4 && (
-                <div className="space-y-2">
-                  <div className="border-b border-neutral-200 focus-within:border-purple-600 transition-colors py-2 flex items-center gap-3">
-                    <span className="text-xl font-bold text-neutral-400">+258</span>
-                    <input type="tel" className="w-full bg-transparent text-xl font-medium outline-none" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="84XXXXXXX" maxLength={9} />
-                  </div>
-                  <p className="text-xs text-neutral-400 font-light">Suporta Vodacom, Movitel ou mcel.</p>
-                </div>
-              )}
-
-              {step === 5 && (
-                <div className="border-b border-neutral-200 focus-within:border-purple-600 transition-colors py-2">
-                  <select className="w-full bg-transparent text-lg font-medium outline-none cursor-pointer text-neutral-800 appearance-none" value={dailyLimit} onChange={e => setDailyLimit(e.target.value)}>
-                    <option value="">Escolha uma faixa</option>
-                    <option value="1000">Até R$ 1.000,00 por dia</option>
-                    <option value="5000">De R$ 1.000,00 a R$ 5.000,00</option>
-                    <option value="10000">Acima de R$ 5.000,00</option>
-                  </select>
-                </div>
-              )}
-
-              {step === 6 && (
-                <div className="space-y-4">
-                  <div className="border-b border-neutral-200 focus-within:border-purple-600 transition-colors py-2 flex items-center justify-between">
-                    <input type={showPass ? 'text' : 'password'} className="w-full bg-transparent text-xl font-medium outline-none placeholder:text-neutral-300" value={password} onChange={e => setPassword(e.target.value)} placeholder="Criar senha" />
-                    <button type="button" onClick={() => setShowPass(!showPass)} className="text-neutral-400">{showPass ? <EyeOff size={18} /> : <Eye size={18} />}</button>
-                  </div>
-                  <div className="border-b border-neutral-200 focus-within:border-purple-600 transition-colors py-2">
-                    <input type={showPass ? 'text' : 'password'} className="w-full bg-transparent text-xl font-medium outline-none placeholder:text-neutral-300" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirmar senha" />
-                  </div>
-                </div>
-              )}
-
-              {step === 7 && (
-                <div className="space-y-4">
-                  {(docStep === 'frente' || docStep === 'verso') && (
-                    <label className="flex flex-col items-center justify-center border border-dashed border-neutral-300 rounded-2xl p-12 bg-neutral-50 cursor-pointer hover:bg-neutral-100/60 transition-all">
-                      <UploadCloud className="w-6 h-6 text-purple-600 mb-2" />
-                      <span className="text-sm font-semibold text-neutral-700">Tirar Foto do Documento</span>
-                      <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, docStep === 'frente' ? 'front' : 'back')} />
-                    </label>
-                  )}
-
-                  {docStep === 'previa' && (
-                    <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100 space-y-2">
-                      <p className="text-xs font-bold text-neutral-800 uppercase">Imagens prontas para envio</p>
-                      <p className="text-xs text-neutral-500 font-light">As capturas foram anexadas com criptografia de ponta a ponta.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TELA DE SUCESSO COMPLETO */}
-      {step === 8 && (
-        <div className="flex-1 flex flex-col justify-between py-6 text-left animate-in fade-in duration-500">
-          <div className="space-y-8 pt-12">
-            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-purple-600">
-              <CheckCircle className="w-6 h-6" />
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-bold tracking-tight text-neutral-900">Tudo pronto! Sua conta foi ativada.</h1>
-              <p className="text-sm text-neutral-500 font-light leading-relaxed">
-                Parabéns, <span className="font-semibold text-neutral-800">{name.split(' ')[0]}</span>. Sua infraestrutura financeira na rede **BankPix** foi provisionada.
-              </p>
-            </div>
-            <div className="p-4 bg-neutral-50 rounded-2xl flex items-center gap-3">
-              <Sparkles className="w-5 h-5 text-purple-600" />
-              <div>
-                <p className="text-xs font-bold text-neutral-800">Status Operacional</p>
-                <p className="text-xs text-neutral-500">Chaves Pix e serviços integrados</p>
-              </div>
+            {/* Barra de Progresso Minimalista de Linha Única */}
+            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-indigo-600 transition-all duration-500 ease-out rounded-full" 
+                style={{ width: `${(step / totalSteps) * 100}%` }}
+              />
             </div>
           </div>
+        )}
 
-          <button onClick={handleCompleteRegistration} className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-full font-semibold text-base transition-all active:scale-[0.98]">
-            Acessar painel
-          </button>
+        <div className="flex-1 flex flex-col justify-center">
+          {mode === 'register' ? renderStepContent() : null}
         </div>
-      )}
 
-      {/* BOTÃO FIXO DE AÇÃO INFERIOR DO CADASTRO */}
-      {step < 8 && mode === 'register' && !isProcessing && (
-        <div className="pt-6">
-          <button 
-            onClick={step === 7 && docStep === 'previa' ? handleDocumentSubmit : nextStep}
-            disabled={
-              (step === 1 && !name.trim()) ||
-              (step === 2 && !birthDate) ||
-              (step === 3 && !province) ||
-              (step === 4 && phone.length !== 9) ||
-              (step === 5 && !dailyLimit) ||
-              (step === 6 && (password.length < 8 || password !== confirmPassword)) ||
-              (step === 7 && docStep !== 'previa')
-            }
-            className="w-full py-4 bg-purple-600 hover:bg-purple-700 disabled:bg-neutral-100 text-white disabled:text-neutral-400 rounded-full font-semibold text-base transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
-          >
-            {step === 7 && docStep === 'previa' ? 'Concluir cadastro' : 'Continuar'}
-            <ArrowRight size={16} />
-          </button>
-        </div>
-      )}
-
+      </div>
     </div>
   )
 }
