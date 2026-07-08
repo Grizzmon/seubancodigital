@@ -357,7 +357,7 @@ export function Dashboard({ userData }: { userData: any }) {
                 rel="noopener noreferrer"
                 className="flex-1 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-95 flex items-center justify-center text-center"
               >
-                Desbloquear AGORA!
+                Desbloquear AGORA!!
               </a>
             </div>
           </div>
