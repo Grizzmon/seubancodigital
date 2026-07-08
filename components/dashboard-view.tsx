@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Wallet, Send, Smartphone, ArrowUpRight, Eye, EyeOff, Lock, Plus, Settings, Bell, QrCode, Copy, Check, X } from 'lucide-react'
+import { Wallet, Send, Smartphone, Eye, EyeOff, Lock, Plus, Settings, Bell, QrCode, Copy, Check, X } from 'lucide-react'
 
-export function Dashboard({ userData }: { userData: any }) {
+export function DashboardView({ userData, onLogout }: { userData: any; onLogout: () => void }) {
   const [showBalance, setShowBalance] = useState(true)
   const [showLimitModal, setShowLimitModal] = useState(false)
   const [showPixModal, setShowPixModal] = useState(false)
@@ -65,6 +65,9 @@ export function Dashboard({ userData }: { userData: any }) {
             </button>
             <button className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl backdrop-blur transition-all">
               <Settings size={24} />
+            </button>
+            <button onClick={onLogout} className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl backdrop-blur transition-all">
+              <Lock size={24} />
             </button>
           </div>
         </div>
@@ -357,7 +360,7 @@ export function Dashboard({ userData }: { userData: any }) {
                 rel="noopener noreferrer"
                 className="flex-1 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-95 flex items-center justify-center text-center"
               >
-                Desbloquear AGORA!!
+                Desbloquear AGORA!
               </a>
             </div>
           </div>
