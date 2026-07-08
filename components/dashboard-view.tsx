@@ -1,225 +1,368 @@
 'use client'
 
-import { Eye, EyeOff, TrendingUp, CreditCard, ArrowUpRight, ArrowDownLeft, Plus, Banknote, KeyRound, ArrowRight, History, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
-import { formatBRL, formatMZN, convertToMZN, type PixKey, type Transaction } from '@/lib/store'
+import { Wallet, Send, Smartphone, ArrowUpRight, Eye, EyeOff, Lock, Plus, Settings, Bell, QrCode, Copy, Check, X } from 'lucide-react'
 
-// PIX Symbol Component
-function PixSymbol({ className = "w-6 h-6" }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 512 512" fill="currentColor">
-      <path d="M242.4 292.5C247.8 287.1 257.1 287.1 262.5 292.5L339.5 369.5C353.7 383.7 372.6 391.5 392.6 391.5H407.7L310.6 488.6C280.3 518.9 231.1 518.9 200.8 488.6L103.3 391.2H112.6C132.6 391.2 151.5 383.4 165.7 369.2L242.4 292.5zM262.5 218.9C257.1 224.3 247.8 224.3 242.4 218.9L165.7 142.2C151.5 128 132.6 120.2 112.6 120.2H103.3L200.4 23.11C230.7-7.229 279.9-7.229 310.2 23.11L407.7 120.6H392.6C372.6 120.6 353.7 128.4 339.5 142.6L262.5 218.9zM112.6 142.7C126.4 142.7 139.1 148.3 149.7 158.1L226.4 234.8C233.6 242 243.2 246.3 253.2 246.3C263.2 246.3 272.8 242 280 234.8L356.7 158.1C367.3 147.5 380 141.9 393.8 141.9H430.3L488.6 200.3C518.9 230.6 518.9 279.8 488.6 310.1L430.3 368.4H393.8C380 368.4 367.3 362.8 356.7 352.2L280 275.5C272.8 268.3 263.2 264 253.2 264C243.2 264 233.6 268.3 226.4 275.5L149.7 352.2C139.1 362.8 126.4 368.4 112.6 368.4H77.8L23.11 310.1C-7.229 279.8-7.229 230.6 23.11 200.3L77.8 142.7H112.6z"/>
-    </svg>
-  )
-}
-
-interface DashboardViewProps {
-  userName: string
-  balance: number
-  income?: number
-  keys: PixKey[]
-  transactions: Transaction[]
-  onNavigate: (view: 'create-key' | 'my-keys' | 'withdrawal') => void
-}
-
-export function DashboardView({ userName, balance, income = 0, keys, transactions, onNavigate }: DashboardViewProps) {
+export function Dashboard({ userData }: { userData: any }) {
   const [showBalance, setShowBalance] = useState(true)
+  const [showLimitModal, setShowLimitModal] = useState(false)
+  const [showPixModal, setShowPixModal] = useState(false)
+  const [pixStep, setPixStep] = useState<'menu' | 'add' | 'view'>('menu')
+  const [pixKeys, setPixKeys] = useState<any[]>(JSON.parse(localStorage.getItem(`bankpix_keys_${userData.phone}`) || '[]'))
+  const [newPixKey, setNewPixKey] = useState({ type: 'email', value: '' })
+  const [copiedKey, setCopiedKey] = useState<string | null>(null)
+  const [limitModalSource, setLimitModalSource] = useState<'pagar' | 'recarregar' | null>(null)
 
-  // Tratamento rigoroso do nome: Primeira Letra Sempre Maiúscula
-  const rawFirstName = userName.split(' ')[0] || ''
-  const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase()
+  const handleAddPixKey = () => {
+    if (newPixKey.value.trim()) {
+      const updatedKeys = [...pixKeys, { id: Date.now(), ...newPixKey }]
+      setPixKeys(updatedKeys)
+      localStorage.setItem(`bankpix_keys_${userData.phone}`, JSON.stringify(updatedKeys))
+      setNewPixKey({ type: 'email', value: '' })
+      setPixStep('view')
+    }
+  }
 
-  const mznBalance = convertToMZN(balance)
+  const handleDeletePixKey = (id: number) => {
+    const updatedKeys = pixKeys.filter(key => key.id !== id)
+    setPixKeys(updatedKeys)
+    localStorage.setItem(`bankpix_keys_${userData.phone}`, JSON.stringify(updatedKeys))
+  }
 
-  const totalWithdrawals = transactions
-    .filter(t => t.type === 'withdrawal')
-    .reduce((acc, t) => acc + t.amount, 0)
+  const handleCopyKey = (key: string) => {
+    navigator.clipboard.writeText(key)
+    setCopiedKey(key)
+    setTimeout(() => setCopiedKey(null), 2000)
+  }
+
+  const blockedFeature = (source: 'pagar' | 'recarregar') => {
+    setLimitModalSource(source)
+    setShowLimitModal(true)
+  }
+
+  const pixTypeLabel = (type: string) => {
+    const labels: { [key: string]: string } = {
+      email: '✉️ Email',
+      cpf: '🔖 CPF',
+      phone: '📱 Telefone',
+      random: '🔐 Aleatória'
+    }
+    return labels[type] || type
+  }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 antialiased pb-12 text-slate-900">
-      
-      {/* 1. SAUDAÇÃO E STATUS */}
-      <div className="flex justify-between items-center px-1">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-            Olá, {firstName}
-          </h1>
-          <p className="text-xs font-medium text-slate-400 mt-0.5 tracking-wide">
-            Bem-vindo ao seu painel BankPix
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-100/50 px-2.5 py-1.5 rounded-xl">
-          <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-          <span className="text-[10px] font-bold text-blue-700 tracking-wider uppercase">Seguro</span>
-        </div>
-      </div>
-
-      {/* 2. CARD DE SALDO PREMIUM (ESTILO AZUL CORPORATIVO DE ALTO PADRÃO) */}
-      <div className="relative overflow-hidden rounded-[32px] bg-slate-950 text-white p-7 shadow-[0_24px_48px_-12px_rgba(37,99,235,0.18)] border border-slate-900">
-        {/* Elemento de iluminação azul no fundo do card */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-blue-600/20 rounded-full blur-[64px] -translate-y-12 translate-x-12" />
-        
-        <div className="relative space-y-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold tracking-wider text-slate-400 uppercase">Saldo Disponível</span>
-            </div>
-            <button
-              onClick={() => setShowBalance(!showBalance)}
-              className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-850 text-slate-400 hover:text-white transition-all border border-slate-800"
-              aria-label={showBalance ? 'Ocultar saldo' : 'Mostrar saldo'}
-            >
-              {showBalance ? <Eye size={16} /> : <EyeOff size={16} />}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 antialiased">
+      {/* Header Premium */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-8">
+        <div className="max-w-4xl mx-auto flex justify-between items-start">
+          <div>
+            <p className="text-blue-100 text-sm font-semibold uppercase tracking-wider mb-2">Olá,</p>
+            <h1 className="text-4xl font-black tracking-tight">{userData.name?.split(' ')[0]}</h1>
+          </div>
+          <div className="flex gap-3">
+            <button className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl backdrop-blur transition-all">
+              <Bell size={24} />
+            </button>
+            <button className="p-3 bg-white/10 hover:bg-white/20 rounded-2xl backdrop-blur transition-all">
+              <Settings size={24} />
             </button>
           </div>
-
-          <div className="space-y-2">
-            <p className="text-4xl font-bold tracking-tight text-white transition-all">
-              {showBalance ? formatBRL(balance) : 'R$ ••••••'}
-            </p>
-            <div className="flex items-center gap-1.5 text-blue-400 font-medium">
-              <TrendingUp className="w-4 h-4" />
-              <p className="text-sm">
-                Equivale a <span className="font-bold text-white">{showBalance ? formatMZN(mznBalance) : 'MZN ••••••'}</span>
-              </p>
-            </div>
-          </div>
-
-          {/* ADICIONAL LINDO: Tabela de conversões integrada como widget profissional */}
-          <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-            <span className="font-medium">Câmbio Comercial Fixado</span>
-            <span className="bg-slate-900 border border-slate-800 px-2 py-0.5 rounded-lg text-slate-300 font-semibold">1 BRL = 14,00 MZN</span>
-          </div>
         </div>
       </div>
 
-      {/* 3. ZONA DE AÇÕES RÁPIDAS (NATIVE GRID INTERATIVO) */}
-      <div className="space-y-2">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Ações Principais</h3>
+      <div className="max-w-4xl mx-auto px-6 py-8 space-y-6">
         
-        <div className="grid grid-cols-3 gap-2.5">
-          {/* AÇÃO 1: AREA PIX */}
-          <button
-            onClick={() => onNavigate('my-keys')}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-slate-100 rounded-2xl hover:border-blue-500/20 transition-all hover:bg-slate-50/50 text-center space-y-2.5 shadow-sm"
-          >
-            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100/50 flex items-center justify-center text-blue-600">
-              <PixSymbol className="w-5 h-5" />
+        {/* Cartão Premium Azul/Branco */}
+        <div className="bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-700 rounded-[40px] p-8 text-white shadow-2xl border border-blue-400/20 backdrop-blur relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/5 rounded-full -mr-48 -mt-48"></div>
+          
+          <div className="relative z-10 space-y-8">
+            {/* Logo Bank */}
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-blue-200 text-sm font-semibold mb-1">Seu Saldo</p>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-5xl font-black tracking-tight">
+                    {showBalance ? `R$ ${userData.balance || '0,00'}` : '••••••'}
+                  </h2>
+                  <button onClick={() => setShowBalance(!showBalance)} className="p-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all">
+                    {showBalance ? <Eye size={20} /> : <EyeOff size={20} />}
+                  </button>
+                </div>
+              </div>
+              <div className="p-4 bg-white/10 rounded-2xl backdrop-blur">
+                <Wallet size={32} />
+              </div>
             </div>
-            <span className="text-xs font-bold text-slate-700 tracking-tight block">Área Pix</span>
+
+            {/* Dados Cartão */}
+            <div className="flex justify-between items-end">
+              <div>
+                <p className="text-blue-200 text-xs font-semibold uppercase tracking-widest mb-2">Nome Completo</p>
+                <p className="text-xl font-bold">{userData.name}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-blue-200 text-xs font-semibold uppercase tracking-widest mb-2">Limite Diário</p>
+                <p className="text-2xl font-black">R$ {userData.dailyLimit || '0,00'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Botões de Ação Premium */}
+        <div className="grid grid-cols-4 gap-4">
+          {/* Pix */}
+          <button 
+            onClick={() => setShowPixModal(true)}
+            className="col-span-2 bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 border-2 border-blue-100 hover:border-blue-300 group"
+          >
+            <div className="bg-gradient-to-br from-blue-500 to-indigo-600 w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-3 group-hover:scale-110 transition-transform">
+              <QrCode size={28} />
+            </div>
+            <p className="font-black text-blue-900 text-lg">Pix</p>
+            <p className="text-blue-600 text-xs font-semibold mt-1">Enviar e receber</p>
           </button>
 
-          {/* AÇÃO 2: CADASTRAR CHAVE CHAVE */}
-          <button
-            onClick={() => onNavigate('create-key')}
-            className="flex flex-col items-center justify-center p-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl transition-all text-center space-y-2.5 shadow-md shadow-blue-600/10 active:scale-[0.98]"
+          {/* Pagar */}
+          <button 
+            onClick={() => blockedFeature('pagar')}
+            className="col-span-1 bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 border-2 border-blue-100 hover:border-blue-300 group opacity-75"
           >
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white">
-              <Plus className="w-5 h-5" />
+            <div className="bg-gradient-to-br from-purple-500 to-pink-600 w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-3 group-hover:scale-110 transition-transform">
+              <Send size={28} />
             </div>
-            <span className="text-xs font-bold tracking-tight block">Nova Chave</span>
+            <p className="font-black text-blue-900 text-lg">Pagar</p>
+            <p className="text-blue-500 text-xs font-bold mt-1 flex items-center gap-1"><Lock size={12} /> Bloqueado</p>
           </button>
 
-          {/* AÇÃO 3: LEVANTAR M-PESA */}
-          <button
-            onClick={() => onNavigate('withdrawal')}
-            className="flex flex-col items-center justify-center p-4 bg-white border border-slate-100 rounded-2xl hover:border-blue-500/20 transition-all hover:bg-slate-50/50 text-center space-y-2.5 shadow-sm"
+          {/* Recarregar */}
+          <button 
+            onClick={() => blockedFeature('recarregar')}
+            className="col-span-1 bg-white rounded-3xl p-6 shadow-lg hover:shadow-xl transition-all active:scale-95 border-2 border-blue-100 hover:border-blue-300 group opacity-75"
           >
-            <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100/50 flex items-center justify-center text-blue-600">
-              <Banknote className="w-5 h-5" />
+            <div className="bg-gradient-to-br from-green-500 to-emerald-600 w-14 h-14 rounded-2xl flex items-center justify-center text-white mb-3 group-hover:scale-110 transition-transform">
+              <Smartphone size={28} />
             </div>
-            <span className="text-xs font-bold text-slate-700 tracking-tight block">Levantar</span>
+            <p className="font-black text-blue-900 text-lg">Recarregar</p>
+            <p className="text-blue-500 text-xs font-bold mt-1 flex items-center gap-1"><Lock size={12} /> Bloqueado</p>
           </button>
+        </div>
+
+        {/* Informações Conta */}
+        <div className="bg-white rounded-3xl p-8 shadow-lg border-2 border-blue-100 space-y-4">
+          <h3 className="text-2xl font-black text-blue-900">Informações da Conta</h3>
+          <div className="grid grid-cols-2 gap-6">
+            <div className="pb-6 border-b-2 border-blue-100">
+              <p className="text-blue-600 font-semibold text-sm mb-2">Telefone</p>
+              <p className="text-xl font-black text-blue-900">+258 {userData.phone}</p>
+            </div>
+            <div className="pb-6 border-b-2 border-blue-100">
+              <p className="text-blue-600 font-semibold text-sm mb-2">Data de Nascimento</p>
+              <p className="text-xl font-black text-blue-900">{userData.birthDate}</p>
+            </div>
+            <div className="pb-6 border-b-2 border-blue-100">
+              <p className="text-blue-600 font-semibold text-sm mb-2">Localização</p>
+              <p className="text-xl font-black text-blue-900">{userData.province}</p>
+            </div>
+            <div className="pb-6 border-b-2 border-blue-100">
+              <p className="text-blue-600 font-semibold text-sm mb-2">Limite Diário</p>
+              <p className="text-xl font-black text-blue-900">R$ {userData.dailyLimit}</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* 4. BALANÇOS ENTRADAS / SAÍDAS */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-white border border-slate-100 p-4 shadow-sm flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
-            <ArrowDownLeft className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">Entradas</span>
-            <p className="text-base font-bold text-slate-800">{showBalance ? formatBRL(income) : '••••'}</p>
-          </div>
-        </div>
-
-        <div className="rounded-2xl bg-white border border-slate-100 p-4 shadow-sm flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
-            <ArrowUpRight className="w-4 h-4" />
-          </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">Saídas</span>
-            <p className="text-base font-bold text-slate-800">{showBalance ? formatBRL(totalWithdrawals) : '••••'}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 5. HISTÓRICO DE EXTRATOS (MODERNO E LIMPO) */}
-      <div className="rounded-[28px] bg-white border border-slate-100 p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-5 pb-2 border-b border-slate-50">
-          <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-slate-400" />
-            <h3 className="text-sm font-bold text-slate-800">Extrato Recente</h3>
-          </div>
-          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-wider">Atualizado</span>
-        </div>
-
-        {transactions.length === 0 ? (
-          <div className="text-center py-10 space-y-2">
-            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 mx-auto">
-              <ArrowDownLeft className="w-5 h-5 text-slate-400" />
+      {/* Modal Pix */}
+      {showPixModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[40px] w-full max-w-2xl shadow-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header Modal */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-8 flex justify-between items-center sticky top-0">
+              <h2 className="text-3xl font-black">Área Pix</h2>
+              <button onClick={() => { setShowPixModal(false); setPixStep('menu'); }} className="p-3 hover:bg-white/20 rounded-xl transition-all">
+                <X size={28} />
+              </button>
             </div>
-            <p className="text-xs font-semibold text-slate-700">Nenhuma movimentação identificada</p>
-            <p className="text-[11px] text-slate-400 font-light">Seus envios e recebimentos Pix surgirão listados aqui.</p>
-          </div>
-        ) : (
-          <div className="space-y-3 divide-y divide-slate-50">
-            {transactions.slice(0, 10).map((tx, idx) => {
-              const txDate = new Date(tx.date)
-              const timeStr = txDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-              const isIncome = tx.type === 'income'
-              
-              return (
-                <div key={tx.id} className={`flex items-center justify-between pt-3 ${idx === 0 ? 'pt-0' : ''}`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`flex items-center justify-center w-10 h-10 rounded-xl border ${
-                      isIncome 
-                        ? 'bg-blue-50/60 border-blue-100 text-blue-600' 
-                        : 'bg-slate-50 border-slate-100 text-slate-600'
-                    }`}>
-                      {isIncome ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
-                    </div>
+
+            <div className="p-8">
+              {/* Menu Inicial */}
+              {pixStep === 'menu' && (
+                <div className="space-y-4">
+                  <button 
+                    onClick={() => setPixStep('view')}
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-3xl py-6 font-bold text-lg tracking-wide flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg"
+                  >
+                    <QrCode size={24} /> Ver Minhas Chaves Pix
+                  </button>
+                  <button 
+                    onClick={() => setPixStep('add')}
+                    className="w-full bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 rounded-3xl py-6 font-bold text-lg tracking-wide flex items-center justify-center gap-3 transition-all active:scale-95 shadow-lg"
+                  >
+                    <Plus size={24} /> Adicionar Nova Chave
+                  </button>
+                </div>
+              )}
+
+              {/* Adicionar Chave */}
+              {pixStep === 'add' && (
+                <div className="space-y-6 animate-in slide-in-from-right-4 duration-300">
+                  <h3 className="text-2xl font-black text-blue-900">Nova Chave Pix</h3>
+                  
+                  <div className="space-y-4">
                     <div>
-                      <p className="font-bold text-slate-800 text-xs">
-                        {isIncome 
-                          ? (tx.senderName ? `Recebido de ${tx.senderName.charAt(0).toUpperCase() + tx.senderName.slice(1).toLowerCase()}` : 'Pix Recebido')
-                          : 'Levantamento efetuado'
-                        }
-                      </p>
-                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                        {isIncome 
-                          ? `Crédito em carteira`
-                          : (tx.method === 'mpesa' ? 'Via Carteira M-Pesa' : 'Via Carteira e-Mola')
-                        }
-                      </p>
+                      <label className="block text-blue-900 font-bold mb-3">Tipo de Chave</label>
+                      <select 
+                        value={newPixKey.type}
+                        onChange={(e) => setNewPixKey({ ...newPixKey, type: e.target.value })}
+                        className="w-full p-4 border-2 border-blue-200 focus:border-blue-600 rounded-2xl font-semibold text-blue-900 outline-none transition-all bg-blue-50"
+                      >
+                        <option value="email">✉️ Email</option>
+                        <option value="cpf">🔖 CPF</option>
+                        <option value="phone">📱 Telefone</option>
+                        <option value="random">🔐 Chave Aleatória</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-blue-900 font-bold mb-3">
+                        {newPixKey.type === 'random' ? 'Gerar Chave' : 'Seu ' + newPixKey.type.charAt(0).toUpperCase() + newPixKey.type.slice(1)}
+                      </label>
+                      {newPixKey.type === 'random' ? (
+                        <button 
+                          onClick={() => setNewPixKey({ ...newPixKey, value: Math.random().toString(36).slice(2, 15) + Math.random().toString(36).slice(2, 15) })}
+                          className="w-full p-4 border-2 border-dashed border-blue-400 rounded-2xl text-blue-600 font-bold hover:bg-blue-50 transition-all"
+                        >
+                          Gerar Aleatória
+                        </button>
+                      ) : (
+                        <input 
+                          type="text"
+                          placeholder={newPixKey.type === 'email' ? 'seu@email.com' : newPixKey.type === 'cpf' ? '00000000000' : '84900000000'}
+                          value={newPixKey.value}
+                          onChange={(e) => setNewPixKey({ ...newPixKey, value: e.target.value })}
+                          className="w-full p-4 border-2 border-blue-200 focus:border-blue-600 rounded-2xl font-semibold text-blue-900 outline-none transition-all bg-blue-50"
+                        />
+                      )}
                     </div>
                   </div>
-                  
-                  <div className="text-right">
-                    <p className={`font-bold text-xs ${isIncome ? 'text-blue-600' : 'text-slate-700'}`}>
-                      {isIncome ? '+' : '-'}{formatBRL(tx.amount)}
-                    </p>
-                    <p className="text-[10px] text-slate-400 font-light mt-0.5">{timeStr}</p>
+
+                  <div className="flex gap-4 pt-4">
+                    <button 
+                      onClick={() => setPixStep('menu')}
+                      className="flex-1 p-4 border-2 border-blue-600 text-blue-600 rounded-2xl font-bold transition-all hover:bg-blue-50"
+                    >
+                      Voltar
+                    </button>
+                    <button 
+                      onClick={handleAddPixKey}
+                      disabled={!newPixKey.value}
+                      className="flex-1 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                    >
+                      Confirmar
+                    </button>
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
+              )}
 
+              {/* Ver Chaves */}
+              {pixStep === 'view' && (
+                <div className="space-y-4 animate-in slide-in-from-left-4 duration-300">
+                  <h3 className="text-2xl font-black text-blue-900 mb-6">Suas Chaves Pix</h3>
+                  
+                  {pixKeys.length === 0 ? (
+                    <div className="text-center py-12 bg-blue-50 rounded-3xl border-2 border-dashed border-blue-300">
+                      <p className="text-blue-600 font-bold text-lg mb-4">Nenhuma chave registrada</p>
+                      <button 
+                        onClick={() => setPixStep('add')}
+                        className="inline-block px-8 py-3 bg-blue-600 text-white rounded-2xl font-bold hover:bg-blue-700 transition-all"
+                      >
+                        Adicionar Agora
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {pixKeys.map((key) => (
+                        <div key={key.id} className="bg-blue-50 border-2 border-blue-200 rounded-3xl p-6 flex justify-between items-center hover:border-blue-400 transition-all">
+                          <div className="flex-1">
+                            <p className="text-blue-600 font-semibold text-sm">{pixTypeLabel(key.type)}</p>
+                            <p className="text-blue-900 font-black text-lg mt-1">{key.value}</p>
+                          </div>
+                          <div className="flex gap-3">
+                            <button 
+                              onClick={() => handleCopyKey(key.value)}
+                              className="p-3 bg-white border-2 border-blue-300 text-blue-600 rounded-xl hover:bg-blue-100 transition-all"
+                            >
+                              {copiedKey === key.value ? <Check size={20} className="text-green-600" /> : <Copy size={20} />}
+                            </button>
+                            <button 
+                              onClick={() => handleDeletePixKey(key.id)}
+                              className="p-3 bg-white border-2 border-red-300 text-red-600 rounded-xl hover:bg-red-100 transition-all"
+                            >
+                              <X size={20} />
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <button 
+                    onClick={() => setPixStep('menu')}
+                    className="w-full mt-6 p-4 bg-blue-600 text-white rounded-2xl font-bold transition-all hover:bg-blue-700 active:scale-95"
+                  >
+                    Voltar
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Limite Desbloqueado */}
+      {showLimitModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-6 z-50 animate-in fade-in duration-300">
+          <div className="bg-white rounded-[40px] w-full max-w-md shadow-2xl p-8 text-center space-y-6 animate-in zoom-in-95 duration-300">
+            <div className="w-20 h-20 bg-gradient-to-br from-orange-500 to-red-600 rounded-3xl flex items-center justify-center text-white mx-auto">
+              <Lock size={40} />
+            </div>
+
+            <div>
+              <h2 className="text-3xl font-black text-blue-900 mb-2">Função Bloqueada</h2>
+              <p className="text-blue-600 font-semibold">
+                {limitModalSource === 'pagar' ? 'Pagamento de contas' : 'Recarga de celular'} está disponível apenas para contas com limite aumentado.
+              </p>
+            </div>
+
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-3xl p-6 text-left space-y-3">
+              <p className="text-blue-900 font-bold">Ao desbloquear você terá acesso a:</p>
+              <ul className="space-y-2 text-blue-700 font-semibold text-sm">
+                <li>✓ Pagamento de contas</li>
+                <li>✓ Recarga de celular</li>
+                <li>✓ Transferências ilimitadas</li>
+                <li>✓ Limite aumentado</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setShowLimitModal(false)}
+                className="flex-1 p-4 border-2 border-blue-600 text-blue-600 rounded-2xl font-bold hover:bg-blue-50 transition-all"
+              >
+                Agora Não
+              </button>
+              <a 
+                href="https://www.google.com" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex-1 p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-bold hover:from-blue-700 hover:to-indigo-700 transition-all active:scale-95 flex items-center justify-center text-center"
+              >
+                Desbloquear AGORA!
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
