@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowRight, ArrowLeft, Phone, User, Lock, CheckCircle, Wallet, Calendar, BarChart3, MapPin, Eye, EyeOff, ShieldCheck, Sparkles, UploadCloud } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Phone, User, Lock, CheckCircle, Wallet, Calendar, BarChart3, MapPin, Eye, EyeOff, ShieldCheck, Sparkles, UploadCloud, Zap } from 'lucide-react'
 import { showInstallPrompt } from './install-prompt'
 
 export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
@@ -141,99 +141,116 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     }
   }
 
-  // --- 1. DESIGN DE SERVIDOR SEGURO (PRE-LINK) ---
+  // --- LOADING PRÉ-LINK PREMIUM ---
   if (preLinkLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 p-6 text-center antialiased select-none">
-        <div className="relative w-20 h-20 mb-8 flex items-center justify-center">
-          <div className="absolute inset-0 border-2 border-indigo-500/10 rounded-full"></div>
-          <div className="absolute inset-0 border-2 border-transparent border-t-indigo-500 rounded-full animate-spin"></div>
-          <ShieldCheck className="w-8 h-8 text-indigo-400" />
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-blue-100 to-indigo-50 p-6 text-center antialiased select-none">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+          <div className="absolute top-40 right-10 w-72 h-72 bg-indigo-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
         </div>
-        <h1 className="text-xs font-bold tracking-[0.3em] text-indigo-400 uppercase mb-2 animate-pulse">
-          Conexão Criptografada SSL
-        </h1>
-        <p className="text-sm text-slate-400 max-w-xs font-light leading-relaxed">
-          Autenticando as chaves do seu dispositivo em ambiente de alta segurança corporativa.
-        </p>
+        
+        <div className="relative z-10">
+          <div className="relative w-24 h-24 mb-8 flex items-center justify-center">
+            <div className="absolute inset-0 border-3 border-blue-200 rounded-full"></div>
+            <div className="absolute inset-0 border-3 border-transparent border-t-blue-600 border-r-indigo-500 rounded-full animate-spin"></div>
+            <ShieldCheck className="w-10 h-10 text-blue-600 animate-pulse" />
+          </div>
+          <h1 className="text-xl font-black tracking-widest text-blue-900 uppercase mb-3 animate-pulse">
+            Conexão Segura
+          </h1>
+          <p className="text-base text-blue-700 max-w-xs font-semibold leading-relaxed">
+            Autenticando as chaves do seu dispositivo em ambiente corporativo de alta segurança.
+          </p>
+        </div>
       </div>
     )
   }
 
-  // --- 2. DESIGN DE PROCESSAMENTO GERAL (FINAL LOADING) ---
+  // --- LOADING FINAL PREMIUM ---
   if (finalLoading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-950 p-6 text-center antialiased">
-        <div className="w-full max-w-sm bg-slate-900/40 border border-slate-900 rounded-3xl p-8 backdrop-blur-xl">
-          <div className="relative w-12 h-12 mx-auto mb-8 flex items-center justify-center">
-            <div className="absolute inset-0 border-2 border-indigo-500/10 rounded-full"></div>
-            <div className="absolute inset-0 border-2 border-transparent border-t-indigo-500 rounded-full animate-spin"></div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-900 via-indigo-900 to-blue-950 p-6 text-center antialiased">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-500 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-pulse"></div>
+        </div>
+
+        <div className="w-full max-w-sm bg-gradient-to-br from-blue-800/40 to-indigo-800/40 border border-blue-600/30 rounded-3xl p-8 backdrop-blur-2xl relative z-10 shadow-2xl">
+          <div className="relative w-16 h-16 mx-auto mb-8 flex items-center justify-center">
+            <div className="absolute inset-0 border-3 border-blue-400/20 rounded-full"></div>
+            <div className="absolute inset-0 border-3 border-transparent border-t-blue-400 border-r-cyan-400 rounded-full animate-spin"></div>
+            <Zap className="w-7 h-7 text-blue-300 animate-pulse" />
           </div>
-          <h2 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Análise de Segurança</h2>
-          <p className="text-base font-medium text-slate-200 h-12 flex items-center justify-center px-2 transition-all duration-300">
+          <h2 className="text-sm font-bold text-blue-200 uppercase tracking-widest mb-4">Análise Avançada</h2>
+          <p className="text-lg font-semibold text-blue-50 h-16 flex items-center justify-center px-4 transition-all duration-300 animate-pulse">
             {loadingMessage || 'Processando requisição...'}
           </p>
-          <div className="mt-6 w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-            <div className="bg-indigo-500 h-full w-3/4 animate-[pulse_1.5s_infinite] rounded-full"></div>
+          <div className="mt-8 w-full bg-blue-900/50 h-2 rounded-full overflow-hidden border border-blue-600/30">
+            <div className="bg-gradient-to-r from-blue-400 to-cyan-400 h-full w-3/4 animate-[pulse_1.5s_infinite] rounded-full shadow-lg shadow-blue-400/50"></div>
           </div>
         </div>
       </div>
     )
   }
 
-  // --- 3. DESIGN DE LOGIN PREMIUM (ESTILO NUBANK CLEAN) ---
+  // --- LOGIN PREMIUM AZULADO ---
   if (mode === 'login') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 text-slate-900 p-6 antialiased">
-        <div className="w-full max-w-md bg-white rounded-[32px] p-10 border border-slate-100 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.03)] flex flex-col justify-between relative min-h-[580px]">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6 antialiased">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
+          <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
+        </div>
+
+        <div className="w-full max-w-md bg-white rounded-[40px] p-10 border border-blue-100 shadow-2xl flex flex-col justify-between relative min-h-[600px] z-10">
           
           <div>
-            <div className="flex items-center gap-2.5 mb-12">
-              <div className="p-2.5 bg-indigo-600 rounded-2xl text-white shadow-sm">
-                <Wallet className="w-5 h-5" />
+            <div className="flex items-center gap-3 mb-12">
+              <div className="p-3 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl text-white shadow-lg">
+                <Wallet className="w-6 h-6" />
               </div>
-              <span className="text-xl font-bold tracking-tight text-slate-900">
-                Bank<span className="text-indigo-600 font-medium">Pix</span>
+              <span className="text-2xl font-black tracking-tight text-blue-900">
+                Bank<span className="text-blue-600 font-black">Pix</span>
               </span>
             </div>
 
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 mb-2">Olá! Digite suas credenciais</h1>
-            <p className="text-sm text-slate-400 font-light mb-8">Insira seus dados para acessar sua conta digital.</p>
+            <h1 className="text-3xl font-black tracking-tight text-blue-900 mb-3 leading-tight">Bem-vindo de volta!</h1>
+            <p className="text-base text-blue-600 font-semibold mb-10">Acesse sua conta com suas credenciais.</p>
             
-            <form onSubmit={handleActualLogin} className="space-y-5">
+            <form onSubmit={handleActualLogin} className="space-y-6">
               <div className="relative flex items-center">
-                <User className="absolute left-4 w-4 h-4 text-slate-400" />
+                <User className="absolute left-5 w-5 h-5 text-blue-400" />
                 <input 
-                  type="tel" placeholder="Telefone ou chave digital" 
-                  className="w-full p-4 pl-12 bg-slate-50 border border-transparent rounded-2xl text-slate-900 font-medium text-sm outline-none focus:border-indigo-500/20 focus:bg-white transition-all placeholder:text-slate-400"
+                  type="tel" placeholder="Seu telefone ou chave" 
+                  className="w-full p-5 pl-14 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-transparent rounded-3xl text-blue-900 font-semibold text-base outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-blue-300"
                   value={phone} onChange={e => setPhone(e.target.value)}
                 />
               </div>
 
               <div className="relative flex items-center">
-                <Lock className="absolute left-4 w-4 h-4 text-slate-400" />
+                <Lock className="absolute left-5 w-5 h-5 text-blue-400" />
                 <input 
-                  type={showPass ? 'text' : 'password'} placeholder="Senha de acesso" 
-                  className="w-full p-4 pl-12 pr-12 bg-slate-50 border border-transparent rounded-2xl text-slate-900 font-medium text-sm outline-none focus:border-indigo-500/20 focus:bg-white transition-all placeholder:text-slate-400"
+                  type={showPass ? 'text' : 'password'} placeholder="Sua senha segura" 
+                  className="w-full p-5 pl-14 pr-14 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-transparent rounded-3xl text-blue-900 font-semibold text-base outline-none focus:border-blue-500 focus:bg-white transition-all placeholder:text-blue-300"
                   value={password} onChange={e => setPassword(e.target.value)}
                 />
-                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 text-slate-400 hover:text-slate-600 transition-colors">
-                  {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-5 text-blue-400 hover:text-blue-600 transition-colors">
+                  {showPass ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
 
-              <button type="submit" className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide transition-all shadow-sm active:scale-[0.98] mt-4">
-                Entrar na conta
+              <button type="submit" className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-3xl font-bold text-lg tracking-wide transition-all shadow-lg hover:shadow-xl active:scale-[0.98] mt-6">
+                Entrar agora
               </button>
             </form>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-slate-100">
+          <div className="mt-10 pt-8 border-t border-blue-100">
             <button 
               onClick={() => { setMode('register'); setStep(1); setDocStep('frente'); }}
-              className="w-full py-4 text-indigo-600 hover:bg-slate-50 rounded-2xl font-semibold text-sm transition-all"
+              className="w-full py-5 text-blue-600 hover:bg-blue-50 rounded-3xl font-bold text-lg transition-all"
             >
-              Quero criar uma conta gratuita
+              Criar conta gratuita
             </button>
           </div>
 
@@ -243,24 +260,24 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
   }
 
   const stepInfo: { [key: number]: { icon: React.ReactNode; title: string; subtitle: string } } = {
-    1: { icon: <User className="w-5 h-5 text-indigo-600" />, title: "Qual é o seu nome completo?", subtitle: "Preencha de forma idêntica ao seu documento oficial." },
-    2: { icon: <Calendar className="w-5 h-5 text-indigo-600" />, title: "Qual sua data de nascimento?", subtitle: "Necessário para validação de maioridade legal." },
-    3: { icon: <MapPin className="w-5 h-5 text-indigo-600" />, title: "Onde você reside atualmente?", subtitle: "Selecione a província do seu domicílio fiscal." },
-    4: { icon: <Phone className="w-5 h-5 text-indigo-600" />, title: "Qual o número do seu telefone?", subtitle: "Este terminal principal será utilizado para o seu login seguro." },
-    5: { icon: <BarChart3 className="w-5 h-5 text-indigo-600" />, title: "Qual o seu volume operacional?", subtitle: "Defina a estimativa padrão de limites diários para sua movimentação." },
-    6: { icon: <Lock className="w-5 h-5 text-indigo-600" />, title: "Crie uma senha de segurança", subtitle: "Escolha uma combinação forte para assinar suas transações." },
-    7: { icon: <ShieldCheck className="w-5 h-5 text-indigo-600" />, title: "Verificação de identidade", subtitle: "Capture uma imagem nítida do documento para validação biométrica." }
+    1: { icon: <User className="w-7 h-7 text-blue-600" />, title: "Qual é o seu NOME COMPLETO?", subtitle: "Preencha exatamente como consta no seu documento oficial." },
+    2: { icon: <Calendar className="w-7 h-7 text-blue-600" />, title: "Quando você nasceu?", subtitle: "Data de nascimento para validação de maioridade legal." },
+    3: { icon: <MapPin className="w-7 h-7 text-blue-600" />, title: "Onde você RESIDE?", subtitle: "Selecione a sua localização de domicílio fiscal." },
+    4: { icon: <Phone className="w-7 h-7 text-blue-600" />, title: "Qual seu TELEFONE?", subtitle: "Este será seu identificador único e seguro de login." },
+    5: { icon: <BarChart3 className="w-7 h-7 text-blue-600" />, title: "Qual seu LIMITE DIÁRIO?", subtitle: "Defina seu volume operacional de movimentação." },
+    6: { icon: <Lock className="w-7 h-7 text-blue-600" />, title: "Crie sua SENHA DE SEGURANÇA", subtitle: "Use uma combinação forte para suas transações." },
+    7: { icon: <ShieldCheck className="w-7 h-7 text-blue-600" />, title: "VERIFICAÇÃO DE IDENTIDADE", subtitle: "Capture imagem nítida do seu documento." }
   }
 
   const renderStepContent = () => {
     if (isProcessing) {
       return (
-        <div className="flex flex-col items-center justify-center py-20 space-y-4">
-          <div className="relative w-10 h-10 flex items-center justify-center">
-            <div className="absolute inset-0 border-2 border-indigo-600/10 rounded-full"></div>
-            <div className="absolute inset-0 border-2 border-transparent border-t-indigo-600 rounded-full animate-spin"></div>
+        <div className="flex flex-col items-center justify-center py-24 space-y-6">
+          <div className="relative w-14 h-14 flex items-center justify-center">
+            <div className="absolute inset-0 border-3 border-blue-200 rounded-full"></div>
+            <div className="absolute inset-0 border-3 border-transparent border-t-blue-600 rounded-full animate-spin"></div>
           </div>
-          <p className="text-xs font-medium text-slate-400 tracking-wide animate-pulse">Guardando dados com segurança...</p>
+          <p className="text-lg font-bold text-blue-600 tracking-wide animate-pulse">Salvando com segurança...</p>
         </div>
       )
     }
@@ -270,36 +287,36 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     switch (step) {
       case 1:
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
+          <div className="space-y-10 animate-in fade-in slide-in-from-right-6 duration-500">
+            <div className="space-y-3">
+              <h2 className="text-4xl font-black text-blue-900 tracking-tight leading-tight">{currentStepInfo.title}</h2>
+              <p className="text-lg text-blue-600 font-semibold leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
-            <input autoFocus className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-medium text-base outline-none transition-all uppercase placeholder:normal-case placeholder:font-normal placeholder:text-slate-300" value={name} onChange={e => setName(e.target.value)} placeholder="Nome do titular" />
-            <button onClick={nextStep} disabled={!name.trim()} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
+            <input autoFocus className="w-full p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-3xl text-blue-900 font-bold text-xl outline-none transition-all uppercase placeholder:normal-case placeholder:font-semibold placeholder:text-blue-300" value={name} onChange={e => setName(e.target.value)} placeholder="Digite seu nome" />
+            <button onClick={nextStep} disabled={!name.trim()} className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-3xl font-bold text-lg tracking-wide flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-lg">Próximo <ArrowRight size={22} /></button>
           </div>
         )
       case 2:
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
+          <div className="space-y-10 animate-in fade-in slide-in-from-right-6 duration-500">
+            <div className="space-y-3">
+              <h2 className="text-4xl font-black text-blue-900 tracking-tight leading-tight">{currentStepInfo.title}</h2>
+              <p className="text-lg text-blue-600 font-semibold leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
-            <input type="date" className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-medium text-base outline-none transition-all cursor-pointer" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
-            <button onClick={nextStep} disabled={!birthDate} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
+            <input type="date" className="w-full p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-3xl text-blue-900 font-bold text-lg outline-none transition-all cursor-pointer" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
+            <button onClick={nextStep} disabled={!birthDate} className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-3xl font-bold text-lg tracking-wide flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-lg">Próximo <ArrowRight size={22} /></button>
           </div>
         )
       case 3:
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
+          <div className="space-y-10 animate-in fade-in slide-in-from-right-6 duration-500">
+            <div className="space-y-3">
+              <h2 className="text-4xl font-black text-blue-900 tracking-tight leading-tight">{currentStepInfo.title}</h2>
+              <p className="text-lg text-blue-600 font-semibold leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
             <div className="relative">
-              <select className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-800 font-semibold text-sm outline-none transition-all appearance-none cursor-pointer" value={province} onChange={e => setProvince(e.target.value)}>
-                <option value="">SELECIONE A PROVÍNCIA</option>
+              <select className="w-full p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-3xl text-blue-900 font-bold text-lg outline-none transition-all appearance-none cursor-pointer" value={province} onChange={e => setProvince(e.target.value)}>
+                <option value="">ESCOLHA A PROVÍNCIA</option>
                 <option value="Maputo Cidade">Maputo Cidade</option>
                 <option value="Maputo Provincia">Maputo Província</option>
                 <option value="Gaza">Gaza</option>
@@ -313,182 +330,177 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
                 <option value="Niassa">Niassa</option>
               </select>
             </div>
-            <button onClick={nextStep} disabled={!province} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
+            <button onClick={nextStep} disabled={!province} className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-3xl font-bold text-lg tracking-wide flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-lg">Próximo <ArrowRight size={22} /></button>
           </div>
         )
       case 4:
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
-            </div>
+          <div className="space-y-10 animate-in fade-in slide-in-from-right-6 duration-500">
             <div className="space-y-3">
-              <div className="relative flex items-center">
-                <span className="absolute left-4 text-slate-400 font-bold text-sm bg-slate-200/40 px-2.5 py-1 rounded-xl">+258</span>
-                <input type="tel" className="w-full p-4 pl-20 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-semibold text-base outline-none transition-all" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="84XXXXXXX" maxLength={9} />
-              </div>
-              <p className="text-[11px] text-slate-400 text-center font-normal">Operadoras homologadas: Vodacom, Movitel ou mcel</p>
+              <h2 className="text-4xl font-black text-blue-900 tracking-tight leading-tight">{currentStepInfo.title}</h2>
+              <p className="text-lg text-blue-600 font-semibold leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
-            <button onClick={nextStep} disabled={phone.length !== 9} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
+            <div className="space-y-4">
+              <div className="relative flex items-center">
+                <span className="absolute left-5 text-blue-600 font-black text-lg bg-blue-100 px-4 py-2 rounded-2xl">+258</span>
+                <input type="tel" className="w-full p-5 pl-24 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-3xl text-blue-900 font-bold text-xl outline-none transition-all" value={phone} onChange={e => setPhone(e.target.value.replace(/\D/g, '').slice(0, 9))} placeholder="84XXXXXXX" maxLength={9} />
+              </div>
+              <p className="text-sm text-blue-500 text-center font-semibold">Vodacom, Movitel ou mcel</p>
+            </div>
+            <button onClick={nextStep} disabled={phone.length !== 9} className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-3xl font-bold text-lg tracking-wide flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-lg">Próximo <ArrowRight size={22} /></button>
           </div>
         )
       case 5:
         return (
-          <div className="space-y-8 animate-in fade-in slide-in-from-bottom-3 duration-300">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
+          <div className="space-y-10 animate-in fade-in slide-in-from-right-6 duration-500">
+            <div className="space-y-3">
+              <h2 className="text-4xl font-black text-blue-900 tracking-tight leading-tight">{currentStepInfo.title}</h2>
+              <p className="text-lg text-blue-600 font-semibold leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
-            <select className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-800 font-semibold text-sm outline-none transition-all appearance-none cursor-pointer" value={dailyLimit} onChange={e => setDailyLimit(e.target.value)}>
-              <option value="">SELECIONE O FLUXO</option>
+            <select className="w-full p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-3xl text-blue-900 font-bold text-lg outline-none transition-all appearance-none cursor-pointer" value={dailyLimit} onChange={e => setDailyLimit(e.target.value)}>
+              <option value="">ESCOLHA O FLUXO</option>
               <option value="1000">Até R$ 1.000,00 diários</option>
               <option value="5000">De R$ 1.000,00 a R$ 5.000,00</option>
-              <option value="10000">Gerenciamento acima de R$ 5.000,00</option>
+              <option value="10000">Acima de R$ 5.000,00</option>
             </select>
-            <button onClick={nextStep} disabled={!dailyLimit} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98]">Avançar <ArrowRight size={16} /></button>
+            <button onClick={nextStep} disabled={!dailyLimit} className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-3xl font-bold text-lg tracking-wide flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-lg">Próximo <ArrowRight size={22} /></button>
           </div>
         )
       case 6:
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-sm text-slate-400 font-light leading-relaxed">{currentStepInfo.subtitle}</p>
+          <div className="space-y-8 animate-in fade-in slide-in-from-right-6 duration-500">
+            <div className="space-y-3">
+              <h2 className="text-4xl font-black text-blue-900 tracking-tight leading-tight">{currentStepInfo.title}</h2>
+              <p className="text-lg text-blue-600 font-semibold leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="relative flex items-center">
-                <input type={showPass ? 'text' : 'password'} className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-semibold text-base outline-none pr-12 transition-all placeholder:text-slate-400" value={password} onChange={e => setPassword(e.target.value)} placeholder="Senha (mínimo 8 caracteres)" />
-                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-4 text-slate-400 hover:text-slate-600">{showPass ? <EyeOff size={16} /> : <Eye size={16} />}</button>
+                <input type={showPass ? 'text' : 'password'} className="w-full p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-3xl text-blue-900 font-bold text-lg outline-none pr-14 transition-all placeholder:text-blue-300" value={password} onChange={e => setPassword(e.target.value)} placeholder="Mínimo 8 caracteres" />
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-5 text-blue-400 hover:text-blue-600">
+                  {showPass ? <EyeOff size={22} /> : <Eye size={22} />}
+                </button>
               </div>
-              <input type={showPass ? 'text' : 'password'} className="w-full p-4 bg-slate-50 border border-transparent focus:border-indigo-500/20 focus:bg-white rounded-2xl text-slate-900 font-semibold text-base outline-none transition-all placeholder:text-slate-400" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirme a sua senha" />
+              <div className="relative flex items-center">
+                <input type={showPass ? 'text' : 'password'} className="w-full p-5 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-3xl text-blue-900 font-bold text-lg outline-none pr-14 transition-all placeholder:text-blue-300" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirme a senha" />
+                <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-5 text-blue-400 hover:text-blue-600">
+                  {showPass ? <EyeOff size={22} /> : <Eye size={22} />}
+                </button>
+              </div>
+              {password && confirmPassword && password === confirmPassword && <p className="text-base text-green-600 font-bold flex items-center gap-2"><CheckCircle size={20} /> Senhas coincidem!</p>}
             </div>
-            <button onClick={nextStep} disabled={password.length < 8 || password !== confirmPassword} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide active:scale-[0.98] transition-all disabled:opacity-30 disabled:cursor-not-allowed">Avançar</button>
+            <button onClick={nextStep} disabled={!password || password !== confirmPassword || password.length < 8} className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-3xl font-bold text-lg tracking-wide flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-lg">Próximo <ArrowRight size={22} /></button>
           </div>
         )
       case 7:
         return (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-300">
-            <div className="space-y-2">
-              <h2 className="text-2xl font-bold text-slate-900 tracking-tight">{currentStepInfo.title}</h2>
-              <p className="text-sm text-slate-400 font-light leading-relaxed">
-                {docStep === 'frente' && 'Enquadre a FRENTE do documento em um local iluminado.'}
-                {docStep === 'verso' && 'Perfeito! Agora enquadre o VERSO do mesmo documento.'}
-                {docStep === 'previa' && 'Tudo pronto. Suas imagens foram anexadas de forma segura.'}
-              </p>
+          <div className="space-y-8 animate-in fade-in slide-in-from-right-6 duration-500">
+            <div className="space-y-3">
+              <h2 className="text-4xl font-black text-blue-900 tracking-tight leading-tight">{currentStepInfo.title}</h2>
+              <p className="text-lg text-blue-600 font-semibold leading-relaxed">{currentStepInfo.subtitle}</p>
             </div>
 
-            {docStep === 'frente' && (
-              <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-3xl p-12 bg-slate-50/50 cursor-pointer hover:bg-indigo-50/10 hover:border-indigo-400/50 transition-all group">
-                <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 mb-4 group-hover:scale-105 transition-transform">
-                  <UploadCloud className="w-5 h-5 text-indigo-600" />
+            {!frontImage && docStep === 'frente' && (
+              <label className="block cursor-pointer">
+                <div className="border-2 border-dashed border-blue-300 rounded-3xl p-12 text-center hover:border-blue-500 transition-colors bg-blue-50">
+                  <UploadCloud className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                  <p className="text-lg font-bold text-blue-900 mb-2">Frente do Documento</p>
+                  <p className="text-base text-blue-600 font-semibold">Clique para capturar</p>
                 </div>
-                <span className="font-semibold text-xs text-slate-700 tracking-wide">Fotografar Frente</span>
-                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, 'front')} />
+                <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'front')} className="hidden" capture="environment" />
               </label>
             )}
 
-            {docStep === 'verso' && (
-              <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-3xl p-12 bg-slate-50/50 cursor-pointer hover:bg-indigo-50/10 hover:border-indigo-400/50 transition-all group animate-in fade-in duration-300">
-                <div className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 mb-4 group-hover:scale-105 transition-transform">
-                  <UploadCloud className="w-5 h-5 text-indigo-600" />
+            {frontImage && !backImage && docStep === 'verso' && (
+              <label className="block cursor-pointer">
+                <div className="border-2 border-dashed border-blue-300 rounded-3xl p-12 text-center hover:border-blue-500 transition-colors bg-blue-50">
+                  <UploadCloud className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+                  <p className="text-lg font-bold text-blue-900 mb-2">Verso do Documento</p>
+                  <p className="text-base text-blue-600 font-semibold">Clique para capturar</p>
                 </div>
-                <span className="font-semibold text-xs text-slate-700 tracking-wide">Fotografar Verso</span>
-                <input type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => handleImageUpload(e, 'back')} />
+                <input type="file" accept="image/*" onChange={(e) => handleImageUpload(e, 'back')} className="hidden" capture="environment" />
               </label>
             )}
 
-            {docStep === 'previa' && (
-              <div className="space-y-4 animate-in zoom-in-95 duration-200">
-                <div className="flex items-center gap-3 p-4 bg-emerald-50/60 border border-emerald-100 rounded-2xl">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                  <div className="text-left">
-                    <p className="text-xs font-bold text-emerald-900 uppercase tracking-wide">Arquivos Processados</p>
-                    <p className="text-[11px] text-emerald-700 font-light mt-0.5">As imagens serão apagadas automaticamente após a validação.</p>
+            {frontImage && backImage && (
+              <div className="space-y-4">
+                <div className="bg-green-50 border-2 border-green-300 rounded-3xl p-4 flex items-center gap-3">
+                  <CheckCircle className="w-8 h-8 text-green-600 flex-shrink-0" />
+                  <div>
+                    <p className="font-bold text-green-900">Frente capturada</p>
+                    <p className="text-sm text-green-700">Documento recebido com sucesso</p>
                   </div>
                 </div>
-                <button onClick={handleDocumentSubmit} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide transition-all active:scale-[0.98]">
-                  Enviar e finalizar cadastro
-                </button>
+                <div className="bg-green-50 border-2 border-green-300 rounded-3xl p-4 flex items-center gap-3">
+                  <CheckCircle className="w-8 h-8 text-green-600 flex-shrink-0" />
+                  <div>
+                    <p className="font-bold text-green-900">Verso capturado</p>
+                    <p className="text-sm text-green-700">Documento recebido com sucesso</p>
+                  </div>
+                </div>
               </div>
             )}
+
+            <button onClick={handleDocumentSubmit} disabled={!frontImage || !backImage} className="w-full py-5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-3xl font-bold text-lg tracking-wide flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-lg">Enviar Documentos <ArrowRight size={22} /></button>
           </div>
         )
       case 8:
         return (
-          <div className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-500 py-4 text-center">
-            <div className="relative mb-6 flex items-center justify-center">
-              <div className="absolute inset-0 bg-emerald-500/10 rounded-full blur-xl scale-125"></div>
-              <div className="p-4 bg-emerald-500 rounded-full shadow-lg border-4 border-white">
-                <CheckCircle className="w-8 h-8 text-white" />
-              </div>
+          <div className="flex flex-col items-center justify-center py-20 space-y-6 animate-in fade-in duration-500">
+            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center animate-bounce">
+              <CheckCircle className="w-12 h-12 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Conta criada!</h1>
-            <p className="text-sm font-light text-slate-400 mt-2 max-w-xs leading-relaxed">
-              Seja bem-vindo, <span className="font-semibold text-slate-700">{name.split(' ')[0]}</span>. Seu acesso à infraestrutura digital **BankPix** já está pronto.
-            </p>
-            <div className="w-full mt-8 p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center gap-3 text-left">
-              <div className="p-2 bg-indigo-50 rounded-xl"><Sparkles className="w-4 h-4 text-indigo-600" /></div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Status da conta</p>
-                <p className="text-xs font-semibold text-slate-700">Chaves integradas com sucesso</p>
-              </div>
+            <div className="text-center space-y-3">
+              <h2 className="text-4xl font-black text-blue-900">Parabéns!</h2>
+              <p className="text-xl text-blue-600 font-bold max-w-xs leading-relaxed">Sua conta foi criada com sucesso e está pronta para usar.</p>
             </div>
-            <button onClick={handleCompleteRegistration} className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-semibold text-sm tracking-wide transition-all active:scale-[0.98] mt-6">
-              Acessar Painel Principal
-            </button>
+            <button onClick={handleCompleteRegistration} className="w-full py-5 bg-gradient-to-r from-green-500 to-blue-600 hover:from-green-600 hover:to-blue-700 text-white rounded-3xl font-bold text-lg tracking-wide flex items-center justify-center gap-3 transition-all active:scale-[0.98] shadow-lg mt-6">Começar Agora <Sparkles size={22} /></button>
           </div>
         )
-      default: return null
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4 antialiased text-slate-900">
-      <div className="w-full max-w-md bg-white rounded-[32px] p-10 border border-slate-100 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.03)] relative min-h-[540px] flex flex-col justify-between">
-        
-        {step < 8 && mode === 'register' && (
-          <div className="mb-10">
-            <div className="flex justify-between items-center mb-6">
-              <div className="flex items-center gap-3">
-                {step > 1 && (
-                  <button onClick={() => {
-                    if (step === 7 && docStep !== 'frente') {
-                      setDocStep(docStep === 'previa' ? 'verso' : 'frente')
-                    } else {
-                      setStep(step - 1)
-                    }
-                  }} className="p-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 text-slate-500 transition-colors">
-                    <ArrowLeft size={14}/>
-                  </button>
-                )}
-                <span className="text-xs font-semibold text-indigo-600 bg-indigo-50/60 px-3 py-1 rounded-full">
-                  Passo {step} de {totalSteps}
-                </span>
-              </div>
-              
-              <button 
-                onClick={() => setMode('login')} 
-                className="text-xs font-medium text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                Sair
-              </button>
-            </div>
-            
-            {/* Barra de Progresso Minimalista de Linha Única */}
-            <div className="w-full h-1 bg-slate-100 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-indigo-600 transition-all duration-500 ease-out rounded-full" 
-                style={{ width: `${(step / totalSteps) * 100}%` }}
-              />
-            </div>
-          </div>
-        )}
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6 antialiased">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
+      </div>
 
-        <div className="flex-1 flex flex-col justify-center">
-          {mode === 'register' ? renderStepContent() : null}
+      <div className="w-full max-w-2xl bg-white rounded-[40px] p-12 border border-blue-100 shadow-2xl relative z-10">
+        
+        {/* Progress Bar */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-black text-blue-600 uppercase tracking-widest">Etapa {step} de 7</h3>
+            <p className="text-xs font-bold text-blue-400 bg-blue-50 px-3 py-1 rounded-full">{stepsRemaining} etapas restantes</p>
+          </div>
+          <div className="w-full bg-blue-100 h-3 rounded-full overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-blue-500 to-indigo-600 h-full rounded-full transition-all duration-500 ease-out"
+              style={{ width: `${(step / totalSteps) * 100}%` }}
+            ></div>
+          </div>
         </div>
 
+        {/* Step Icon */}
+        <div className="flex items-center justify-center mb-10">
+          <div className="p-5 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-3xl">
+            {stepInfo[step]?.icon}
+          </div>
+        </div>
+
+        {/* Content */}
+        {renderStepContent()}
+
+        {/* Back Button */}
+        {step > 1 && step < 8 && (
+          <button 
+            onClick={() => setStep(s => s - 1)} 
+            className="mt-8 w-full py-4 text-blue-600 hover:bg-blue-50 rounded-3xl font-bold text-base transition-all flex items-center justify-center gap-2"
+          >
+            <ArrowLeft size={20} /> Voltar
+          </button>
+        )}
       </div>
     </div>
   )
