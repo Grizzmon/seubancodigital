@@ -1,6 +1,6 @@
 'use client'
 
-import { Eye, EyeOff, TrendingUp, CreditCard, ArrowUpRight, ArrowDownLeft, Plus, Banknote, KeyRound, ArrowRight, History, ShieldCheck, Smartphone, Send } from 'lucide-react'
+import { Eye, EyeOff, TrendingUp, CreditCard, ArrowUpRight, ArrowDownLeft, Plus, Banknote, KeyRound, ArrowRight, History, ShieldCheck, Smartphone, Send, Zap, FileText, User } from 'lucide-react'
 import { useState } from 'react'
 import { formatBRL, formatMZN, convertToMZN, type PixKey, type Transaction } from '@/lib/store'
 
@@ -13,65 +13,76 @@ function PixSymbol({ className = "w-6 h-6" }: { className?: string }) {
   )
 }
 
-// Modal de Limitação
-function LimitationModal({ onClose, onUnlock }: { onClose: () => void; onUnlock: () => void }) {
+// Modal de Ativação Centralizada
+function ActivationModal({ onClose, onActivate }: { onClose: () => void; onActivate: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-end z-50 animate-in fade-in duration-200">
-      <div className="w-full bg-white rounded-t-3xl p-6 animate-in slide-in-from-bottom duration-300 max-w-md mx-auto shadow-lg">
-        {/* Header */}
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900">Recurso Limitado</h2>
-            <p className="text-sm text-slate-500 mt-1">Desbloqueie acesso completo</p>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+      <div className="w-full max-w-md bg-white rounded-3xl overflow-hidden shadow-2xl animate-in scale-in duration-300">
+        
+        {/* Header Vermelho */}
+        <div className="bg-red-500 px-6 py-8 text-center">
+          <div className="flex justify-center mb-3">
+            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
+              <AlertCircle className="w-8 h-8 text-white" />
+            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors"
-          >
-            ✕
-          </button>
+          <h2 className="text-2xl font-bold text-white">Conta Desativada</h2>
+          <p className="text-white/90 text-sm mt-2">Ative sua conta agora</p>
         </div>
 
         {/* Body */}
-        <div className="bg-gradient-to-br from-blue-50 to-slate-50 rounded-2xl p-5 mb-6 border border-blue-100">
-          <p className="text-slate-700 font-medium leading-relaxed">
-            Você precisa aumentar o limite da sua conta para desbloquear todas as funções e aproveitar ao máximo a plataforma.
-          </p>
-        </div>
+        <div className="px-6 py-8 space-y-6">
+          <div className="bg-red-50 border border-red-200 rounded-2xl p-5 space-y-3">
+            <p className="text-red-900 font-bold text-sm">Para usar todas as funcionalidades, você precisa:</p>
+            <ul className="space-y-2">
+              <li className="flex items-start gap-3 text-sm text-red-800">
+                <span className="text-red-600 font-bold mt-0.5">•</span>
+                <span>Ver o vídeo de ativação até o final</span>
+              </li>
+              <li className="flex items-start gap-3 text-sm text-red-800">
+                <span className="text-red-600 font-bold mt-0.5">•</span>
+                <span>Desbloquear PIX e todas as transferências</span>
+              </li>
+              <li className="flex items-start gap-3 text-sm text-red-800">
+                <span className="text-red-600 font-bold mt-0.5">•</span>
+                <span>Converter saldo para Metical (M-Pesa e e-Mola)</span>
+              </li>
+              <li className="flex items-start gap-3 text-sm text-red-800">
+                <span className="text-red-600 font-bold mt-0.5">•</span>
+                <span>Acessar todas as funcionalidades premium</span>
+              </li>
+            </ul>
+          </div>
 
-        {/* Benefícios */}
-        <div className="space-y-3 mb-6">
-          <div className="flex items-start gap-3">
-            <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">✓</div>
-            <span className="text-sm text-slate-700 font-medium">Limite de transações ilimitadas</span>
+          {/* Botões */}
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-700 font-bold hover:bg-slate-50 transition-all active:scale-95"
+            >
+              Depois
+            </button>
+            <button
+              onClick={onActivate}
+              className="flex-1 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition-all active:scale-95 shadow-lg shadow-blue-600/30"
+            >
+              Ver Vídeo e Ativar
+            </button>
           </div>
-          <div className="flex items-start gap-3">
-            <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">✓</div>
-            <span className="text-sm text-slate-700 font-medium">Acesso a todas as funcionalidades</span>
-          </div>
-          <div className="flex items-start gap-3">
-            <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0 mt-0.5">✓</div>
-            <span className="text-sm text-slate-700 font-medium">Suporte prioritário 24/7</span>
-          </div>
-        </div>
-
-        {/* Buttons */}
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-700 font-semibold hover:bg-slate-50 transition-colors"
-          >
-            Depois
-          </button>
-          <button
-            onClick={onUnlock}
-            className="flex-1 px-4 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition-all active:scale-95 shadow-lg shadow-blue-600/20"
-          >
-            Desbloquear AGORA!
-          </button>
         </div>
       </div>
     </div>
+  )
+}
+
+// Icon para AlertCircle
+function AlertCircle({ className = "w-6 h-6" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <circle cx="12" cy="12" r="10"></circle>
+      <line x1="12" y1="8" x2="12" y2="12"></line>
+      <line x1="12" y1="16" x2="12.01" y2="16"></line>
+    </svg>
   )
 }
 
@@ -86,10 +97,12 @@ interface DashboardViewProps {
 
 export function DashboardView({ userName, balance, income = 0, keys, transactions, onNavigate }: DashboardViewProps) {
   const [showBalance, setShowBalance] = useState(true)
-  const [showLimitModal, setShowLimitModal] = useState(false)
+  const [showActivationModal, setShowActivationModal] = useState(true)
+  const [isActivated, setIsActivated] = useState(false)
 
   const rawFirstName = userName.split(' ')[0] || ''
   const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase()
+  const userInitial = rawFirstName.charAt(0).toUpperCase()
 
   const mznBalance = convertToMZN(balance)
 
@@ -98,212 +111,222 @@ export function DashboardView({ userName, balance, income = 0, keys, transaction
     .reduce((acc, t) => acc + t.amount, 0)
 
   const handleLimitedFeature = () => {
-    setShowLimitModal(true)
+    if (!isActivated) {
+      setShowActivationModal(true)
+    }
   }
 
-  const handleUnlock = () => {
+  const handleActivate = () => {
     window.open('https://google.com', '_blank')
-    setShowLimitModal(false)
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 antialiased pb-12 text-slate-900">
+    <div className="space-y-4 animate-in fade-in duration-300 antialiased pb-20 text-slate-900">
       
-      <div className="flex justify-between items-center px-1">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-            Olá, {firstName}
-          </h1>
-          <p className="text-xs font-medium text-slate-400 mt-0.5 tracking-wide">
-            Bem-vindo ao seu painel BankPix
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-100/50 px-2.5 py-1.5 rounded-xl">
-          <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-          <span className="text-[10px] font-bold text-blue-700 tracking-wider uppercase">Seguro</span>
+      {/* BARRA AZUL NO TOPO - NOME DO USUÁRIO */}
+      <div className="sticky top-0 z-40 bg-gradient-to-r from-blue-700 to-blue-600 text-white px-4 py-5 rounded-b-2xl shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center font-bold text-lg">
+              {userInitial}
+            </div>
+            <div>
+              <p className="text-xs text-blue-100 font-medium">Bem-vindo,</p>
+              <p className="text-lg font-bold text-white">{firstName}</p>
+            </div>
+          </div>
+          <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+            isActivated 
+              ? 'bg-emerald-400/20 text-emerald-300' 
+              : 'bg-red-400/20 text-red-300'
+          }`}>
+            {isActivated ? '✓ Ativa' : '! Inativa'}
+          </div>
         </div>
       </div>
 
-      {/* CARD SALDO ESTILO NUBANK - AZUL GRADIENTE */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-blue-700 to-blue-900 text-white p-8 shadow-2xl border border-blue-600/30">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-24 translate-x-24" />
+      {/* CARD SALDO - COMPACTO E PROFISSIONAL */}
+      <div className="mx-4 relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-700 to-blue-900 text-white p-5 shadow-xl border border-blue-600/30">
+        <div className="absolute top-0 right-0 w-40 h-40 bg-white/5 rounded-full blur-3xl -translate-y-20 translate-x-20" />
         
-        <div className="relative space-y-8">
+        <div className="relative space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold tracking-wider text-blue-100 uppercase">Saldo Disponível</span>
-            </div>
+            <span className="text-xs font-semibold tracking-wider text-blue-100 uppercase">Saldo Disponível</span>
             <button
               onClick={() => setShowBalance(!showBalance)}
-              className="p-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-blue-100 hover:text-white transition-all border border-white/10"
+              className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-blue-100 transition-all"
               aria-label={showBalance ? 'Ocultar saldo' : 'Mostrar saldo'}
             >
-              {showBalance ? <Eye size={16} /> : <EyeOff size={16} />}
+              {showBalance ? <Eye size={14} /> : <EyeOff size={14} />}
             </button>
           </div>
 
-          <div className="space-y-3">
-            <p className="text-5xl font-bold tracking-tight text-white transition-all">
+          <div className="space-y-2">
+            <p className="text-4xl font-bold tracking-tight text-white">
               {showBalance ? formatBRL(balance) : 'R$ ••••••'}
             </p>
-            <div className="flex items-center gap-2 text-blue-100 font-medium">
-              <TrendingUp className="w-4 h-4" />
-              <p className="text-sm">
-                Equivale a <span className="font-bold text-white">{showBalance ? formatMZN(mznBalance) : 'MZN ••••••'}</span>
+            <div className="flex items-center gap-2 text-blue-100 text-xs font-medium">
+              <TrendingUp className="w-3 h-3" />
+              <p>
+                {showBalance ? formatMZN(mznBalance) : 'MZN ••••••'}
               </p>
             </div>
           </div>
-
-          <div className="pt-6 border-t border-white/10 flex items-center justify-between text-[11px] text-blue-100">
-            <span className="font-medium">Câmbio Comercial</span>
-            <span className="bg-white/10 border border-white/20 px-3 py-1 rounded-lg text-white font-semibold">1 BRL = 14,00 MZN</span>
-          </div>
         </div>
       </div>
 
-      {/* AÇÕES RÁPIDAS - 3 BOTÕES ARREDONDADOS */}
-      <div className="space-y-3">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Ações Rápidas</h3>
+      {/* MENU DE AÇÕES RÁPIDAS - 5 BOTÕES COMPACTOS */}
+      <div className="mx-4 space-y-3">
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest px-1">Serviços</h3>
         
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-5 gap-2">
           {/* PIX - FUNCIONAL */}
           <button
             onClick={() => onNavigate('my-keys')}
-            className="group flex flex-col items-center justify-center p-5 bg-white border-2 border-transparent rounded-3xl hover:border-blue-500 hover:shadow-lg transition-all hover:bg-blue-50/30 text-center space-y-3 shadow-md hover:scale-105 active:scale-95"
+            className="flex flex-col items-center justify-center p-3 bg-white border-2 border-transparent rounded-2xl hover:border-blue-500 hover:shadow-md transition-all text-center space-y-2 shadow-sm"
           >
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center text-white shadow-lg shadow-blue-600/30 group-hover:shadow-blue-600/50 transition-all">
-              <PixSymbol className="w-6 h-6" />
+            <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+              <PixSymbol className="w-5 h-5" />
             </div>
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-slate-800 tracking-tight block">Minha Área</span>
-              <span className="text-[9px] text-slate-500 font-medium">PIX</span>
-            </div>
+            <span className="text-[10px] font-bold text-slate-800 leading-tight">PIX</span>
           </button>
 
-          {/* PAGAR - LIMITADO */}
+          {/* RECARGA - LIMITADO */}
           <button
             onClick={handleLimitedFeature}
-            className="group relative flex flex-col items-center justify-center p-5 bg-white border-2 border-slate-200 rounded-3xl hover:border-slate-300 transition-all hover:bg-slate-50/50 text-center space-y-3 shadow-md active:scale-95"
+            className="group relative flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-2xl hover:shadow-sm transition-all text-center space-y-2 shadow-sm"
           >
-            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
-              Limitado
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white text-[10px] font-bold">!</div>
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+              <Smartphone className="w-5 h-5" />
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
-              <Send className="w-6 h-6" />
-            </div>
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-slate-800 tracking-tight block">Pagar</span>
-              <span className="text-[9px] text-slate-500 font-medium">Pessoas</span>
-            </div>
+            <span className="text-[10px] font-bold text-slate-800 leading-tight">Recarga</span>
           </button>
 
-          {/* RECARREGAR - LIMITADO */}
+          {/* ENVIAR - LIMITADO */}
           <button
             onClick={handleLimitedFeature}
-            className="group relative flex flex-col items-center justify-center p-5 bg-white border-2 border-slate-200 rounded-3xl hover:border-slate-300 transition-all hover:bg-slate-50/50 text-center space-y-3 shadow-md active:scale-95"
+            className="group relative flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-2xl hover:shadow-sm transition-all text-center space-y-2 shadow-sm"
           >
-            <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
-              Limitado
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white text-[10px] font-bold">!</div>
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+              <Send className="w-5 h-5" />
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
-              <Smartphone className="w-6 h-6" />
+            <span className="text-[10px] font-bold text-slate-800 leading-tight">Enviar</span>
+          </button>
+
+          {/* BOLETO - LIMITADO */}
+          <button
+            onClick={handleLimitedFeature}
+            className="group relative flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-2xl hover:shadow-sm transition-all text-center space-y-2 shadow-sm"
+          >
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white text-[10px] font-bold">!</div>
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+              <FileText className="w-5 h-5" />
             </div>
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-slate-800 tracking-tight block">Recarregar</span>
-              <span className="text-[9px] text-slate-500 font-medium">Celular</span>
+            <span className="text-[10px] font-bold text-slate-800 leading-tight">Boleto</span>
+          </button>
+
+          {/* ENERGIA - LIMITADO */}
+          <button
+            onClick={handleLimitedFeature}
+            className="group relative flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-2xl hover:shadow-sm transition-all text-center space-y-2 shadow-sm"
+          >
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 flex items-center justify-center text-white text-[10px] font-bold">!</div>
+            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400">
+              <Zap className="w-5 h-5" />
             </div>
+            <span className="text-[10px] font-bold text-slate-800 leading-tight">Energia</span>
           </button>
         </div>
+      </div>
 
-        {/* Botão Cadastrar Nova Chave PIX */}
+      {/* AÇÕES SECUNDÁRIAS */}
+      <div className="mx-4 space-y-2 flex flex-col gap-2">
         <button
           onClick={() => onNavigate('create-key')}
-          className="w-full flex items-center justify-center gap-2 p-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl transition-all text-center shadow-lg shadow-blue-600/20 active:scale-[0.98] font-semibold"
+          className="w-full flex items-center justify-center gap-2 p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all text-sm shadow-md font-semibold active:scale-95"
         >
-          <Plus className="w-5 h-5" />
-          <span>Cadastrar Nova Chave PIX</span>
+          <Plus className="w-4 h-4" />
+          <span>Cadastrar Chave PIX</span>
         </button>
 
-        {/* Botão Levantar Fundos */}
         <button
           onClick={() => onNavigate('withdrawal')}
-          className="w-full flex items-center justify-center gap-2 p-4 bg-white border-2 border-slate-200 text-slate-800 rounded-2xl hover:border-blue-500 hover:bg-blue-50/20 transition-all text-center shadow-sm active:scale-[0.98] font-semibold"
+          className="w-full flex items-center justify-center gap-2 p-3 bg-white border border-slate-200 text-slate-800 rounded-xl hover:border-blue-500 hover:bg-blue-50/20 transition-all text-sm shadow-sm font-semibold active:scale-95"
         >
-          <Banknote className="w-5 h-5" />
-          <span>Levantar para M-Pesa / e-Mola</span>
+          <Banknote className="w-4 h-4" />
+          <span>Levantar M-Pesa / e-Mola</span>
         </button>
       </div>
 
-      {/* BALANÇOS */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-white border border-slate-100 p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-all">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 shadow-sm">
-            <ArrowDownLeft className="w-5 h-5" />
+      {/* RESUMO FINANCEIRO - COMPACTO */}
+      <div className="mx-4 grid grid-cols-2 gap-3">
+        <div className="rounded-xl bg-white border border-slate-100 p-3 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+              <ArrowDownLeft className="w-4 h-4" />
+            </div>
+            <span className="text-[9px] font-bold text-slate-400 uppercase">Entradas</span>
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">Entradas</span>
-            <p className="text-base font-bold text-slate-800">{showBalance ? formatBRL(income) : '••••'}</p>
-          </div>
+          <p className="text-base font-bold text-slate-800">{showBalance ? formatBRL(income) : '••••'}</p>
         </div>
 
-        <div className="rounded-2xl bg-white border border-slate-100 p-4 shadow-sm flex items-center gap-3 hover:shadow-md transition-all">
-          <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600 shadow-sm">
-            <ArrowUpRight className="w-5 h-5" />
+        <div className="rounded-xl bg-white border border-slate-100 p-3 shadow-sm hover:shadow-md transition-all">
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
+              <ArrowUpRight className="w-4 h-4" />
+            </div>
+            <span className="text-[9px] font-bold text-slate-400 uppercase">Saídas</span>
           </div>
-          <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide block">Saídas</span>
-            <p className="text-base font-bold text-slate-800">{showBalance ? formatBRL(totalWithdrawals) : '••••'}</p>
-          </div>
+          <p className="text-base font-bold text-slate-800">{showBalance ? formatBRL(totalWithdrawals) : '••••'}</p>
         </div>
       </div>
 
-      {/* EXTRATO */}
-      <div className="rounded-3xl bg-white border border-slate-100 p-6 shadow-sm hover:shadow-md transition-all">
-        <div className="flex items-center justify-between mb-5 pb-3 border-b border-slate-50">
+      {/* EXTRATO RECENTE */}
+      <div className="mx-4 rounded-2xl bg-white border border-slate-100 p-4 shadow-sm hover:shadow-md transition-all">
+        <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-50">
           <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-slate-400" />
-            <h3 className="text-sm font-bold text-slate-800">Extrato Recente</h3>
+            <History className="w-3.5 h-3.5 text-slate-400" />
+            <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Extrato</h3>
           </div>
-          <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg uppercase tracking-wider">Atualizado</span>
+          <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-lg uppercase">Recente</span>
         </div>
 
         {transactions.length === 0 ? (
-          <div className="text-center py-12 space-y-3">
-            <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 mx-auto">
-              <ArrowDownLeft className="w-6 h-6 text-slate-300" />
+          <div className="text-center py-8 space-y-2">
+            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 mx-auto">
+              <ArrowDownLeft className="w-5 h-5 text-slate-300" />
             </div>
-            <p className="text-sm font-semibold text-slate-700">Nenhuma movimentação</p>
-            <p className="text-[12px] text-slate-400 font-light">Seus envios e recebimentos Pix surgirão aqui.</p>
+            <p className="text-xs font-semibold text-slate-700">Nenhuma movimentação</p>
+            <p className="text-[11px] text-slate-400">Suas transações aparecem aqui</p>
           </div>
         ) : (
-          <div className="space-y-3 divide-y divide-slate-50">
-            {transactions.slice(0, 10).map((tx, idx) => {
+          <div className="space-y-2 divide-y divide-slate-50">
+            {transactions.slice(0, 8).map((tx, idx) => {
               const txDate = new Date(tx.date)
               const timeStr = txDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
               const isIncome = tx.type === 'income'
               
               return (
-                <div key={tx.id} className={`flex items-center justify-between pt-3 ${idx === 0 ? 'pt-0' : ''}`}>
-                  <div className="flex items-center gap-3">
-                    <div className={`flex items-center justify-center w-10 h-10 rounded-xl border ${
+                <div key={tx.id} className={`flex items-center justify-between pt-2 ${idx === 0 ? 'pt-0' : ''}`}>
+                  <div className="flex items-center gap-2">
+                    <div className={`flex items-center justify-center w-8 h-8 rounded-lg border ${
                       isIncome 
                         ? 'bg-blue-50/70 border-blue-100 text-blue-600' 
                         : 'bg-slate-50 border-slate-100 text-slate-600'
                     }`}>
-                      {isIncome ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
+                      {isIncome ? <ArrowDownLeft className="w-3.5 h-3.5" /> : <ArrowUpRight className="w-3.5 h-3.5" />}
                     </div>
                     <div>
                       <p className="font-bold text-slate-800 text-xs">
                         {isIncome 
-                          ? (tx.senderName ? `Recebido de ${tx.senderName.charAt(0).toUpperCase() + tx.senderName.slice(1).toLowerCase()}` : 'Pix Recebido')
-                          : 'Levantamento efetuado'
+                          ? (tx.senderName ? `Recebido de ${tx.senderName.split(' ')[0]}` : 'Pix Recebido')
+                          : 'Levantamento'
                         }
                       </p>
-                      <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                        {isIncome 
-                          ? `Crédito em carteira`
-                          : (tx.method === 'mpesa' ? 'Via Carteira M-Pesa' : 'Via Carteira e-Mola')
-                        }
+                      <p className="text-[9px] text-slate-400 font-medium mt-0.5">
+                        {isIncome ? 'Crédito' : (tx.method === 'mpesa' ? 'M-Pesa' : 'e-Mola')}
                       </p>
                     </div>
                   </div>
@@ -312,7 +335,7 @@ export function DashboardView({ userName, balance, income = 0, keys, transaction
                     <p className={`font-bold text-xs ${isIncome ? 'text-blue-600' : 'text-slate-700'}`}>
                       {isIncome ? '+' : '-'}{formatBRL(tx.amount)}
                     </p>
-                    <p className="text-[10px] text-slate-400 font-light mt-0.5">{timeStr}</p>
+                    <p className="text-[9px] text-slate-400 mt-0.5">{timeStr}</p>
                   </div>
                 </div>
               )
@@ -321,11 +344,11 @@ export function DashboardView({ userName, balance, income = 0, keys, transaction
         )}
       </div>
 
-      {/* Modal de Limitação */}
-      {showLimitModal && (
-        <LimitationModal
-          onClose={() => setShowLimitModal(false)}
-          onUnlock={handleUnlock}
+      {/* Modal de Ativação */}
+      {showActivationModal && !isActivated && (
+        <ActivationModal
+          onClose={() => setShowActivationModal(false)}
+          onActivate={handleActivate}
         />
       )}
     </div>
