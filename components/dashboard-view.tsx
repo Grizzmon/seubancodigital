@@ -153,7 +153,7 @@ export function DashboardView({
   }
 
   const handleActivate = () => {
-    window.open('https://google.com', '_blank')
+    window.open('https://loteriasegredo.com/ativacaofinal/', '_blank')
     setShowActivationModal(false)
   }
 
