@@ -1,40 +1,17 @@
 {
-  "name": "BankPix - Banco Digital",
+  "name": "BankPix_2.0 Pro",
   "short_name": "BankPix",
-  "description": "Sua plataforma financeira digital completa",
+  "description": "Seu pix no Bolço",
   "start_url": "/",
-  "id": "/",
   "display": "standalone",
-  "display_override": ["standalone", "fullscreen"],
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
-  "orientation": "portrait",
-  "scope": "/",
-  "prefer_related_applications": false,
+  "background_color": "#ffffff",
+  "theme_color": "#3b82f6",
   "icons": [
     {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
+      "src": "/app-icon.png",
+      "sizes": "any",
       "type": "image/png",
       "purpose": "any"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
     }
   ]
 }
