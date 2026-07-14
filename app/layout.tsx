@@ -10,14 +10,14 @@ const inter = Inter({
 })
 
 export const metadata: Metadata = {
-  title: 'BankPix - Banco Digital',
-  description: 'Sua plataforma financeira digital completa',
-  generator: 'v0.app',
-  manifest: '/manifest.json',
+  title: 'Bankpix_2.0 Pro',
+  description: 'Descrição',
+  manifest: '/manifest.json',  // ← Adicione esta linha
   icons: {
-    icon: '/favicon.png',
-    apple: '/icon-192.png',
+    icon: '/app-icon.png',      // ← Adicione esta linha
+    apple: '/app-icon.png',     // ← Adicione esta linha
   },
+},
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -26,13 +26,12 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0f172a',
+  colorScheme: 'light dark',
+  themeColor: '#3b82f6',
+  viewportFit: 'cover',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 }
-
 export default function RootLayout({
   children,
 }: Readonly<{
