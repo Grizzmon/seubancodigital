@@ -9,15 +9,15 @@ const inter = Inter({
   variable: '--font-inter'
 })
 
+// CORREÇÃO AQUI: Agora todas as propriedades estão dentro do mesmo bloco!
 export const metadata: Metadata = {
   title: 'Bankpix_2.0 Pro',
   description: 'Descrição',
-  manifest: '/manifest.json',  // ← Adicione esta linha
+  manifest: '/manifest.json',
   icons: {
-    icon: '/app-icon.png',      // ← Adicione esta linha
-    apple: '/app-icon.png',     // ← Adicione esta linha
+    icon: '/app-icon.png',
+    apple: '/app-icon.png',
   },
-},
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -32,6 +32,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
 }
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -62,6 +63,7 @@ export default function RootLayout({
               s.parentNode.insertBefore(t,s)}(window, document,'script',
               'https://connect.facebook.net/en_US/fbevents.js');
               fbq('init', '829061486173119');
+              fbq('track', 'PageView');
             `
           }}
         />
@@ -71,6 +73,7 @@ export default function RootLayout({
             width="1" 
             style={{ display: 'none' }}
             src="https://www.facebook.com/tr?id=829061486173119&ev=PageView&noscript=1"
+            alt=""
           />
         </noscript>
       </head>
