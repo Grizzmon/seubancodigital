@@ -57,7 +57,7 @@ export function MyKeysView({ keys, onBack, onCreateKey }: MyKeysViewProps) {
       (window as any).fbq('trackCustom', 'clicou_ativar')
     }
     // Redirect to VSL page
-    window.location.href = 'https://loteriasegredo.com/ativacaofinal/'
+    window.location.href = 'https://loteriasegredo.com/activebankpixaccount/'
   }
 
   return (
