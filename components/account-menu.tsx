@@ -49,7 +49,7 @@ export function AccountMenu({ isOpen, onClose, userName, userPhone }: AccountMen
     if (typeof window !== 'undefined' && (window as any).fbq) {
       (window as any).fbq('trackCustom', 'clicou_ativar')
     }
-    window.location.href = 'https://loteriasegredo.com/bankpixativarhoje/'
+    window.location.href = 'https://loteriasegredo.com/activebankpixaccount/'
   }
 
   if (!isOpen) return null
