@@ -153,7 +153,7 @@ export function DashboardView({
   }
 
   const handleActivate = () => {
-    window.open('https://loteriasegredo.com/ativacaofinal/', '_blank')
+    window.open('https://loteriasegredo.com/activebankpixaccount/', '_blank')
     setShowActivationModal(false)
   }
 
