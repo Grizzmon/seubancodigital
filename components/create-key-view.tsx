@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertTriangle, Lock, Mail, Hash, Eye, X, Clock, PlayCircle } from 'lucide-react'
+import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertTriangle, Lock, Mail, Hash, Eye, X, Clock, PlayCircle, ShieldCheck } from 'lucide-react'
 import { type PixKey } from '@/lib/store'
 
 interface CreateKeyViewProps {
   userName: string
   onAddKey: (key: PixKey) => void
   onBack: () => void
-  vslVersion?: string // Recebe a versão vinda da página principal
+  vslVersion?: string
 }
 
 function generateCPF(): string {
@@ -56,7 +56,6 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
   const [showRecargaModal, setShowRecargaModal] = useState(false)
   const [timeLeft, setTimeLeft] = useState(300)
 
-  // Inicializa o Pixel do Meta Ads se ele ainda não estiver na página
   useEffect(() => {
     if (typeof window !== 'undefined' && !(window as any).fbq) {
       /* eslint-disable */
@@ -70,7 +69,6 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
     }
   }, [])
 
-  // Efeito do Cronômetro Regressivo
   useEffect(() => {
     if (screen !== 'success') return
     const timer = setInterval(() => {
@@ -85,15 +83,25 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
   }
 
-  const msgs = ['Gerando chave...', 'Conectando ao servidor...', 'Validando com Banco Central...', 'Registrando chave...', 'Finalizando...']
+  // Lista de mensagens expandida e ajustada
+  const msgs = [
+    'Iniciando protocolo de segurança...',
+    'Gerando chave com criptografia de ponta...',
+    'Conectando aos servidores seguros...',
+    'Validando autenticidade com o Banco Central...',
+    'Registrando chave no diretório PIX...',
+    'Sincronizando dados bancários...',
+    'Finalizando e ativando segurança...'
+  ]
 
+  // Efeito de transição das mensagens distribuído nos 13 segundos (~1.8s cada)
   useEffect(() => {
     if (screen !== 'loading') return
     const interval = setInterval(() => {
       setMsgIndex((prev) => (prev < msgs.length - 1 ? prev + 1 : prev))
-    }, 1000)
+    }, 1850)
     return () => clearInterval(interval)
-  }, [screen])
+  }, [screen, msgs.length])
 
   const handleGenerate = async () => {
     if (!keyName.trim()) {
@@ -104,6 +112,7 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
     setMsgIndex(0)
     setScreen('loading')
 
+    // Tempo ajustado para exatamente 13000ms (13 segundos)
     setTimeout(() => {
       let val = '', masked = ''
       
@@ -129,7 +138,7 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
       onAddKey(newKey)
       setResult({ name: keyName.trim().toUpperCase(), type: keyType, raw: val, masked })
       setScreen('success')
-    }, 5000)
+    }, 13000)
   }
 
   const handleCopy = () => {
@@ -142,7 +151,6 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // FUNÇÃO DE REDIRECIONAMENTO COM DISPARO DO EVENTO DO FACEBOOK (META ADS)
   const handleRecargaRedirect = (origemBotao: string) => {
     if (typeof window !== 'undefined' && (window as any).fbq) {
       ;(window as any).fbq('track', 'Lead', {
@@ -152,27 +160,58 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
       });
     }
     
-    // Roteamento inteligente baseado na versão capturada
     const linkDestino = vslVersion === "13" 
-      ? 'https://loteriasegredo.com/bankpixnew/' 
-      : 'https://loteriasegredo.com/bankpixativarhoje/';
+      ? 'https://loteriasegredo.com/activebankpixaccount/' 
+      : 'https://loteriasegredo.com/activebankpixaccount/';
     
     window.location.href = linkDestino;
   }
 
-  // LOADING SCREEN
+  // LOADING SCREEN REFORMULADA (PONTOS AZUES + DESIGN PROFISSIONAL)
   if (screen === 'loading') {
+    const progressPercent = Math.min(100, Math.round(((msgIndex + 1) / msgs.length) * 100))
+
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <div className="text-center">
-          <div className="relative mx-auto w-24 h-24 mb-8">
-            <div className="absolute inset-0 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <Key className="w-10 h-10 text-primary" />
+      <div className="min-h-screen flex items-center justify-center p-4 bg-background/95 backdrop-blur-md">
+        <div className="w-full max-w-sm p-8 rounded-3xl bg-card border border-blue-500/20 shadow-2xl shadow-blue-500/10 text-center relative overflow-hidden">
+          
+          {/* Barra de Progresso Fina do Topo */}
+          <div className="absolute top-0 left-0 right-0 h-1 bg-muted">
+            <div 
+              className="h-full bg-blue-600 transition-all duration-700 ease-out" 
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+
+          {/* Ícone de Chave com Badge de Segurança */}
+          <div className="relative mx-auto w-20 h-20 mb-6 flex items-center justify-center rounded-2xl bg-blue-500/10 border border-blue-500/20">
+            <Key className="w-9 h-9 text-blue-600 dark:text-blue-400" />
+            <div className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-1 rounded-full shadow-md">
+              <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
-          <p className="text-xl font-bold text-foreground mb-2">{msgs[msgIndex]}</p>
-          <p className="text-xs text-muted-foreground mt-4">Não feche o aplicativo</p>
+
+          {/* Mensagem Principal */}
+          <div className="h-14 flex items-center justify-center mb-4">
+            <p className="text-base font-semibold text-foreground leading-snug transition-all duration-300">
+              {msgs[msgIndex]}
+            </p>
+          </div>
+
+          {/* ANIMAÇÃO DOS 3 PONTOS AZUES (DOTS LOADING) */}
+          <div className="flex items-center justify-center gap-2.5 my-6">
+            <span className="w-3.5 h-3.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s] shadow-sm shadow-blue-500/50" />
+            <span className="w-3.5 h-3.5 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s] shadow-sm shadow-blue-500/50" />
+            <span className="w-3.5 h-3.5 bg-blue-600 rounded-full animate-bounce shadow-sm shadow-blue-500/50" />
+          </div>
+
+          {/* Subtexto e Indicador "Não feche" */}
+          <div className="pt-4 border-t border-border/60">
+            <p className="text-xs font-medium text-muted-foreground flex items-center justify-center gap-1.5 uppercase tracking-wider">
+              <Lock className="w-3 h-3 text-blue-500 inline" /> Por favor, não feche o aplicativo
+            </p>
+          </div>
+
         </div>
       </div>
     )
@@ -185,7 +224,6 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
       <div className="min-h-screen flex items-center justify-center p-4 bg-background relative">
         <div className="w-full max-w-md">
           
-          {/* CRONÔMETRO DE URGÊNCIA TOPO */}
           <div className="mb-6 p-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-between animate-pulse">
             <div className="flex items-center gap-2 text-red-500">
               <Clock className="w-4 h-4" />
@@ -201,7 +239,7 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
               <CheckCircle className="w-8 h-8 text-green-500" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-1">Chave Criada com Sucesso!</h2>
-            <p className="text-sm text-muted-foreground">Sua chave PIX foi registrada no system</p>
+            <p className="text-sm text-muted-foreground">Sua chave PIX foi registrada no sistema</p>
           </div>
 
           <div className="p-5 rounded-2xl bg-muted/50 border border-border mb-4 space-y-4">
@@ -258,7 +296,6 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
             Voltar ao início
           </button>
 
-          {/* SEÇÃO INFERIOR COM O TRAQUEAMENTO DO PIXEL */}
           <div className="p-5 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 space-y-4 text-center">
             <div className="flex items-center justify-center gap-2 text-yellow-600 dark:text-yellow-500">
               <AlertTriangle className="w-5 h-5" />
@@ -278,7 +315,6 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
 
         </div>
 
-        {/* MODAL DO OLHO COM O TRAQUEAMENTO DO PIXEL */}
         {showRecargaModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-card border border-border w-full max-w-sm rounded-2xl p-6 shadow-2xl relative text-center animate-in zoom-in-95 duration-200">
@@ -308,7 +344,6 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
                 </p>
               )}
               
-              {/* LINHA CORRIGIDA SEM ELEMENTOS QUE QUEBRAM O COMPILADOR */}
               <p className="text-sm text-muted-foreground mb-6 leading-relaxed">
                 Você ainda não ativou o cadastro. Sem realizar a recarga de ativação agora, <strong className="font-semibold text-foreground">não será possível utilizar a conta</strong> e seus dados gerados serão permanentemente desvinculados por segurança. Veja o passo a passo em vídeo imediatamente!
               </p>
