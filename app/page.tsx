@@ -93,7 +93,7 @@ export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen w-full bg-slate-100">
       <AccountMenu
         isOpen={showAccountMenu}
         onClose={() => setShowAccountMenu(false)}
@@ -101,6 +101,7 @@ export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
         userPhone={userPhone}
       />
 
+      {/* Sidebar / Menu */}
       <AppSidebar
         currentView={currentView}
         onViewChange={setCurrentView}
@@ -110,8 +111,9 @@ export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
         onOpenAccountMenu={() => setShowAccountMenu(true)}
       />
 
-      <main className="lg:pl-64 min-h-screen pt-16 lg:pt-0">
-        <div className="p-4 md:p-6 lg:p-8">
+      {/* Main Container sem padding no mobile para preencher a tela inteira */}
+      <main className="w-full lg:pl-64 min-h-screen p-0 m-0">
+        <div className="w-full p-0 md:p-6 lg:p-8">
           {currentView === 'dashboard' && (
             <DashboardView
               userName={userName}
@@ -129,7 +131,7 @@ export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
               userName={userName}
               onAddKey={handleAddKey}
               onBack={() => setCurrentView('dashboard')}
-              vslVersion={vslVersion} // <-- LINHA CORRIGIDA AQUI! Agora o componente recebe a versão.
+              vslVersion={vslVersion}
             />
           )}
 
