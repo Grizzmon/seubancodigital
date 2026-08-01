@@ -56,7 +56,6 @@ export default function RootLayout({
           href="/launchericon-192x192.png"
         />
 
-        {/* Meta Pixel */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
