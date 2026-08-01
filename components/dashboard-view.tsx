@@ -158,150 +158,150 @@ export function DashboardView({
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-slate-50 flex flex-col">
-      {/* Sticky Header - Ocupa 100% da largura */}
-      <div className="sticky top-0 z-40 bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg border-b border-blue-500/20 w-full">
+    <div className="min-h-screen w-full bg-slate-100 flex flex-col justify-start items-stretch">
+      {/* Header Fixo e 100% de largura */}
+      <div className="sticky top-0 z-40 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md border-b border-blue-500/20 w-full">
         <div className="px-4 py-4 w-full">
           <div className="flex items-center justify-between">
             {/* Left Side - Avatar & Name */}
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center font-bold text-white text-base shadow-lg">
+              <div className="w-10 h-10 rounded-full bg-white/20 border border-white/40 flex items-center justify-center font-bold text-white text-sm shadow-sm">
                 {userInitial}
               </div>
               <div className="flex flex-col">
                 <p className="text-white font-bold text-base leading-tight">{firstName}</p>
-                <p className="text-xs text-blue-100">BankPix</p>
+                <p className="text-[11px] text-blue-100 font-medium">BankPix</p>
               </div>
             </div>
 
             {/* Right Side - Icons */}
             <div className="flex items-center gap-1">
-              <button className="p-2.5 rounded-lg hover:bg-white/15 text-white transition-colors duration-200">
-                <Bell className="w-6 h-6" />
+              <button className="p-2 rounded-lg hover:bg-white/15 text-white transition-colors duration-200">
+                <Bell className="w-5 h-5" />
               </button>
-              <button className="p-2.5 rounded-lg hover:bg-white/15 text-white transition-colors duration-200">
-                <Settings className="w-6 h-6" />
+              <button className="p-2 rounded-lg hover:bg-white/15 text-white transition-colors duration-200">
+                <Settings className="w-5 h-5" />
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Sem travas max-w-3xl no mobile */}
+      {/* Main Content Container - Ocupa 100% da tela sem restrições */}
       <div className="flex-1 overflow-y-auto w-full">
-        <div className="px-4 py-6 w-full pb-32 space-y-6">
+        <div className="px-4 py-5 w-full space-y-5 pb-24">
           
-          {/* Balance Card - Premium & Full Width */}
-          <div className="group relative overflow-hidden rounded-[24px] bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white p-6 shadow-xl border border-blue-500/20 transition-all duration-300">
+          {/* Balance Card */}
+          <div className="group relative overflow-hidden rounded-[20px] bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white p-5 shadow-lg border border-blue-500/20">
             {/* Decorative Background */}
-            <div className="absolute top-0 right-0 w-56 h-56 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 opacity-40" />
-            <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/5 rounded-full blur-3xl translate-y-1/2 -translate-x-1/2" />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 opacity-40 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-36 h-36 bg-white/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
-            <div className="relative space-y-6">
+            <div className="relative space-y-5">
               {/* Balance Section */}
               <div className="flex items-end justify-between">
                 <div className="flex-1">
-                  <p className="text-xs font-semibold tracking-widest text-blue-100 uppercase mb-2">Saldo Disponível</p>
-                  <p className="text-4xl font-bold text-white tracking-tight">
+                  <p className="text-[11px] font-semibold tracking-widest text-blue-100 uppercase mb-1.5">Saldo Disponível</p>
+                  <p className="text-3xl font-extrabold text-white tracking-tight">
                     {showBalance ? formatBRL(balance) : 'R$ ••••••'}
                   </p>
                 </div>
                 <button
                   onClick={() => setShowBalance(!showBalance)}
-                  className="p-3 rounded-[14px] bg-white/15 hover:bg-white/25 border border-white/20 text-blue-100 hover:text-white transition-all duration-200 ml-4"
+                  className="p-2.5 rounded-[12px] bg-white/15 hover:bg-white/25 border border-white/20 text-blue-100 hover:text-white transition-all duration-200 ml-3"
                   aria-label="Toggle balance visibility"
                 >
-                  {showBalance ? <Eye size={22} /> : <EyeOff size={22} />}
+                  {showBalance ? <Eye size={20} /> : <EyeOff size={20} />}
                 </button>
               </div>
 
               {/* Currency Conversion */}
-              <div className="bg-white/10 border border-white/20 rounded-[14px] p-4 backdrop-blur-sm">
-                <p className="text-xs text-blue-100 font-medium mb-1.5">Equivalente em Metical</p>
-                <p className="text-2xl font-bold text-white">
-                  {showBalance ? formatMZN(mznBalance) : 'MZN ••••••'}
+              <div className="bg-white/10 border border-white/20 rounded-[12px] p-3.5 backdrop-blur-sm">
+                <p className="text-[11px] text-blue-100 font-medium mb-1">Equivalente em Metical</p>
+                <p className="text-xl font-bold text-white">
+                  {showBalance ? formatMZN(mznBalance) : '0,00 MZN'}
                 </p>
               </div>
 
               {/* Exchange Rate Footer */}
-              <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs text-blue-100">
+              <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-blue-100">
                 <span className="font-medium">Câmbio: 1 BRL = 14,00 MZN</span>
-                <span className="inline-block px-3 py-1.5 bg-white/20 rounded-[8px] font-semibold border border-white/30">
+                <span className="inline-block px-2.5 py-1 bg-white/20 rounded-[6px] font-semibold border border-white/30">
                   Seguro
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Operations Section - Ícones e botões maiores */}
-          <div className="space-y-4">
+          {/* Operations Section */}
+          <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
-              <h3 className="text-xs font-bold text-slate-600 uppercase tracking-widest">Operações Rápidas</h3>
-              <p className="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-full">5 Serviços</p>
+              <h3 className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Operações Rápidas</h3>
+              <p className="text-[10px] font-semibold text-slate-500 bg-slate-200/60 px-2 py-0.5 rounded-full">5 Serviços</p>
             </div>
 
-            {/* Service Grid - Mudado para cols-4 e padding maior para destacar os botões no mobile */}
-            <div className="grid grid-cols-4 gap-3">
-              {/* PIX - Available */}
+            {/* Grid 4 Colunas ajustado */}
+            <div className="grid grid-cols-4 gap-2.5">
+              {/* PIX */}
               <button
                 onClick={() => onNavigate('my-keys')}
-                className="group flex flex-col items-center justify-center p-4 bg-white border-2 border-slate-200 rounded-[20px] hover:border-blue-500 hover:shadow-lg transition-all duration-300 active:scale-95 shadow-sm"
+                className="group flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-[16px] hover:border-blue-500 transition-all duration-200 active:scale-95 shadow-sm"
               >
-                <div className="w-14 h-14 rounded-[16px] bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center text-blue-600 mb-2 group-hover:from-blue-600 group-hover:to-blue-700 group-hover:text-white transition-all duration-300 shadow-sm">
-                  <PixSymbol className="w-6 h-6" />
+                <div className="w-11 h-11 rounded-[12px] bg-blue-50 flex items-center justify-center text-blue-600 mb-1.5 group-hover:bg-blue-600 group-hover:text-white transition-colors duration-200">
+                  <PixSymbol className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-bold text-slate-800 text-center leading-tight group-hover:text-blue-600">PIX</span>
+                <span className="text-[11px] font-bold text-slate-800 text-center leading-tight">PIX</span>
               </button>
 
-              {/* RECARGA - Limited */}
+              {/* RECARGA */}
               <button
                 onClick={handleLimitedFeature}
-                className="group relative flex flex-col items-center justify-center p-4 bg-white border-2 border-slate-200 rounded-[20px] hover:shadow-md transition-all duration-300 active:scale-95 shadow-sm"
+                className="group relative flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-[16px] transition-all duration-200 active:scale-95 shadow-sm"
               >
-                <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full text-white text-xs font-bold flex items-center justify-center border-2 border-white shadow-md">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
                   !
                 </span>
-                <div className="w-14 h-14 rounded-[16px] bg-slate-100 flex items-center justify-center text-slate-400 mb-2 group-hover:bg-slate-200 transition-colors duration-300 shadow-sm">
-                  <Smartphone className="w-6 h-6" />
+                <div className="w-11 h-11 rounded-[12px] bg-slate-100 flex items-center justify-center text-slate-400 mb-1.5">
+                  <Smartphone className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-bold text-slate-600 text-center leading-tight">Recarga</span>
+                <span className="text-[11px] font-bold text-slate-600 text-center leading-tight">Recarga</span>
               </button>
 
-              {/* ENVIAR - Limited */}
+              {/* ENVIAR */}
               <button
                 onClick={handleLimitedFeature}
-                className="group relative flex flex-col items-center justify-center p-4 bg-white border-2 border-slate-200 rounded-[20px] hover:shadow-md transition-all duration-300 active:scale-95 shadow-sm"
+                className="group relative flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-[16px] transition-all duration-200 active:scale-95 shadow-sm"
               >
-                <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full text-white text-xs font-bold flex items-center justify-center border-2 border-white shadow-md">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
                   !
                 </span>
-                <div className="w-14 h-14 rounded-[16px] bg-slate-100 flex items-center justify-center text-slate-400 mb-2 group-hover:bg-slate-200 transition-colors duration-300 shadow-sm">
-                  <Send className="w-6 h-6" />
+                <div className="w-11 h-11 rounded-[12px] bg-slate-100 flex items-center justify-center text-slate-400 mb-1.5">
+                  <Send className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-bold text-slate-600 text-center leading-tight">Enviar</span>
+                <span className="text-[11px] font-bold text-slate-600 text-center leading-tight">Enviar</span>
               </button>
 
-              {/* BOLETO - Limited */}
+              {/* BOLETO */}
               <button
                 onClick={handleLimitedFeature}
-                className="group relative flex flex-col items-center justify-center p-4 bg-white border-2 border-slate-200 rounded-[20px] hover:shadow-md transition-all duration-300 active:scale-95 shadow-sm"
+                className="group relative flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-[16px] transition-all duration-200 active:scale-95 shadow-sm"
               >
-                <span className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 rounded-full text-white text-xs font-bold flex items-center justify-center border-2 border-white shadow-md">
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
                   !
                 </span>
-                <div className="w-14 h-14 rounded-[16px] bg-slate-100 flex items-center justify-center text-slate-400 mb-2 group-hover:bg-slate-200 transition-colors duration-300 shadow-sm">
-                  <FileText className="w-6 h-6" />
+                <div className="w-11 h-11 rounded-[12px] bg-slate-100 flex items-center justify-center text-slate-400 mb-1.5">
+                  <FileText className="w-5 h-5" />
                 </div>
-                <span className="text-xs font-bold text-slate-600 text-center leading-tight">Boleto</span>
+                <span className="text-[11px] font-bold text-slate-600 text-center leading-tight">Boleto</span>
               </button>
             </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="space-y-3 pt-2">
+          <div className="space-y-2.5 pt-1">
             <button
               onClick={() => onNavigate('create-key')}
-              className="w-full flex items-center justify-center gap-3 px-6 py-4.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-[18px] transition-all duration-300 text-base font-bold shadow-lg shadow-blue-600/30 active:scale-95 border border-blue-500/20"
+              className="w-full flex items-center justify-center gap-2.5 px-5 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-[16px] transition-all duration-200 text-sm font-bold shadow-md shadow-blue-600/20 active:scale-95"
             >
               <Plus className="w-5 h-5" />
               <span>Cadastrar Chave PIX</span>
@@ -309,58 +309,58 @@ export function DashboardView({
 
             <button
               onClick={() => onNavigate('withdrawal')}
-              className="w-full flex items-center justify-center gap-3 px-6 py-4.5 bg-white border-2 border-slate-200 text-slate-700 rounded-[18px] hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-300 text-base font-bold shadow-sm active:scale-95"
+              className="w-full flex items-center justify-center gap-2.5 px-5 py-3.5 bg-white border border-slate-200 text-slate-800 rounded-[16px] hover:bg-slate-50 transition-all duration-200 text-sm font-bold shadow-sm active:scale-95"
             >
-              <Banknote className="w-5 h-5" />
+              <Banknote className="w-5 h-5 text-slate-600" />
               <span>Levantar para M-Pesa / e-Mola</span>
             </button>
           </div>
 
           {/* Financial Summary */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-white border border-slate-200 rounded-[18px] p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-emerald-100 to-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-sm">
-                  <ArrowDownLeft className="w-5 h-5" />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white border border-slate-200 rounded-[16px] p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-[10px] bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600">
+                  <ArrowDownLeft className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">Entradas</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Entradas</span>
               </div>
-              <p className="text-2xl font-bold text-slate-900">{showBalance ? formatBRL(income) : '••••'}</p>
+              <p className="text-xl font-bold text-slate-900">{showBalance ? formatBRL(income) : '••••'}</p>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-[18px] p-5 shadow-sm">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-rose-100 to-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shadow-sm">
-                  <ArrowUpRight className="w-5 h-5" />
+            <div className="bg-white border border-slate-200 rounded-[16px] p-4 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-[10px] bg-rose-50 border border-rose-100 flex items-center justify-center text-rose-600">
+                  <ArrowUpRight className="w-4 h-4" />
                 </div>
-                <span className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">Saídas</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Saídas</span>
               </div>
-              <p className="text-2xl font-bold text-slate-900">{showBalance ? formatBRL(totalWithdrawals) : '••••'}</p>
+              <p className="text-xl font-bold text-slate-900">{showBalance ? formatBRL(totalWithdrawals) : '••••'}</p>
             </div>
           </div>
 
           {/* Recent Statement */}
-          <div className="bg-white border border-slate-200 rounded-[22px] p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-5 pb-5 border-b border-slate-100">
-              <div className="flex items-center gap-2.5">
-                <History className="w-5 h-5 text-slate-400" />
-                <h3 className="text-sm font-bold text-slate-900">Extrato Recente</h3>
+          <div className="bg-white border border-slate-200 rounded-[18px] p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <History className="w-4 h-4 text-slate-400" />
+                <h3 className="text-xs font-bold text-slate-900">Extrato Recente</h3>
               </div>
-              <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-[8px] uppercase border border-blue-200">
+              <span className="text-[9px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-[6px] uppercase border border-blue-100">
                 Atualizado
               </span>
             </div>
 
             {transactions.length === 0 ? (
-              <div className="text-center py-12 space-y-4">
+              <div className="text-center py-8 space-y-3">
                 <div className="flex justify-center">
-                  <div className="w-14 h-14 rounded-[14px] bg-slate-100 border border-slate-200 flex items-center justify-center shadow-sm">
-                    <ArrowDownLeft className="w-6 h-6 text-slate-300" />
+                  <div className="w-12 h-12 rounded-[12px] bg-slate-50 border border-slate-200 flex items-center justify-center">
+                    <ArrowDownLeft className="w-5 h-5 text-slate-300" />
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-700">Nenhuma movimentação</p>
-                  <p className="text-xs text-slate-500 mt-1">Suas transações aparecerão aqui</p>
+                  <p className="text-xs font-semibold text-slate-700">Nenhuma movimentação</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5">Suas transações aparecerão aqui</p>
                 </div>
               </div>
             ) : (
@@ -374,26 +374,26 @@ export function DashboardView({
                   const isIncome = tx.type === 'income'
 
                   return (
-                    <div key={tx.id} className={`flex items-center justify-between ${idx === 0 ? '' : 'pt-3'}`}>
-                      <div className="flex items-center gap-3">
+                    <div key={tx.id} className={`flex items-center justify-between ${idx === 0 ? '' : 'pt-2.5'}`}>
+                      <div className="flex items-center gap-2.5">
                         <div
-                          className={`w-10 h-10 rounded-[12px] flex items-center justify-center border shadow-sm ${
+                          className={`w-9 h-9 rounded-[10px] flex items-center justify-center border ${
                             isIncome
-                              ? 'bg-blue-50 border-blue-200 text-blue-600'
-                              : 'bg-slate-100 border-slate-200 text-slate-600'
+                              ? 'bg-blue-50 border-blue-100 text-blue-600'
+                              : 'bg-slate-50 border-slate-200 text-slate-600'
                           }`}
                         >
-                          {isIncome ? <ArrowDownLeft className="w-5 h-5" /> : <ArrowUpRight className="w-5 h-5" />}
+                          {isIncome ? <ArrowDownLeft className="w-4 h-4" /> : <ArrowUpRight className="w-4 h-4" />}
                         </div>
                         <div>
-                          <p className="text-sm font-semibold text-slate-900">
+                          <p className="text-xs font-semibold text-slate-900">
                             {isIncome ? 'Recebimento' : 'Levantamento'}
                           </p>
-                          <p className="text-xs text-slate-500 mt-0.5">{timeStr}</p>
+                          <p className="text-[10px] text-slate-400">{timeStr}</p>
                         </div>
                       </div>
 
-                      <p className={`text-sm font-bold ${isIncome ? 'text-blue-600' : 'text-slate-900'}`}>
+                      <p className={`text-xs font-bold ${isIncome ? 'text-blue-600' : 'text-slate-900'}`}>
                         {isIncome ? '+' : '-'}
                         {formatBRL(tx.amount)}
                       </p>
