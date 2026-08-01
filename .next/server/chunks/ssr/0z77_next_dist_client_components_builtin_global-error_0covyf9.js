@@ -1,0 +1,3 @@
+module.exports=[68625,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(22497);a.n(d("[project]/seubancodigital-main/node_modules/next/dist/client/components/builtin/global-error.js <module evaluation>"))},77197,(a,b,c)=>{let{createClientModuleProxy:d}=a.r(22497);a.n(d("[project]/seubancodigital-main/node_modules/next/dist/client/components/builtin/global-error.js"))},4942,a=>{"use strict";a.i(68625);var b=a.i(77197);a.n(b)},95338,a=>{a.n(a.i(4942))}];
+
+//# sourceMappingURL=0z77_next_dist_client_components_builtin_global-error_0covyf9.js.map

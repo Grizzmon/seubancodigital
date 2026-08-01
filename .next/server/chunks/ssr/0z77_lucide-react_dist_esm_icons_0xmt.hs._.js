@@ -1,0 +1,3 @@
+module.exports=[30009,a=>{"use strict";let b=(0,a.i(30948).default)("circle-check-big",[["path",{d:"M21.801 10A10 10 0 1 1 17 3.335",key:"yps3ct"}],["path",{d:"m9 11 3 3L22 4",key:"1pflzl"}]]);a.s(["CheckCircle",0,b],30009)},71807,a=>{"use strict";let b=(0,a.i(30948).default)("smartphone",[["rect",{width:"14",height:"20",x:"5",y:"2",rx:"2",ry:"2",key:"1yt0o3"}],["path",{d:"M12 18h.01",key:"mhygvu"}]]);a.s(["Smartphone",0,b],71807)}];
+
+//# sourceMappingURL=0z77_lucide-react_dist_esm_icons_0xmt.hs._.js.map
