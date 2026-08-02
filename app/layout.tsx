@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { InstallPrompt } from "@/components/install-prompt";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import ServiceWorkerRegister from "@/components/service-worker-register";
 import "./globals.css";
 
@@ -95,6 +96,7 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         {children}
         <InstallPrompt />
+        <PwaInstallPrompt />
         <Analytics />
       </body>
     </html>
