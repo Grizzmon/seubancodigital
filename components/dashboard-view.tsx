@@ -138,9 +138,10 @@ export function DashboardView({
   const [showBalance, setShowBalance] = useState(true)
   const [showActivationModal, setShowActivationModal] = useState(false)
 
-  const rawFirstName = userName.split(' ')[0] || ''
+  // Tratamento do nome para exibição na saudação
+  const rawFirstName = userName.split(' ')[0] || 'Usuário'
   const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase()
-  const userInitial = rawFirstName.charAt(0).toUpperCase()
+  const userInitial = firstName.charAt(0).toUpperCase()
 
   const mznBalance = convertToMZN(balance)
 
@@ -159,22 +160,24 @@ export function DashboardView({
 
   return (
     <div className="min-h-screen w-full bg-slate-100 flex flex-col justify-start items-stretch">
-      {/* Header Fixo e 100% de largura */}
+      {/* Header Fixo - Topo Azul com "Olá, Nome do Usuário" */}
       <div className="sticky top-0 z-40 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md border-b border-blue-500/20 w-full">
-        <div className="px-4 py-4 w-full">
+        <div className="px-4 py-3.5 w-full">
           <div className="flex items-center justify-between">
-            {/* Left Side - Avatar & Name */}
+            {/* Lado Esquerdo - Avatar com a Inicial e Saudação com Nome */}
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/20 border border-white/40 flex items-center justify-center font-bold text-white text-sm shadow-sm">
+              <div className="w-11 h-11 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center font-extrabold text-white text-lg shadow-sm">
                 {userInitial}
               </div>
               <div className="flex flex-col">
-                <p className="text-white font-bold text-base leading-tight">{firstName}</p>
-                <p className="text-[11px] text-blue-100 font-medium">BankPix</p>
+                <span className="text-[11px] text-blue-100 font-medium leading-none mb-1">Bem-vindo de volta 👋</span>
+                <p className="text-white font-extrabold text-lg leading-tight">
+                  Olá, {firstName}
+                </p>
               </div>
             </div>
 
-            {/* Right Side - Icons */}
+            {/* Lado Direito - Ícones de Notificação e Configurações */}
             <div className="flex items-center gap-1">
               <button className="p-2 rounded-lg hover:bg-white/15 text-white transition-colors duration-200">
                 <Bell className="w-5 h-5" />
