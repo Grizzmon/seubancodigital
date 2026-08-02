@@ -101,17 +101,19 @@ export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
         userPhone={userPhone}
       />
 
-      {/* Sidebar / Menu */}
-      <AppSidebar
-        currentView={currentView}
-        onViewChange={setCurrentView}
-        userName={userName}
-        userPhone={userPhone}
-        onLogout={handleLogout}
-        onOpenAccountMenu={() => setShowAccountMenu(true)}
-      />
+      {/* O AppSidebar agora fica ESCONDIDO no celular e só aparece em telas grandes (hidden lg:block) */}
+      <div className="hidden lg:block">
+        <AppSidebar
+          currentView={currentView}
+          onViewChange={setCurrentView}
+          userName={userName}
+          userPhone={userPhone}
+          onLogout={handleLogout}
+          onOpenAccountMenu={() => setShowAccountMenu(true)}
+        />
+      </div>
 
-      {/* Main Container sem padding no mobile para preencher a tela inteira */}
+      {/* Container principal sem padding ou topo extra no mobile */}
       <main className="w-full lg:pl-64 min-h-screen p-0 m-0">
         <div className="w-full p-0 md:p-6 lg:p-8">
           {currentView === 'dashboard' && (
