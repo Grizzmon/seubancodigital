@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertCircle, Lock, Mail, Hash, Eye, X, PlayCircle, ShieldCheck } from 'lucide-react'
 import { type PixKey } from '@/lib/store'
 
@@ -27,7 +28,6 @@ function generateRandom(): string {
   return `a8f9`
 }
 
-// Formatação padronizada com *** para todos os tipos
 function maskCPF(): string {
   const n1 = Math.floor(Math.random() * 800) + 100
   const end = Math.floor(Math.random() * 80) + 10
@@ -51,6 +51,11 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
   const [msgIndex, setMsgIndex] = useState(0)
   const [result, setResult] = useState<{ name: string; type: string; raw: string; masked: string } | null>(null)
   const [showRecargaModal, setShowRecargaModal] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  // LEITURA DO PARÂMETRO NA URL (?acesso=vip)
+  const searchParams = useSearchParams()
+  const isUnlocked = searchParams.get('acesso') === 'vip'
 
   useEffect(() => {
     if (typeof window !== 'undefined' && !(window as any).fbq) {
@@ -101,6 +106,9 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
       } else if (keyType === 'celular') {
         val = generatePhone()
         masked = maskPhone()
+      } else if (keyType === 'email') {
+        val = `${keyName.toLowerCase().replace(/\s+/g, '')}@gmail.com`
+        masked = `${keyName.slice(0, 2)}***@gmail.com`
       } else {
         val = generateRandom()
         masked = maskRandom()
@@ -109,7 +117,7 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
       const newKey: PixKey = {
         id: `key-${Date.now()}`,
         name: keyName.trim().toUpperCase(),
-        type: keyType === 'email' ? 'cpf' : keyType,
+        type: keyType,
         value: val,
         createdAt: new Date()
       }
@@ -133,7 +141,21 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
     window.location.href = linkDestino;
   }
 
-  // LOADING SCREEN (PONTOS AZUIS + DESIGN LEVE)
+  const handleCopy = async () => {
+    if (!isUnlocked) {
+      setShowRecargaModal(true)
+      return
+    }
+
+    if (result) {
+      const textToCopy = `${result.name}\nCHAVE ${result.type.toUpperCase()}: ${result.raw}\nINSTITUIÇÃO: BANKPIX SSA`
+      await navigator.clipboard.writeText(textToCopy)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    }
+  }
+
+  // LOADING SCREEN
   if (screen === 'loading') {
     const progressPercent = Math.min(100, Math.round(((msgIndex + 1) / msgs.length) * 100))
 
@@ -161,7 +183,6 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
             </p>
           </div>
 
-          {/* Pontos Azuis Animados */}
           <div className="flex items-center justify-center gap-2.5 my-6">
             <span className="w-3 h-3 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]" />
             <span className="w-3 h-3 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]" />
@@ -177,9 +198,9 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
     )
   }
 
-  // SUCCESS SCREEN (ESTILO FINTECH AZUL E BRANCO)
+  // SUCCESS SCREEN
   if (screen === 'success' && result) {
-    const labelType = result.type === 'cpf' ? 'CPF' : result.type === 'celular' ? 'Celular' : 'Aleatória'
+    const labelType = result.type === 'cpf' ? 'CPF' : result.type === 'celular' ? 'Celular' : result.type === 'email' ? 'Email' : 'Aleatória'
 
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50 relative">
@@ -191,13 +212,14 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
               <CheckCircle className="w-8 h-8" />
             </div>
             <h2 className="text-2xl font-bold text-slate-900 mb-1">Chave Registrada!</h2>
-            <p className="text-sm text-slate-500">Sua chave PIX está pronta para ser ativada</p>
+            <p className="text-sm text-slate-500">
+              {isUnlocked ? 'Sua chave PIX está ativa e pronta para uso' : 'Sua chave PIX está pronta para ser ativada'}
+            </p>
           </div>
 
-          {/* CARD AGRUPADO E UNIFICADO */}
+          {/* CARD AGRUPADO */}
           <div className="p-6 rounded-3xl bg-white border border-blue-100 shadow-xl shadow-blue-500/5 mb-6 space-y-4">
             
-            {/* Titular e Instituição Juntos */}
             <div className="pb-4 border-b border-slate-100">
               <span className="text-xs font-medium text-slate-400 uppercase tracking-wider block mb-0.5">Titular</span>
               <h3 className="text-lg font-bold text-slate-900 leading-tight">{result.name}</h3>
@@ -210,26 +232,29 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
               </div>
             </div>
 
-            {/* Linha da Chave (Com *** e Blur Leve) */}
+            {/* Linha da Chave */}
             <div className="flex items-center justify-between pt-1">
               <div className="space-y-1">
                 <span className="text-xs font-medium text-slate-400 uppercase tracking-wider block">
                   Chave ({labelType})
                 </span>
                 
-                {/* Exibição combinada de *** e blur leve [1.5px] */}
                 <div className="flex items-center gap-1 font-mono text-base font-semibold text-slate-800">
-                  <span className="select-none blur-[1.5px] tracking-wider opacity-90">
-                    {result.masked}
+                  <span className={isUnlocked ? 'text-slate-900 font-bold tracking-wider' : 'select-none blur-[1.5px] tracking-wider opacity-90'}>
+                    {isUnlocked ? result.raw : result.masked}
                   </span>
                 </div>
               </div>
 
-              {/* Botão do Olho na Direita */}
+              {/* Olho só abre modal se estiver bloqueado */}
               <button 
                 type="button" 
-                onClick={() => setShowRecargaModal(true)} 
-                className="p-3 rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all active:scale-95 border border-blue-100 shadow-sm"
+                onClick={() => { if (!isUnlocked) setShowRecargaModal(true) }} 
+                className={`p-3 rounded-2xl border shadow-sm transition-all active:scale-95 ${
+                  isUnlocked 
+                    ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-default' 
+                    : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-100'
+                }`}
                 aria-label="Visualizar chave"
               >
                 <Eye className="w-5 h-5" />
@@ -238,13 +263,22 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
 
           </div>
 
-          {/* Botão de Copiar / Ação Principal */}
+          {/* Botão Copiar */}
           <button 
-            onClick={() => setShowRecargaModal(true)} 
+            onClick={handleCopy} 
             className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-semibold mb-3 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98]"
           >
-            <Copy className="w-4 h-4" />
-            Copiar Dados da Chave
+            {copied ? (
+              <>
+                <CheckCircle className="w-4 h-4 text-white" />
+                Copiado com Sucesso!
+              </>
+            ) : (
+              <>
+                <Copy className="w-4 h-4" />
+                Copiar Dados da Chave
+              </>
+            )}
           </button>
 
           <button 
@@ -255,24 +289,26 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
             Voltar ao início
           </button>
 
-          {/* Caixa do Aviso de Ativação */}
-          <div className="p-5 rounded-3xl bg-blue-50/60 border border-blue-100 text-center space-y-3">
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Para ver sua chave, utilizar todos os recursos, receber e fazer saque no Mpesa e Emola veja o vídeo completo e ative sua conta.
-            </p>
-            <button
-              onClick={() => handleRecargaRedirect('botao_inferior_ver_como_ativar')}
-              className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/10 active:scale-[0.98]"
-            >
-              <PlayCircle className="w-4 h-4" />
-              Ver Vídeo e Ativar Conta
-            </button>
-          </div>
+          {/* Caixa do Aviso de Ativação (SÓ EXIBE SE ESTIVER BLOQUEADO) */}
+          {!isUnlocked && (
+            <div className="p-5 rounded-3xl bg-blue-50/60 border border-blue-100 text-center space-y-3">
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Para ver sua chave, utilizar todos os recursos, receber e fazer saque no Mpesa e Emola veja o vídeo completo e ative sua conta.
+              </p>
+              <button
+                onClick={() => handleRecargaRedirect('botao_inferior_ver_como_ativar')}
+                className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/10 active:scale-[0.98]"
+              >
+                <PlayCircle className="w-4 h-4" />
+                Ver Vídeo e Ativar Conta
+              </button>
+            </div>
+          )}
 
         </div>
 
-        {/* MODAL DO OLHO */}
-        {showRecargaModal && (
+        {/* MODAL DO OLHO (SÓ RENDERIZA SE BLOQUEADO) */}
+        {showRecargaModal && !isUnlocked && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
             <div className="bg-white border border-blue-100 w-full max-w-sm rounded-3xl p-6 shadow-2xl relative text-center animate-in zoom-in-95 duration-200">
               
@@ -309,8 +345,8 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
     )
   }
 
-  // EMAIL WARNING SCREEN
-  if (screen === 'email') {
+  // EMAIL WARNING SCREEN (SÓ RENDERIZA SE ESTIVER BLOQUEADO E TENTAR USAR EMAIL)
+  if (screen === 'email' && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
         <div className="w-full max-w-md text-center bg-white p-8 rounded-3xl border border-blue-100 shadow-xl">
@@ -369,12 +405,18 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
                   { t: 'cpf', icon: CreditCard, label: 'CPF' },
                   { t: 'celular', icon: Smartphone, label: 'Celular' },
                   { t: 'aleatorio', icon: Hash, label: 'Aleatória' },
-                  { t: 'email', icon: Mail, label: 'Email', locked: true }
+                  { t: 'email', icon: Mail, label: 'Email', locked: !isUnlocked }
                 ].map(({ t, icon: Icon, label, locked }) => (
                   <button
                     key={t}
                     type="button"
-                    onClick={() => t === 'email' ? setScreen('email') : setKeyType(t as any)}
+                    onClick={() => {
+                      if (t === 'email' && !isUnlocked) {
+                        setScreen('email')
+                      } else {
+                        setKeyType(t as any)
+                      }
+                    }}
                     className={`relative flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
                       keyType === t ? 'border-blue-600 bg-blue-50/50 text-blue-600' : 'border-slate-100 text-slate-500 hover:border-blue-200'
                     }`}
