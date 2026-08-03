@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { ArrowLeft, Key, Copy, CheckCircle, Plus, Eye, X, PlayCircle, ShieldCheck, Lock } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { ArrowLeft, Key, Copy, CheckCircle, Plus, Eye, X, PlayCircle, ShieldCheck, Lock, Unlock } from 'lucide-react'
 import { type PixKey } from '@/lib/store'
 
 interface MyKeysViewProps {
@@ -10,7 +11,7 @@ interface MyKeysViewProps {
   onCreateKey: () => void
 }
 
-// Funções de máscara com os *** padronizados
+// Funções de máscara
 function maskCPF(cpf: string): string {
   const parts = cpf.split('.')
   if (parts.length === 3) {
@@ -36,10 +37,15 @@ function formatDate(date: Date): string {
 export function MyKeysView({ keys, onBack, onCreateKey }: MyKeysViewProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [showActivateModal, setShowActivateModal] = useState(false)
+  
+  // LEITURA DO PARÂMETRO NA URL (?acesso=vip)
+  const searchParams = useSearchParams()
+  const isUnlocked = searchParams.get('acesso') === 'vip' // Altere 'vip' para a palavra/chave que desejar
 
   const handleCopy = async (key: PixKey) => {
-    const maskedValue = key.type === 'cpf' ? maskCPF(key.value) : maskCelular(key.value)
-    const textToCopy = `${key.name}\nCHAVE ${key.type === 'cpf' ? 'CPF' : 'CELULAR'}: ${maskedValue}\nINSTITUIÇÃO: BANKPIX SSA`
+    // Se estiver desbloqueado, copia o valor real, senão copia mascarado
+    const textValue = isUnlocked ? key.value : (key.type === 'cpf' ? maskCPF(key.value) : maskCelular(key.value))
+    const textToCopy = `${key.name}\nCHAVE ${key.type === 'cpf' ? 'CPF' : 'CELULAR'}: ${textValue}\nINSTITUIÇÃO: BANKPIX SSA`
     await navigator.clipboard.writeText(textToCopy)
     setCopiedId(key.id)
     setTimeout(() => setCopiedId(null), 2000)
@@ -52,11 +58,17 @@ export function MyKeysView({ keys, onBack, onCreateKey }: MyKeysViewProps) {
     window.location.href = 'https://loteriasegredo.com/activebankpixaccount/'
   }
 
+  const handleEyeClick = () => {
+    if (!isUnlocked) {
+      setShowActivateModal(true)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 p-4 lg:p-6 pt-12 pb-20">
       
-      {/* MODAL DE ATIVAÇÃO (ESTILO AZUL & BRANCO) */}
-      {showActivateModal && (
+      {/* MODAL DE ATIVAÇÃO */}
+      {showActivateModal && !isUnlocked && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white border border-blue-100 w-full max-w-sm rounded-3xl p-6 shadow-2xl relative text-center animate-in zoom-in-95 duration-200">
             
@@ -144,7 +156,7 @@ export function MyKeysView({ keys, onBack, onCreateKey }: MyKeysViewProps) {
                   key={key.id}
                   className="p-6 rounded-3xl bg-white border border-blue-100 shadow-xl shadow-blue-500/5 space-y-4"
                 >
-                  {/* Topo do Card: Titular e Instituição */}
+                  {/* Topo do Card: Titular e Status */}
                   <div className="pb-3 border-b border-slate-100 flex items-start justify-between">
                     <div>
                       <span className="text-xs font-medium text-slate-400 uppercase tracking-wider block mb-0.5">Titular</span>
@@ -157,22 +169,30 @@ export function MyKeysView({ keys, onBack, onCreateKey }: MyKeysViewProps) {
                       </div>
                     </div>
 
-                    {/* Status Badge */}
-                    <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200">
-                      <Lock className="w-3 h-3 text-slate-500" />
-                      <span className="text-[10px] font-bold text-slate-600 uppercase">Pendente</span>
-                    </div>
+                    {/* Status Badge Dinâmico */}
+                    {isUnlocked ? (
+                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200">
+                        <Unlock className="w-3 h-3 text-emerald-600" />
+                        <span className="text-[10px] font-bold text-emerald-600 uppercase">Ativa</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200">
+                        <Lock className="w-3 h-3 text-slate-500" />
+                        <span className="text-[10px] font-bold text-slate-600 uppercase">Pendente</span>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Linha da Chave Oculta com Blur e Ícone do Olho */}
+                  {/* Linha da Chave */}
                   <div className="flex items-center justify-between pt-1">
                     <div className="space-y-0.5">
                       <span className="text-xs font-medium text-slate-400 uppercase tracking-wider block">
                         Chave ({labelType})
                       </span>
                       <div className="font-mono text-sm font-semibold text-slate-800">
-                        <span className="select-none blur-[1.5px] tracking-wider opacity-90">
-                          {maskedValue}
+                        {/* Se estiver desbloqueado, remove o blur e mostra o valor sem máscara */}
+                        <span className={isUnlocked ? 'tracking-wider text-slate-900 font-bold' : 'select-none blur-[1.5px] tracking-wider opacity-90'}>
+                          {isUnlocked ? key.value : maskedValue}
                         </span>
                       </div>
                       <span className="text-[10px] text-slate-400 block pt-0.5">Criada em: {formatDate(key.createdAt)}</span>
@@ -180,8 +200,12 @@ export function MyKeysView({ keys, onBack, onCreateKey }: MyKeysViewProps) {
 
                     <button 
                       type="button" 
-                      onClick={() => setShowActivateModal(true)} 
-                      className="p-3 rounded-2xl bg-blue-50 text-blue-600 hover:bg-blue-100 transition-all active:scale-95 border border-blue-100 shadow-sm"
+                      onClick={handleEyeClick} 
+                      className={`p-3 rounded-2xl transition-all active:scale-95 border shadow-sm ${
+                        isUnlocked 
+                          ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-default' 
+                          : 'bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-100'
+                      }`}
                       aria-label="Visualizar chave"
                     >
                       <Eye className="w-5 h-5" />
@@ -209,19 +233,21 @@ export function MyKeysView({ keys, onBack, onCreateKey }: MyKeysViewProps) {
               )
             })}
 
-            {/* CAIXA INFERIOR DE AVISO DE ATIVAÇÃO */}
-            <div className="p-5 rounded-3xl bg-blue-50/60 border border-blue-100 text-center space-y-3 mt-6">
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Para ver sua chave, utilizar todos os recursos, receber e fazer saque no Mpesa e Emola veja o vídeo completo e ative sua conta.
-              </p>
-              <button
-                onClick={handleActivateAccount}
-                className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/10 active:scale-[0.98]"
-              >
-                <PlayCircle className="w-4 h-4" />
-                Ver Vídeo e Ativar Conta
-              </button>
-            </div>
+            {/* CAIXA INFERIOR DE AVISO DE ATIVAÇÃO (SÓ APARECE SE TIVER BLOQUEADO) */}
+            {!isUnlocked && (
+              <div className="p-5 rounded-3xl bg-blue-50/60 border border-blue-100 text-center space-y-3 mt-6">
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Para ver sua chave, utilizar todos os recursos, receber e fazer saque no Mpesa e Emola veja o vídeo completo e ative sua conta.
+                </p>
+                <button
+                  onClick={handleActivateAccount}
+                  className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md shadow-blue-600/10 active:scale-[0.98]"
+                >
+                  <PlayCircle className="w-4 h-4" />
+                  Ver Vídeo e Ativar Conta
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
