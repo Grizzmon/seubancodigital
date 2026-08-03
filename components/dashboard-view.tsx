@@ -11,13 +11,15 @@ import {
   History,
   Smartphone,
   Send,
-  Zap,
   FileText,
   Bell,
   Settings,
   AlertCircle,
+  CheckCircle2,
+  X
 } from 'lucide-react'
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { formatBRL, formatMZN, convertToMZN, type PixKey, type Transaction } from '@/lib/store'
 
 // PIX Symbol Component
@@ -29,7 +31,41 @@ function PixSymbol({ className = 'w-6 h-6' }: { className?: string }) {
   )
 }
 
-// Activation Modal - Premium Design
+// Modal PRO Sucesso
+function ProSuccessModal({
+  featureName,
+  onClose,
+}: {
+  featureName: string
+  onClose: () => void
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+      <div className="bg-white rounded-[32px] overflow-hidden max-w-sm w-full shadow-2xl p-8 border border-emerald-100 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+        <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mb-5 shadow-sm">
+          <CheckCircle2 className="w-8 h-8" />
+        </div>
+
+        <h3 className="text-xl font-bold text-slate-900 tracking-tight mb-2">
+          Você é um PRO agora, parabéns! 🎉
+        </h3>
+
+        <p className="text-sm text-slate-500 leading-relaxed mb-6">
+          O recurso de <span className="font-bold text-slate-700">{featureName}</span> está totalmente desbloqueado e ativo na sua conta sem qualquer limitação!
+        </p>
+
+        <button
+          onClick={onClose}
+          className="w-full py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm tracking-wide transition-all shadow-md shadow-emerald-600/20 active:scale-[0.98]"
+        >
+          Continuar aproveitando
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// Activation Modal - Padrão de Bloqueio
 function ActivationModal({
   onClose,
   onActivate,
@@ -56,7 +92,6 @@ function ActivationModal({
 
         {/* Content */}
         <div className="px-6 py-6 space-y-5">
-          {/* Features List */}
           <div className="space-y-3 bg-gradient-to-br from-slate-50 to-slate-100 rounded-[16px] p-4 border border-slate-200">
             <div className="flex items-start gap-3">
               <div className="mt-1 w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -89,7 +124,6 @@ function ActivationModal({
             </div>
           </div>
 
-          {/* Important Notice */}
           <div className="bg-amber-50 border border-amber-200 rounded-[12px] p-3.5">
             <p className="text-xs text-amber-900 font-medium leading-relaxed">
               <span className="font-bold block mb-1">Importante:</span>
@@ -97,7 +131,6 @@ function ActivationModal({
             </p>
           </div>
 
-          {/* Buttons */}
           <div className="flex gap-3 pt-2">
             <button
               onClick={onClose}
@@ -137,8 +170,13 @@ export function DashboardView({
 }: DashboardViewProps) {
   const [showBalance, setShowBalance] = useState(true)
   const [showActivationModal, setShowActivationModal] = useState(false)
+  const [showProModal, setShowProModal] = useState(false)
+  const [selectedFeature, setSelectedFeature] = useState('')
 
-  // Tratamento do nome para exibição na saudação
+  // LEITURA DO PARÂMETRO NA URL (?acesso=vip)
+  const searchParams = useSearchParams()
+  const isUnlocked = searchParams.get('acesso') === 'vip'
+
   const rawFirstName = userName.split(' ')[0] || 'Usuário'
   const firstName = rawFirstName.charAt(0).toUpperCase() + rawFirstName.slice(1).toLowerCase()
   const userInitial = firstName.charAt(0).toUpperCase()
@@ -149,8 +187,13 @@ export function DashboardView({
     .filter((t) => t.type === 'withdrawal')
     .reduce((acc, t) => acc + t.amount, 0)
 
-  const handleLimitedFeature = () => {
-    setShowActivationModal(true)
+  const handleFeatureClick = (featureName: string) => {
+    if (isUnlocked) {
+      setSelectedFeature(featureName)
+      setShowProModal(true)
+    } else {
+      setShowActivationModal(true)
+    }
   }
 
   const handleActivate = () => {
@@ -160,29 +203,35 @@ export function DashboardView({
 
   return (
     <div className="min-h-screen w-full bg-slate-100 flex flex-col justify-start items-stretch">
-      {/* Header Fixo - Topo Azul com "Olá, Nome do Usuário" */}
+      {/* Header Fixo */}
       <div className="sticky top-0 z-40 bg-gradient-to-r from-blue-600 to-blue-700 shadow-md border-b border-blue-500/20 w-full">
         <div className="px-4 py-3.5 w-full">
           <div className="flex items-center justify-between">
-            {/* Lado Esquerdo - Avatar com a Inicial e Saudação com Nome */}
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-full bg-white/20 border-2 border-white/40 flex items-center justify-center font-extrabold text-white text-lg shadow-sm">
                 {userInitial}
               </div>
               <div className="flex flex-col">
-                <span className="text-[11px] text-blue-100 font-medium leading-none mb-1">Bem-vindo de volta 👋</span>
+                <span className="text-[11px] text-blue-100 font-medium leading-none mb-1">
+                  {isUnlocked ? 'Perfil PRO Ativo ✨' : 'Bem-vindo de volta 👋'}
+                </span>
                 <p className="text-white font-extrabold text-lg leading-tight">
                   Olá, {firstName}
                 </p>
               </div>
             </div>
 
-            {/* Lado Direito - Ícones de Notificação e Configurações */}
             <div className="flex items-center gap-1">
-              <button className="p-2 rounded-lg hover:bg-white/15 text-white transition-colors duration-200">
+              <button 
+                onClick={() => handleFeatureClick('Notificações')} 
+                className="p-2 rounded-lg hover:bg-white/15 text-white transition-colors duration-200"
+              >
                 <Bell className="w-5 h-5" />
               </button>
-              <button className="p-2 rounded-lg hover:bg-white/15 text-white transition-colors duration-200">
+              <button 
+                onClick={() => handleFeatureClick('Configurações')} 
+                className="p-2 rounded-lg hover:bg-white/15 text-white transition-colors duration-200"
+              >
                 <Settings className="w-5 h-5" />
               </button>
             </div>
@@ -190,18 +239,16 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* Main Content Container - Ocupa 100% da tela sem restrições */}
+      {/* Main Content */}
       <div className="flex-1 overflow-y-auto w-full">
         <div className="px-4 py-5 w-full space-y-5 pb-24">
           
           {/* Balance Card */}
           <div className="group relative overflow-hidden rounded-[20px] bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800 text-white p-5 shadow-lg border border-blue-500/20">
-            {/* Decorative Background */}
             <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 opacity-40 pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-36 h-36 bg-white/5 rounded-full blur-2xl translate-y-1/2 -translate-x-1/2 pointer-events-none" />
 
             <div className="relative space-y-5">
-              {/* Balance Section */}
               <div className="flex items-end justify-between">
                 <div className="flex-1">
                   <p className="text-[11px] font-semibold tracking-widest text-blue-100 uppercase mb-1.5">Saldo Disponível</p>
@@ -218,7 +265,6 @@ export function DashboardView({
                 </button>
               </div>
 
-              {/* Currency Conversion */}
               <div className="bg-white/10 border border-white/20 rounded-[12px] p-3.5 backdrop-blur-sm">
                 <p className="text-[11px] text-blue-100 font-medium mb-1">Equivalente em Metical</p>
                 <p className="text-xl font-bold text-white">
@@ -226,7 +272,6 @@ export function DashboardView({
                 </p>
               </div>
 
-              {/* Exchange Rate Footer */}
               <div className="pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-blue-100">
                 <span className="font-medium">Câmbio: 1 BRL = 14,00 MZN</span>
                 <span className="inline-block px-2.5 py-1 bg-white/20 rounded-[6px] font-semibold border border-white/30">
@@ -243,9 +288,8 @@ export function DashboardView({
               <p className="text-[10px] font-semibold text-slate-500 bg-slate-200/60 px-2 py-0.5 rounded-full">5 Serviços</p>
             </div>
 
-            {/* Grid 4 Colunas ajustado */}
             <div className="grid grid-cols-4 gap-2.5">
-              {/* PIX */}
+              {/* PIX - Continua livre e navega normalmente */}
               <button
                 onClick={() => onNavigate('my-keys')}
                 className="group flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-[16px] hover:border-blue-500 transition-all duration-200 active:scale-95 shadow-sm"
@@ -258,44 +302,50 @@ export function DashboardView({
 
               {/* RECARGA */}
               <button
-                onClick={handleLimitedFeature}
+                onClick={() => handleFeatureClick('Recarga de Celular')}
                 className="group relative flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-[16px] transition-all duration-200 active:scale-95 shadow-sm"
               >
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
-                  !
-                </span>
-                <div className="w-11 h-11 rounded-[12px] bg-slate-100 flex items-center justify-center text-slate-400 mb-1.5">
+                {!isUnlocked && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
+                    !
+                  </span>
+                )}
+                <div className="w-11 h-11 rounded-[12px] bg-slate-100 flex items-center justify-center text-slate-600 mb-1.5">
                   <Smartphone className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold text-slate-600 text-center leading-tight">Recarga</span>
+                <span className="text-[11px] font-bold text-slate-800 text-center leading-tight">Recarga</span>
               </button>
 
               {/* ENVIAR */}
               <button
-                onClick={handleLimitedFeature}
+                onClick={() => handleFeatureClick('Envio de Valores')}
                 className="group relative flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-[16px] transition-all duration-200 active:scale-95 shadow-sm"
               >
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
-                  !
-                </span>
-                <div className="w-11 h-11 rounded-[12px] bg-slate-100 flex items-center justify-center text-slate-400 mb-1.5">
+                {!isUnlocked && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
+                    !
+                  </span>
+                )}
+                <div className="w-11 h-11 rounded-[12px] bg-slate-100 flex items-center justify-center text-slate-600 mb-1.5">
                   <Send className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold text-slate-600 text-center leading-tight">Enviar</span>
+                <span className="text-[11px] font-bold text-slate-800 text-center leading-tight">Enviar</span>
               </button>
 
               {/* BOLETO */}
               <button
-                onClick={handleLimitedFeature}
+                onClick={() => handleFeatureClick('Pagamento de Boleto')}
                 className="group relative flex flex-col items-center justify-center p-3 bg-white border border-slate-200 rounded-[16px] transition-all duration-200 active:scale-95 shadow-sm"
               >
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
-                  !
-                </span>
-                <div className="w-11 h-11 rounded-[12px] bg-slate-100 flex items-center justify-center text-slate-400 mb-1.5">
+                {!isUnlocked && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full text-white text-[10px] font-bold flex items-center justify-center border-2 border-white">
+                    !
+                  </span>
+                )}
+                <div className="w-11 h-11 rounded-[12px] bg-slate-100 flex items-center justify-center text-slate-600 mb-1.5">
                   <FileText className="w-5 h-5" />
                 </div>
-                <span className="text-[11px] font-bold text-slate-600 text-center leading-tight">Boleto</span>
+                <span className="text-[11px] font-bold text-slate-800 text-center leading-tight">Boleto</span>
               </button>
             </div>
           </div>
@@ -410,11 +460,19 @@ export function DashboardView({
         </div>
       </div>
 
-      {/* Activation Modal */}
+      {/* Modal Padrão de Bloqueio */}
       {showActivationModal && (
         <ActivationModal
           onClose={() => setShowActivationModal(false)}
           onActivate={handleActivate}
+        />
+      )}
+
+      {/* Modal PRO Sucesso */}
+      {showProModal && (
+        <ProSuccessModal
+          featureName={selectedFeature}
+          onClose={() => setShowProModal(false)}
         />
       )}
     </div>
