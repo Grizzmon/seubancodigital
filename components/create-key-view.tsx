@@ -12,36 +12,43 @@ interface CreateKeyViewProps {
   vslVersion?: string
 }
 
+// GERADORES DE DADOS REALISTAS E COMPLETOS (11 DÍGITOS)
 function generateCPF(): string {
-  const n1 = Math.floor(Math.random() * 900) + 100
-  const n2 = Math.floor(Math.random() * 90) + 10
-  return `${n1}.${n2}`
+  const n = () => Math.floor(Math.random() * 9)
+  const n1 = `${n()}${n()}${n()}`
+  const n2 = `${n()}${n()}${n()}`
+  const n3 = `${n()}${n()}${n()}`
+  const d = `${n()}${n()}`
+  return `${n1}.${n2}.${n3}-${d}`
 }
 
 function generatePhone(): string {
   const ddd = ['84', '85', '82', '86', '87'][Math.floor(Math.random() * 5)]
-  const end = Math.floor(Math.random() * 90) + 10
-  return `+258 ${ddd}`
+  const rest = Math.floor(1000000 + Math.random() * 9000000)
+  return `+258 ${ddd} ${String(rest).slice(0, 3)} ${String(rest).slice(3)}`
 }
 
 function generateRandom(): string {
-  return `a8f9`
+  const hex = (len: number) => [...Array(len)].map(() => Math.floor(Math.random() * 16).toString(16)).join('')
+  return `${hex(8)}-${hex(4)}-${hex(4)}-${hex(4)}-${hex(12)}`
 }
 
-function maskCPF(): string {
-  const n1 = Math.floor(Math.random() * 800) + 100
-  const end = Math.floor(Math.random() * 80) + 10
-  return `${n1}.***.***-${end}`
+// MÁSCARAS PADRONIZADAS
+function maskCPF(cpf: string): string {
+  const parts = cpf.split('.')
+  if (parts.length === 3) {
+    const lastPart = parts[2].split('-')
+    return `${parts[0]}.***.***-${lastPart[1]}`
+  }
+  return `${cpf.slice(0, 3)}.***.***-${cpf.slice(-2)}`
 }
 
-function maskPhone(): string {
-  const ddd = ['84', '85', '82', '86', '87'][Math.floor(Math.random() * 5)]
-  const end = Math.floor(Math.random() * 80) + 10
-  return `+258 ${ddd} *** ***${end}`
+function maskPhone(phone: string): string {
+  return `${phone.slice(0, 8)} *** **${phone.slice(-2)}`
 }
 
-function maskRandom(): string {
-  return `a8f9-***-***-2b4c`
+function maskRandom(randomKey: string): string {
+  return `${randomKey.slice(0, 4)}-****-****-${randomKey.slice(-4)}`
 }
 
 export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: CreateKeyViewProps) {
@@ -102,22 +109,22 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
       
       if (keyType === 'cpf') {
         val = generateCPF()
-        masked = maskCPF()
+        masked = maskCPF(val)
       } else if (keyType === 'celular') {
         val = generatePhone()
-        masked = maskPhone()
+        masked = maskPhone(val)
       } else if (keyType === 'email') {
         val = `${keyName.toLowerCase().replace(/\s+/g, '')}@gmail.com`
         masked = `${keyName.slice(0, 2)}***@gmail.com`
       } else {
         val = generateRandom()
-        masked = maskRandom()
+        masked = maskRandom(val)
       }
 
       const newKey: PixKey = {
         id: `key-${Date.now()}`,
         name: keyName.trim().toUpperCase(),
-        type: keyType,
+        type: keyType === 'email' ? 'cpf' : keyType,
         value: val,
         createdAt: new Date()
       }
@@ -246,7 +253,7 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
                 </div>
               </div>
 
-              {/* Olho só abre modal se estiver bloqueado */}
+              {/* Botão do olho */}
               <button 
                 type="button" 
                 onClick={() => { if (!isUnlocked) setShowRecargaModal(true) }} 
@@ -289,7 +296,7 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
             Voltar ao início
           </button>
 
-          {/* Caixa do Aviso de Ativação (SÓ EXIBE SE ESTIVER BLOQUEADO) */}
+          {/* Caixa do Aviso de Ativação (SÓ EXIBE SE BLOQUEADO) */}
           {!isUnlocked && (
             <div className="p-5 rounded-3xl bg-blue-50/60 border border-blue-100 text-center space-y-3">
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -345,7 +352,7 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
     )
   }
 
-  // EMAIL WARNING SCREEN (SÓ RENDERIZA SE ESTIVER BLOQUEADO E TENTAR USAR EMAIL)
+  // EMAIL WARNING SCREEN (SÓ RENDERIZA SE BLOQUEADO)
   if (screen === 'email' && !isUnlocked) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
