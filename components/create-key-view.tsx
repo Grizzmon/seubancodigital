@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertCircle, Lock, Mail, Hash, Eye, X, PlayCircle, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Key, CheckCircle, Copy, Smartphone, CreditCard, AlertCircle, Lock, Mail, Hash, Eye, X, PlayCircle, ShieldCheck, RefreshCw, AlertTriangle } from 'lucide-react'
 import { type PixKey } from '@/lib/store'
 
 interface CreateKeyViewProps {
@@ -11,6 +11,9 @@ interface CreateKeyViewProps {
   onBack: () => void
   vslVersion?: string
 }
+
+// LINK DO CHECKOUT TUTORA (399 MZN)
+const TUTORA_PAY_LINK = "https://pay.tutora.co.mz/e6cc1edc66244aa7b142f8049459b73b"
 
 // GERADORES DE DADOS REALISTAS E COMPLETOS (11 DÍGITOS)
 function generateCPF(): string {
@@ -58,6 +61,7 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
   const [msgIndex, setMsgIndex] = useState(0)
   const [result, setResult] = useState<{ name: string; type: string; raw: string; masked: string } | null>(null)
   const [showRecargaModal, setShowRecargaModal] = useState(false)
+  const [showBacenModal, setShowBacenModal] = useState(false)
   const [copied, setCopied] = useState(false)
 
   // LEITURA DO PARÂMETRO NA URL (?acesso=vip)
@@ -225,7 +229,7 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
           </div>
 
           {/* CARD AGRUPADO */}
-          <div className="p-6 rounded-3xl bg-white border border-blue-100 shadow-xl shadow-blue-500/5 mb-6 space-y-4">
+          <div className="p-6 rounded-3xl bg-white border border-blue-100 shadow-xl shadow-blue-500/5 mb-4 space-y-4">
             
             <div className="pb-4 border-b border-slate-100">
               <span className="text-xs font-medium text-slate-400 uppercase tracking-wider block mb-0.5">Titular</span>
@@ -270,6 +274,25 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
 
           </div>
 
+          {/* CAIXA DE AVISO BACEN (SÓ APARECE NO LINK DESBLOQUEADO ?acesso=vip) */}
+          {isUnlocked && (
+            <div className="p-5 rounded-3xl bg-amber-50/80 border border-amber-200 text-left space-y-3 mb-4 shadow-sm">
+              <div className="flex items-start gap-2.5">
+                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-900 font-medium leading-relaxed">
+                  Caso a sua chave PIX não esteja funcionando, será necessário fazer um update da sua chave com o <span className="font-bold underline">Banco Central do Brasil</span> para garantir a utilização 100% garantida!
+                </p>
+              </div>
+              <button
+                onClick={() => setShowBacenModal(true)}
+                className="w-full py-3 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-amber-500/20 active:scale-[0.98]"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Verificar / Atualizar Chave no BACEN
+              </button>
+            </div>
+          )}
+
           {/* Botão Copiar */}
           <button 
             onClick={handleCopy} 
@@ -296,7 +319,7 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
             Voltar ao início
           </button>
 
-          {/* Caixa do Aviso de Ativação (SÓ EXIBE SE BLOQUEADO) */}
+          {/* Caixa do Aviso de Ativação (SÓ EXIBE SE ESTIVER BLOQUEADO) */}
           {!isUnlocked && (
             <div className="p-5 rounded-3xl bg-blue-50/60 border border-blue-100 text-center space-y-3">
               <p className="text-xs text-slate-600 leading-relaxed">
@@ -313,6 +336,53 @@ export function CreateKeyView({ userName, onAddKey, onBack, vslVersion = "9" }: 
           )}
 
         </div>
+
+        {/* MODAL BACEN 399 MZN (SÓ RENDERIZA SE DESBLOQUEADO) */}
+        {showBacenModal && isUnlocked && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white border border-amber-200 w-full max-w-sm rounded-3xl p-6 shadow-2xl relative text-center animate-in zoom-in-95 duration-200">
+              
+              <button 
+                onClick={() => setShowBacenModal(false)}
+                className="absolute top-4 right-4 p-1 rounded-full text-slate-400 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shadow-inner">
+                <ShieldCheck className="w-7 h-7" />
+              </div>
+
+              <h3 className="text-xl font-bold text-slate-900 mb-2">
+                Ativação & Vinculação BACEN
+              </h3>
+              
+              <p className="text-xs text-slate-600 mb-4 leading-relaxed text-left bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                Para realizar a vinculação oficial da sua chave junto ao Banco Central do Brasil (BACEN) e garantir a funcionalidade definitiva sem bloqueios nas redes M-Pesa e e-Mola, é necessário o pagamento de uma taxa adicional de <span className="font-bold text-slate-900">399 MZN</span>.
+              </p>
+
+              <div className="space-y-2 mb-6 text-left text-xs text-slate-600 font-medium">
+                <p className="flex items-center gap-2 text-emerald-600">
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                  Sincronização imediata no BACEN
+                </p>
+                <p className="flex items-center gap-2 text-emerald-600">
+                  <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                  Garantia de funcionamento definitivo
+                </p>
+              </div>
+
+              <a 
+                href={TUTORA_PAY_LINK}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700 text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/25 transition-all active:scale-[0.98] text-sm"
+              >
+                Continuar e Pagar 399 MZN
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* MODAL DO OLHO (SÓ RENDERIZA SE BLOQUEADO) */}
         {showRecargaModal && !isUnlocked && (
