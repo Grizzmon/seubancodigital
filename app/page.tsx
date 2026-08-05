@@ -47,7 +47,6 @@ export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
   // DISPARO DE COMPRA E E-MAIL QUANDO ACESSAR PELO LINK DESBLOQUEADO
   useEffect(() => {
     if (isLoggedIn && isUnlocked) {
-      // 1. Dispara evento Purchase no Facebook Pixel
       if (typeof window !== 'undefined' && window.fbq) {
         window.fbq('track', 'Purchase', { 
           value: 399, 
@@ -55,7 +54,6 @@ export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
         })
       }
 
-      // 2. Chama a API de envio de e-mail em segundo plano
       fetch('/api/send-email', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,7 +134,6 @@ export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
         userPhone={userPhone}
       />
 
-      {/* O AppSidebar fica escondido no celular e só aparece em telas grandes */}
       <div className="hidden lg:block">
         <AppSidebar
           currentView={currentView}
@@ -148,7 +145,6 @@ export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
         />
       </div>
 
-      {/* Container principal sem padding ou topo extra no mobile */}
       <main className="w-full lg:pl-64 min-h-screen p-0 m-0">
         <div className="w-full p-0 md:p-6 lg:p-8">
           {currentView === 'dashboard' && (
