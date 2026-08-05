@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { LoginScreen } from '@/components/login-screen'
 import { AppSidebar } from '@/components/app-sidebar'
@@ -29,7 +29,7 @@ interface UserData {
   transactions: Transaction[]
 }
 
-export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
+function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userName, setUserName] = useState('')
   const [userPhone, setUserPhone] = useState('')
@@ -44,7 +44,7 @@ export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
   const searchParams = useSearchParams()
   const isUnlocked = searchParams.get('acesso') === 'vip'
 
-  // DISPARO DE COMPRA E E-MAIL QUANDO ACESSAR PELO LINK DESBLOQUEADO
+  // DISPARO DE COMPRA E E-MAIL NO MODO VIP
   useEffect(() => {
     if (isLoggedIn && isUnlocked) {
       if (typeof window !== 'undefined' && window.fbq) {
@@ -186,5 +186,13 @@ export default function Home({ vslVersion = "9" }: { vslVersion?: string }) {
         </div>
       </main>
     </div>
+  )
+}
+
+export default function Home(props: { vslVersion?: string }) {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-100 flex items-center justify-center">Carregando...</div>}>
+      <MainApp {...props} />
+    </Suspense>
   )
 }
