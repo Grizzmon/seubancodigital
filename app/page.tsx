@@ -44,9 +44,10 @@ function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
   const searchParams = useSearchParams()
   const isUnlocked = searchParams.get('acesso') === 'vip'
 
-  // DISPARO DE COMPRA E E-MAIL NO MODO VIP
+  // DISPARO IMEDIATO AO ENTRAR NO LINK VIP (NÃO ESPERA LOGIN)
   useEffect(() => {
-    if (isLoggedIn && isUnlocked) {
+    if (isUnlocked) {
+      // 1. Dispara o evento de Purchase no Facebook Pixel
       if (typeof window !== 'undefined' && window.fbq) {
         window.fbq('track', 'Purchase', { 
           value: 399, 
@@ -54,17 +55,17 @@ function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
         })
       }
 
+      // 2. Dispara a API de e-mail de compra imediatamente
       fetch('/api/send-email', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          user: userName, 
-          phone: userPhone, 
-          status: 'VIP_UNLOCKED' 
+          accessType: 'VIP_UNLOCKED',
+          timestamp: new Date().toISOString()
         })
-      }).catch(() => {})
+      }).catch((err) => console.error("Erro ao enviar e-mail:", err))
     }
-  }, [isLoggedIn, isUnlocked, userName, userPhone])
+  }, [isUnlocked])
 
   useEffect(() => {
     if (isLoggedIn && userPhone) {
