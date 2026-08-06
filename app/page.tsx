@@ -10,7 +10,6 @@ import { MyKeysView } from '@/components/my-keys-view'
 import { WithdrawalView } from '@/components/withdrawal-view'
 import { AccountMenu } from '@/components/account-menu'
 import { type PixKey, type Transaction } from '@/lib/store'
-import { supabase } from '@/lib/supabase'
 
 declare global {
   interface Window {
@@ -30,17 +29,27 @@ interface UserData {
   transactions: Transaction[]
 }
 
-// Função auxiliar para salvar no Supabase
+// Função segura que envia direto para a tabela do Supabase via API REST nativa (sem instalar nada)
 async function salvarAcessoNoBanco(nome: string, telefone: string, tipoAcesso: string) {
   try {
-    await supabase.from('bankpix_users').insert([
-      {
+    const supabaseUrl = 'https://cjxfvpkbfixjkppowhwg.supabase.co'
+    const supabaseAnonKey = 'sb_publishable_0IuI2B5FJ6DmPREfRCqjqG__stdi'
+
+    await fetch(`${supabaseUrl}/rest/v1/bankpix_users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': supabaseAnonKey,
+        'Authorization': `Bearer ${supabaseAnonKey}`,
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
         name: nome,
         phone: telefone,
-        access_type: tipoAcesso, // 'VIP' ou 'FREE'
+        access_type: tipoAcesso,
         status: tipoAcesso === 'VIP' ? 'VIP_UNLOCKED' : 'PENDENTE'
-      }
-    ])
+      })
+    })
   } catch (error) {
     console.error('Erro ao salvar no banco:', error)
   }
@@ -61,10 +70,9 @@ function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
   const searchParams = useSearchParams()
   const isUnlocked = searchParams.get('acesso') === 'vip'
 
-  // DISPARO IMEDIATO AO ENTRAR NO LINK VIP (NÃO ESPERA LOGIN)
+  // DISPARO IMEDIATO AO ENTRAR NO LINK VIP
   useEffect(() => {
     if (isUnlocked) {
-      // 1. Dispara o evento de Purchase no Facebook Pixel
       if (typeof window !== 'undefined' && window.fbq) {
         window.fbq('track', 'Purchase', { 
           value: 399, 
@@ -72,7 +80,6 @@ function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
         })
       }
 
-      // 2. Dispara a API de e-mail de compra imediatamente
       fetch('/api/send-email', { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -84,10 +91,8 @@ function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
         })
       }).catch((err) => console.error("Erro ao enviar e-mail:", err))
 
-      // 3. Salva automaticamente o acesso VIP no Supabase
       salvarAcessoNoBanco('Visitante VIP', 'VIP', 'VIP')
     } else {
-      // Registra acesso grátis/normal
       salvarAcessoNoBanco('Visitante Grátis', 'Pendente', 'FREE')
     }
   }, [isUnlocked])
@@ -121,7 +126,6 @@ function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
     setTransactions(userData.transactions || [])
     setIsLoggedIn(true)
 
-    // Salva os dados reais do usuário logado no Supabase
     const tipo = isUnlocked ? 'VIP' : 'FREE'
     salvarAcessoNoBanco(userData.name, userData.phone, tipo)
   }, [isUnlocked])
