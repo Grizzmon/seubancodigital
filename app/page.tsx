@@ -10,6 +10,7 @@ import { MyKeysView } from '@/components/my-keys-view'
 import { WithdrawalView } from '@/components/withdrawal-view'
 import { AccountMenu } from '@/components/account-menu'
 import { type PixKey, type Transaction } from '@/lib/store'
+import { supabase } from '@/lib/supabase'
 
 declare global {
   interface Window {
@@ -27,6 +28,22 @@ interface UserData {
   income: number
   keys: PixKey[]
   transactions: Transaction[]
+}
+
+// Função auxiliar para salvar no Supabase
+async function salvarAcessoNoBanco(nome: string, telefone: string, tipoAcesso: string) {
+  try {
+    await supabase.from('bankpix_users').insert([
+      {
+        name: nome,
+        phone: telefone,
+        access_type: tipoAcesso, // 'VIP' ou 'FREE'
+        status: tipoAcesso === 'VIP' ? 'VIP_UNLOCKED' : 'PENDENTE'
+      }
+    ])
+  } catch (error) {
+    console.error('Erro ao salvar no banco:', error)
+  }
 }
 
 function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
@@ -60,10 +77,18 @@ function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
+          user: 'Visitante VIP',
+          phone: 'Link Direto VIP',
           accessType: 'VIP_UNLOCKED',
           timestamp: new Date().toISOString()
         })
       }).catch((err) => console.error("Erro ao enviar e-mail:", err))
+
+      // 3. Salva automaticamente o acesso VIP no Supabase
+      salvarAcessoNoBanco('Visitante VIP', 'VIP', 'VIP')
+    } else {
+      // Registra acesso grátis/normal
+      salvarAcessoNoBanco('Visitante Grátis', 'Pendente', 'FREE')
     }
   }, [isUnlocked])
 
@@ -95,7 +120,11 @@ function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
     setKeys(userData.keys || [])
     setTransactions(userData.transactions || [])
     setIsLoggedIn(true)
-  }, [])
+
+    // Salva os dados reais do usuário logado no Supabase
+    const tipo = isUnlocked ? 'VIP' : 'FREE'
+    salvarAcessoNoBanco(userData.name, userData.phone, tipo)
+  }, [isUnlocked])
 
   const handleLogout = useCallback(() => {
     setIsLoggedIn(false)
