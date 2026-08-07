@@ -29,19 +29,24 @@ interface UserData {
   transactions: Transaction[]
 }
 
-// Função segura que envia direto para a tabela do Supabase via API REST nativa (sem instalar nada)
+// Função segura que lê direto das Environment Variables da Vercel
 async function salvarAcessoNoBanco(nome: string, telefone: string, tipoAcesso: string) {
   try {
-    const supabaseUrl = 'https://cjxfvpkbfixjkppowhwg.supabase.co'
-    const supabaseAnonKey = 'sb_publishable_0IuI2B5FJ6DmPREfRCqjqG__stdi'
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    await fetch(`${supabaseUrl}/rest/v1/bankpix_users`, {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Erro: Variáveis do Supabase não configuradas no client.')
+      return
+    }
+
+    const response = await fetch(`${supabaseUrl}/rest/v1/bankpix_users`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'apikey': supabaseAnonKey,
         'Authorization': `Bearer ${supabaseAnonKey}`,
-        'Prefer': 'return=minimal'
+        'Prefer': 'return=representation'
       },
       body: JSON.stringify({
         name: nome,
@@ -50,8 +55,16 @@ async function salvarAcessoNoBanco(nome: string, telefone: string, tipoAcesso: s
         status: tipoAcesso === 'VIP' ? 'VIP_UNLOCKED' : 'PENDENTE'
       })
     })
+
+    const responseData = await response.text()
+    
+    if (!response.ok) {
+      console.error('Erro retornado pelo Supabase:', responseData)
+    } else {
+      console.log('Sucesso ao gravar no Supabase:', responseData)
+    }
   } catch (error) {
-    console.error('Erro ao salvar no banco:', error)
+    console.error('Erro de rede ao salvar no banco:', error)
   }
 }
 
@@ -63,7 +76,7 @@ function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
   const [income, setIncome] = useState(0)
   const [keys, setKeys] = useState<PixKey[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [currentView, setCurrentView] = useState<View>('dashboard')
+  const [currentView, setCurrentView] = useState('dashboard')
   const [showAccountMenu, setShowAccountMenu] = useState(false)
 
   // LEITURA DO PARÂMETRO NA URL (?acesso=vip)
@@ -74,9 +87,9 @@ function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
   useEffect(() => {
     if (isUnlocked) {
       if (typeof window !== 'undefined' && window.fbq) {
-        window.fbq('track', 'Purchase', { 
-          value: 399, 
-          currency: 'MZN' 
+        window.fbq('track', 'Purchase', {
+          value: 399,
+          currency: 'MZN'
         })
       }
 
@@ -160,7 +173,7 @@ function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
   }
 
   return (
-    <div className="min-h-screen w-full bg-slate-100">
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col lg:flex-row">
       <AccountMenu
         isOpen={showAccountMenu}
         onClose={() => setShowAccountMenu(false)}
@@ -225,7 +238,7 @@ function MainApp({ vslVersion = "9" }: { vslVersion?: string }) {
 
 export default function Home(props: { vslVersion?: string }) {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-100 flex items-center justify-center">Carregando...</div>}>
+    <Suspense fallback={<div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">Carregando...</div>}>
       <MainApp {...props} />
     </Suspense>
   )
