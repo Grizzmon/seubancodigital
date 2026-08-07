@@ -23,6 +23,8 @@ interface UserData {
   transactions: Transaction[]
 }
 
+const VIP_PAGE_MARKER = 'vip'
+
 async function salvarAcessoNoBanco(
   nome: string,
   telefone: string,
@@ -103,17 +105,19 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
   const [income, setIncome] = useState(0)
   const [keys, setKeys] = useState<PixKey[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [currentView, setCurrentView] =
-    useState<View>('dashboard')
-  const [showAccountMenu, setShowAccountMenu] =
-    useState(false)
+  const [currentView, setCurrentView] = useState<View>('dashboard')
+  const [showAccountMenu, setShowAccountMenu] = useState(false)
 
   const searchParams = useSearchParams()
-  const isUnlocked =
-    searchParams.get('acesso') === 'vip'
+  const isUnlocked = searchParams.get('acesso') === 'vip'
 
   useEffect(() => {
-    if (!isUnlocked) {
+    const url = new URL(window.location.href)
+    const isVipPage =
+      url.pathname.toLowerCase().includes('/vip') ||
+      url.searchParams.get('acesso') === 'vip'
+
+    if (!isVipPage) {
       void salvarAcessoNoBanco(
         'Visitante Grátis',
         'Pendente',
@@ -122,15 +126,31 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
       return
     }
 
-    const notificationKey = 'vip-email-notified'
+    const visitKey = `vip-visit-notified:${url.pathname}`
+    if (!sessionStorage.getItem(visitKey)) {
+      sessionStorage.setItem(visitKey, 'true')
 
-    if (sessionStorage.getItem(notificationKey)) {
-      return
+      void fetch('/api/notify-visit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          pageType: VIP_PAGE_MARKER,
+          url: window.location.href,
+          referrer: document.referrer,
+          userAgent: navigator.userAgent,
+        }),
+      }).catch((error) => {
+        console.error('[v0] Erro ao enviar alerta VIP:', error)
+      })
     }
 
-    sessionStorage.setItem(notificationKey, 'true')
-
-    void enviarNotificacaoVip()
+    const notificationKey = 'vip-email-notified'
+    if (!sessionStorage.getItem(notificationKey)) {
+      sessionStorage.setItem(notificationKey, 'true')
+      void enviarNotificacaoVip()
+    }
 
     void salvarAcessoNoBanco(
       'Visitante VIP',
