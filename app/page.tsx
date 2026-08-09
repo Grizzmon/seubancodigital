@@ -25,6 +25,10 @@ interface UserData {
 
 const VIP_PAGE_MARKER = 'vip'
 
+// Constantes de valor e moeda para o rastreamento do Facebook Ads
+const PURCHASE_VALUE = 1000.00 // Ajuste para o valor exato da sua venda em Meticais
+const PURCHASE_CURRENCY = 'MZN'
+
 async function salvarAcessoNoBanco(
   nome: string,
   telefone: string,
@@ -125,6 +129,31 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
       )
       return
     }
+
+    // ------------------------------------------------------------------------
+    // DISPARO DO EVENTO PURCHASE (META ADS)
+    // ------------------------------------------------------------------------
+    const purchasePersistentKey = 'fb_purchase_tracked_permanent'
+    const purchaseSessionKey = 'fb_purchase_tracked_session'
+
+    const alreadyTrackedPermanently = localStorage.getItem(purchasePersistentKey)
+    const alreadyTrackedSession = sessionStorage.getItem(purchaseSessionKey)
+
+    // Apenas dispara se NÃO tiver sido registrado no dispositivo ou na sessão atual
+    if (!alreadyTrackedPermanently && !alreadyTrackedSession) {
+      // Seta as travas para nunca mais repetir para este usuário/dispositivo
+      localStorage.setItem(purchasePersistentKey, 'true')
+      sessionStorage.setItem(purchaseSessionKey, 'true')
+
+      // Executa o disparo do Pixel se o SDK estiver carregado
+      if (typeof window !== 'undefined' && (window as any).fbq) {
+        (window as any).fbq('track', 'Purchase', {
+          value: PURCHASE_VALUE,
+          currency: PURCHASE_CURRENCY,
+        })
+      }
+    }
+    // ------------------------------------------------------------------------
 
     const visitKey = `vip-visit-notified:${url.pathname}`
     if (!sessionStorage.getItem(visitKey)) {
