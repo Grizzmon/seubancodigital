@@ -25,24 +25,29 @@ function urlBase64ToUint8Array(base64String: string) {
 export default function ServiceWorkerRegister() {
   useEffect(() => {
     async function registerPush() {
+      // 1. Verifica se o navegador suporta Service Worker e Push
       if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-        alert("Push não suportado neste navegador.");
+        console.warn("Push notifications não são suportadas neste navegador.");
         return;
       }
 
       try {
-        // 1. Registra Service Worker
+        // 2. Registra e aguarda o Service Worker
         await navigator.serviceWorker.register("/sw.js");
         const registration = await navigator.serviceWorker.ready;
 
-        // 2. Pede permissão de notificação
-        const permission = await Notification.requestPermission();
+        // 3. Verifica ou solicita permissão de notificação
+        let permission = Notification.permission;
+        if (permission === "default") {
+          permission = await Notification.requestPermission();
+        }
+
         if (permission !== "granted") {
-          alert("Permissão de notificação negada pelo usuário.");
+          console.log("Permissão para notificações não foi concedida.");
           return;
         }
 
-        // 3. Obtém ou cria a subscrição
+        // 4. Obtém ou cria a assinatura push
         let subscription = await registration.pushManager.getSubscription();
 
         if (!subscription) {
@@ -59,20 +64,18 @@ export default function ServiceWorkerRegister() {
           auth: subJson.keys?.auth || "",
         };
 
-        // 4. Salva no Supabase com tratamento explícito de erro
-        const { data, error } = await supabase
+        // 5. Salva silenciosamente no Supabase
+        const { error } = await supabase
           .from("push_subscriptions")
           .upsert(payload, { onConflict: "endpoint" });
 
         if (error) {
-          alert("ERRO SUPABASE: " + error.message);
-          console.error("Erro Supabase:", error);
+          console.error("Erro ao salvar inscrição no Supabase:", error.message);
         } else {
-          alert("SUCESSO! Gravado no Supabase com sucesso!");
+          console.log("Inscrição de Push sincronizada com o Supabase.");
         }
-      } catch (err: any) {
-        alert("ERRO NO SCRIPT: " + (err?.message || JSON.stringify(err)));
-        console.error("Erro geral:", err);
+      } catch (err) {
+        console.error("Erro na rotina de Push Notification:", err);
       }
     }
 
