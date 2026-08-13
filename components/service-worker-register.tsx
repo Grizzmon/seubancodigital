@@ -24,46 +24,59 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export default function ServiceWorkerRegister() {
   useEffect(() => {
-    async function initPushNotification() {
+    async function registerPush() {
       if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-        console.warn("Push notifications não são suportadas neste navegador.");
+        alert("Push não suportado neste navegador.");
         return;
       }
 
       try {
+        // 1. Registra Service Worker
         await navigator.serviceWorker.register("/sw.js");
         const registration = await navigator.serviceWorker.ready;
 
+        // 2. Pede permissão de notificação
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") {
+          alert("Permissão de notificação negada pelo usuário.");
+          return;
+        }
+
+        // 3. Obtém ou cria a subscrição
         let subscription = await registration.pushManager.getSubscription();
 
-        if (!subscription && Notification.permission === "granted") {
+        if (!subscription) {
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
           });
         }
 
-        if (subscription) {
-          const subJson = subscription.toJSON();
+        const subJson = subscription.toJSON();
+        const payload = {
+          endpoint: subscription.endpoint,
+          p256dh: subJson.keys?.p256dh || "",
+          auth: subJson.keys?.auth || "",
+        };
 
-          await supabase.from("push_subscriptions").upsert(
-            {
-              endpoint: subscription.endpoint,
-              p256dh: subJson.keys?.p256dh || "",
-              auth: subJson.keys?.auth || "",
-            },
-            { onConflict: "endpoint" }
-          );
+        // 4. Salva no Supabase com tratamento explícito de erro
+        const { data, error } = await supabase
+          .from("push_subscriptions")
+          .upsert(payload, { onConflict: "endpoint" });
 
-          // Alerta temporário de confirmação para testes
-          alert("Dispositivo registrado para notificações!");
+        if (error) {
+          alert("ERRO SUPABASE: " + error.message);
+          console.error("Erro Supabase:", error);
+        } else {
+          alert("SUCESSO! Gravado no Supabase com sucesso!");
         }
-      } catch (err) {
-        console.error("Erro ao registrar Push Notification:", err);
+      } catch (err: any) {
+        alert("ERRO NO SCRIPT: " + (err?.message || JSON.stringify(err)));
+        console.error("Erro geral:", err);
       }
     }
 
-    initPushNotification();
+    registerPush();
   }, []);
 
   return null;
