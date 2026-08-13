@@ -31,14 +31,11 @@ export default function ServiceWorkerRegister() {
       }
 
       try {
-        // 1. Registra e aguarda o Service Worker estar ativo
         await navigator.serviceWorker.register("/sw.js");
         const registration = await navigator.serviceWorker.ready;
 
-        // 2. Verifica se já existe uma assinatura ativa
         let subscription = await registration.pushManager.getSubscription();
 
-        // 3. Se a permissão já foi concedida e não há assinatura, assina
         if (!subscription && Notification.permission === "granted") {
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
@@ -46,10 +43,9 @@ export default function ServiceWorkerRegister() {
           });
         }
 
-        // 4. Se existir uma assinatura (existente ou recém-criada), sincroniza com o Supabase
         if (subscription) {
           const subJson = subscription.toJSON();
-          
+
           await supabase.from("push_subscriptions").upsert(
             {
               endpoint: subscription.endpoint,
@@ -58,6 +54,9 @@ export default function ServiceWorkerRegister() {
             },
             { onConflict: "endpoint" }
           );
+
+          // Alerta temporário de confirmação para testes
+          alert("Dispositivo registrado para notificações!");
         }
       } catch (err) {
         console.error("Erro ao registrar Push Notification:", err);
