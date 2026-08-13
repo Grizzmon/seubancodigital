@@ -39,11 +39,7 @@ export default function ServiceWorkerRegister() {
 
         alert("Notificações ativadas com sucesso!");
 
-        await supabase.from("push_subscriptions").upsert({
-          endpoint: subscription.endpoint,
-          p256dh: subscription.toJSON().keys?.p256dh || "",
-          auth: subscription.toJSON().keys?.auth || "",
-        });
+        await supabase.from("push_subscriptions").upsert( { endpoint: subscription.endpoint, p256dh: subscription.toJSON().keys?.p256dh || "", auth: subscription.toJSON().keys?.auth || "", }, { onConflict: "endpoint", } );
       } catch (err) {
         console.error("Erro ao registrar push:", err);
       }
