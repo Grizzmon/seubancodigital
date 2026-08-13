@@ -25,14 +25,12 @@ interface UserData {
 
 const VIP_PAGE_MARKER = 'vip'
 
-// Constantes de valor e moeda para o rastreamento do Facebook Ads
-const PURCHASE_VALUE = 1000.00 // Ajuste para o valor exato da sua venda em Meticais
-const PURCHASE_CURRENCY = 'MZN'
-
-async function salvarAcessoNoBanco(
-  nome: string,
+// Função para salvar ou atualizar o usuário REAL cadastrado no banco
+async function salvarUsuarioRealNoBanco(
+  fullName: string,
   telefone: string,
-  tipoAcesso: string,
+  tipoPlano: 'free' | 'vip',
+  pushAtivo: boolean = false
 ) {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -43,6 +41,9 @@ async function salvarAcessoNoBanco(
       return
     }
 
+    // Extrai apenas o primeiro nome para a notificação personalizada ("Marcos, você...")
+    const firstName = fullName.trim().split(' ')[0] || 'Visitante'
+
     const response = await fetch(
       `${supabaseUrl}/rest/v1/bankpix_users`,
       {
@@ -51,25 +52,21 @@ async function salvarAcessoNoBanco(
           'Content-Type': 'application/json',
           apikey: supabaseAnonKey,
           Authorization: `Bearer ${supabaseAnonKey}`,
-          Prefer: 'return=representation',
+          Prefer: 'resolution=merge-duplicates,return=representation',
         },
         body: JSON.stringify({
-          name: nome,
+          first_name: firstName,
           phone: telefone,
-          access_type: tipoAcesso,
-          status:
-            tipoAcesso === 'VIP'
-              ? 'VIP_UNLOCKED'
-              : 'PENDENTE',
+          plan: tipoPlano,
+          push_enabled: pushAtivo,
+          status: tipoPlano === 'vip' ? 'VIP_UNLOCKED' : 'PENDENTE',
+          vip_activated_at: tipoPlano === 'vip' ? new Date().toISOString() : null
         }),
       },
     )
 
     if (!response.ok) {
-      console.error(
-        'Erro ao salvar acesso:',
-        await response.text(),
-      )
+      console.error('Erro ao salvar usuário real:', await response.text())
     }
   } catch (error) {
     console.error('Erro de conexão com o banco:', error)
@@ -94,10 +91,7 @@ async function enviarNotificacaoVip() {
       }),
     })
   } catch (error) {
-    console.error(
-      'Erro ao enviar notificação VIP:',
-      error,
-    )
+    console.error('Erro ao enviar notificação VIP:', error)
   }
 }
 
@@ -113,47 +107,15 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
   const [showAccountMenu, setShowAccountMenu] = useState(false)
 
   const searchParams = useSearchParams()
-  const isUnlocked = searchParams.get('acesso') === 'vip'
+  const isUnlocked = searchParams.get('acesso') === 'vip' || searchParams.get('plano') === 'vip'
+  const planoAtual = isUnlocked ? 'vip' : 'free'
 
   useEffect(() => {
     const url = new URL(window.location.href)
     const isVipPage =
-      url.pathname.toLowerCase().includes('/vip') ||
-      url.searchParams.get('acesso') === 'vip'
+      url.pathname.toLowerCase().includes('/vip') || isUnlocked
 
-    if (!isVipPage) {
-      void salvarAcessoNoBanco(
-        'Visitante Grátis',
-        'Pendente',
-        'FREE',
-      )
-      return
-    }
-
-    // ------------------------------------------------------------------------
-    // DISPARO DO EVENTO PURCHASE (META ADS)
-    // ------------------------------------------------------------------------
-    const purchasePersistentKey = 'fb_purchase_tracked_permanent'
-    const purchaseSessionKey = 'fb_purchase_tracked_session'
-
-    const alreadyTrackedPermanently = localStorage.getItem(purchasePersistentKey)
-    const alreadyTrackedSession = sessionStorage.getItem(purchaseSessionKey)
-
-    // Apenas dispara se NÃO tiver sido registrado no dispositivo ou na sessão atual
-    if (!alreadyTrackedPermanently && !alreadyTrackedSession) {
-      // Seta as travas para nunca mais repetir para este usuário/dispositivo
-      localStorage.setItem(purchasePersistentKey, 'true')
-      sessionStorage.setItem(purchaseSessionKey, 'true')
-
-      // Executa o disparo do Pixel se o SDK estiver carregado
-      if (typeof window !== 'undefined' && (window as any).fbq) {
-        (window as any).fbq('track', 'Purchase', {
-          value: PURCHASE_VALUE,
-          currency: PURCHASE_CURRENCY,
-        })
-      }
-    }
-    // ------------------------------------------------------------------------
+    if (!isVipPage) return
 
     const visitKey = `vip-visit-notified:${url.pathname}`
     if (!sessionStorage.getItem(visitKey)) {
@@ -180,12 +142,6 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
       sessionStorage.setItem(notificationKey, 'true')
       void enviarNotificacaoVip()
     }
-
-    void salvarAcessoNoBanco(
-      'Visitante VIP',
-      'VIP',
-      'VIP',
-    )
   }, [isUnlocked])
 
   useEffect(() => {
@@ -201,28 +157,14 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
       transactions,
     }
 
-    const savedUser = localStorage.getItem(
-      `bankpix_user_${userPhone}`,
-    )
-
+    const savedUser = localStorage.getItem(`bankpix_user_${userPhone}`)
     if (savedUser) {
       const existingData = JSON.parse(savedUser)
       userData.password = existingData.password
     }
 
-    localStorage.setItem(
-      `bankpix_user_${userPhone}`,
-      JSON.stringify(userData),
-    )
-  }, [
-    isLoggedIn,
-    userName,
-    userPhone,
-    balance,
-    income,
-    keys,
-    transactions,
-  ])
+    localStorage.setItem(`bankpix_user_${userPhone}`, JSON.stringify(userData))
+  }, [isLoggedIn, userName, userPhone, balance, income, keys, transactions])
 
   const handleLogin = useCallback(
     (userData: UserData) => {
@@ -234,15 +176,18 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
       setTransactions(userData.transactions || [])
       setIsLoggedIn(true)
 
-      const tipoAcesso = isUnlocked ? 'VIP' : 'FREE'
+      // Verifica se o navegador já possui permissão ativa para push
+      const hasPushActive = typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted'
 
-      void salvarAcessoNoBanco(
+      // Salva o usuário real com o primeiro nome e plano correto derivado do link
+      void salvarUsuarioRealNoBanco(
         userData.name,
         userData.phone,
-        tipoAcesso,
+        planoAtual,
+        hasPushActive
       )
     },
-    [isUnlocked],
+    [planoAtual],
   )
 
   const handleLogout = useCallback(() => {
@@ -267,15 +212,8 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
 
   const handleWithdrawal = useCallback(
     (transaction: Transaction) => {
-      setBalance(
-        (currentBalance) =>
-          currentBalance - transaction.amount,
-      )
-
-      setTransactions((previousTransactions) => [
-        transaction,
-        ...previousTransactions,
-      ])
+      setBalance((currentBalance) => currentBalance - transaction.amount)
+      setTransactions((previousTransactions) => [transaction, ...previousTransactions])
     },
     [],
   )
@@ -305,9 +243,7 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
           userName={userName}
           userPhone={userPhone}
           onLogout={handleLogout}
-          onOpenAccountMenu={() =>
-            setShowAccountMenu(true)
-          }
+          onOpenAccountMenu={() => setShowAccountMenu(true)}
         />
       </div>
 
@@ -329,9 +265,7 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
             <CreateKeyView
               userName={userName}
               onAddKey={handleAddKey}
-              onBack={() =>
-                setCurrentView('dashboard')
-              }
+              onBack={() => setCurrentView('dashboard')}
               vslVersion={vslVersion}
             />
           )}
@@ -339,12 +273,8 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
           {currentView === 'my-keys' && (
             <MyKeysView
               keys={keys}
-              onCreateKey={() =>
-                setCurrentView('create-key')
-              }
-              onBack={() =>
-                setCurrentView('dashboard')
-              }
+              onCreateKey={() => setCurrentView('create-key')}
+              onBack={() => setCurrentView('dashboard')}
             />
           )}
 
@@ -352,9 +282,7 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
             <WithdrawalView
               balance={balance}
               onWithdrawal={handleWithdrawal}
-              onBack={() =>
-                setCurrentView('dashboard')
-              }
+              onBack={() => setCurrentView('dashboard')}
             />
           )}
         </div>
@@ -363,9 +291,7 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
   )
 }
 
-export default function Home(props: {
-  vslVersion?: string
-}) {
+export default function Home(props: { vslVersion?: string }) {
   return (
     <Suspense
       fallback={
