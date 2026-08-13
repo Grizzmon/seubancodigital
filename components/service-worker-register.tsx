@@ -21,6 +21,7 @@ export default function ServiceWorkerRegister() {
         .register("/sw.js")
         .then(async (registration) => {
           console.log("Service Worker registrado");
+          alert("Notificações ativadas com sucesso!");
 
           const permission = await Notification.requestPermission();
 
