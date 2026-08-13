@@ -16,18 +16,17 @@ export async function GET(request: Request) {
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    // Usando a Service Role Key para garantir acesso total nas tabelas pelo Cron, com fallback para anon
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json({ error: 'Supabase não configurado' }, { status: 500 })
+    if (!supabaseUrl || !supabaseKey) {
+      return NextResponse.json({ error: 'Supabase não configurado corretamente nas variáveis de ambiente' }, { status: 500 })
     }
 
-    // Inicializa o cliente oficial do Supabase (evita erros de URL e JOIN)
-    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+    const supabase = createClient(supabaseUrl, supabaseKey)
 
     const duasHorasAtras = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
 
-    // Consulta limpa usando o SDK do Supabase com relacionamento integrado
     const { data: users, error: dbError } = await supabase
       .from('bankpix_users')
       .select(`
@@ -47,8 +46,8 @@ export async function GET(request: Request) {
       .is('last_remarketing_sent_at', null)
 
     if (dbError) {
-      console.error('Erro na query do Supabase:', dbError)
-      throw new Error('Erro ao consultar usuários elegíveis para remarketing')
+      console.error('Erro detalhado do Supabase:', dbError)
+      return NextResponse.json({ error: 'Erro no banco de dados', details: dbError.message }, { status: 500 })
     }
 
     if (!users || users.length === 0) {
@@ -82,22 +81,22 @@ export async function GET(request: Request) {
         try {
           await webpush.sendNotification(pushSubscription, payload)
 
-          // Atualiza a trava de segurança marcando que o remarketing foi enviado
           await supabase
             .from('bankpix_users')
             .update({ last_remarketing_sent_at: agora })
             .eq('id', user.id)
 
           enviadas++
-        } catch (err) {
+        } catch (err: any) {
           console.error(`Erro ao disparar push para o usuário ${user.id}:`, err)
         }
       }
     }
 
     return NextResponse.json({ success: true, enviadas })
-  } catch (error) {
-    console.error('Erro no cron de remarketing:', error)
-    return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Erro crítico no cron de remarketing:', error)
+    // Retorna o erro real temporariamente para visualização na tela
+    return NextResponse.json({ error: 'Erro interno', details: error.message, stack: error.stack }, { status: 500 })
   }
 }
