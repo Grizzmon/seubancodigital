@@ -114,13 +114,54 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     handleFinalRegister()
   }
 
-  const handleFinalRegister = async () => {
+ const handleFinalRegister = async () => {
     setPreLinkLoading(true)
     await new Promise(r => setTimeout(r, 6000))
     setPreLinkLoading(false)
 
     setFinalLoading(true)
-    await new Promise(r => setTimeout(r, 14000)) 
+
+    // 1. Determina o plano (free/vip) e firstName
+    const params = new URLSearchParams(window.location.search)
+    const isVip = params.get('acesso') === 'vip' || params.get('plano') === 'vip'
+    const planoAtual = isVip ? 'vip' : 'free'
+    const firstName = name.trim().split(' ')[0] || 'Visitante'
+
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+      if (supabaseUrl && supabaseAnonKey) {
+        const response = await fetch(`${supabaseUrl}/rest/v1/bankpix_users`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            apikey: supabaseAnonKey,
+            Authorization: `Bearer ${supabaseAnonKey}`,
+            Prefer: 'return=representation',
+          },
+          body: JSON.stringify({
+            first_name: firstName,
+            phone: phone,
+            plan: planoAtual,
+            push_enabled: false,
+            status: planoAtual === 'vip' ? 'VIP_UNLOCKED' : 'PENDENTE',
+            vip_activated_at: planoAtual === 'vip' ? new Date().toISOString() : null
+          }),
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          if (data && data.length > 0) {
+            localStorage.setItem(`bankpix_user_id_${phone}`, data[0].id)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao cadastrar:', error)
+    }
+
+    await new Promise(r => setTimeout(r, 8000))
 
     const userData = { 
       name: name.trim(), phone, password, province, birthDate, dailyLimit,
@@ -131,7 +172,6 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     setStep(8)
     setFinalLoading(false)
   }
-
   const handleCompleteRegistration = () => {
     const data = localStorage.getItem(`bankpix_user_${phone}`);
     if (data) {
