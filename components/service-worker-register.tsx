@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
-const VAPID_PUBLIC_KEY = "BKOyYXXQkylmhMhXOq9qfBctTi0edUI6OzjUOzatYko2pgVSj_FU5WbV9WipbJdSyK-1XnWr1oZ46eVFHee00ho";
+const VAPID_PUBLIC_KEY =
+  "BKOyYXXQkylmhMhXOq9qfBctTi0edUI6OzjUOzatYko2pgVSj_FU5WbV9WipbJdSyK-1XnWr1oZ46eVFHee00ho";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -16,26 +18,38 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export default function ServiceWorkerRegister() {
   useEffect(() => {
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker
-        .register("/sw.js")
-        .then(async (registration) => {
-          console.log("Service Worker registrado");
-          alert("Notificações ativadas com sucesso!");
+    async function registerPush() {
+      if (!("serviceWorker" in navigator)) return;
 
-          const permission = await Notification.requestPermission();
+      try {
+        const registration = await navigator.serviceWorker.register("/sw.js");
 
-          if (permission !== "granted") return;
+        console.log("Service Worker registrado");
 
-          const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-          });
+        const permission = await Notification.requestPermission();
 
-          console.log("SUBSCRIPTION:", JSON.stringify(subscription));
-        })
-        .catch((err) => console.error("Erro ao registrar SW:", err));
+        if (permission !== "granted") return;
+
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+
+        console.log("SUBSCRIPTION:", JSON.stringify(subscription));
+
+        alert("Notificações ativadas com sucesso!");
+
+        await supabase.from("push_subscriptions").upsert({
+          endpoint: subscription.endpoint,
+          p256dh: subscription.toJSON().keys?.p256dh || "",
+          auth: subscription.toJSON().keys?.auth || "",
+        });
+      } catch (err) {
+        console.error("Erro ao registrar push:", err);
+      }
     }
+
+    registerPush();
   }, []);
 
   return null;
