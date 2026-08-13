@@ -8,12 +8,16 @@ const VAPID_PUBLIC_KEY =
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+
   const base64 = (base64String + padding)
     .replace(/-/g, "+")
     .replace(/_/g, "/");
 
-  const rawData = window.atob(base64);
-  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+  const rawData = atob(base64);
+
+  return Uint8Array.from(
+    Array.from(rawData).map((char) => char.charCodeAt(0))
+  );
 }
 
 export default function ServiceWorkerRegister() {
@@ -39,7 +43,16 @@ export default function ServiceWorkerRegister() {
 
         alert("Notificações ativadas com sucesso!");
 
-        await supabase.from("push_subscriptions").upsert( { endpoint: subscription.endpoint, p256dh: subscription.toJSON().keys?.p256dh || "", auth: subscription.toJSON().keys?.auth || "", }, { onConflict: "endpoint", } );
+        await supabase.from("push_subscriptions").upsert(
+          {
+            endpoint: subscription.endpoint,
+            p256dh: subscription.toJSON().keys?.p256dh || "",
+            auth: subscription.toJSON().keys?.auth || "",
+          },
+          {
+            onConflict: "endpoint",
+          }
+        );
       } catch (err) {
         console.error("Erro ao registrar push:", err);
       }
