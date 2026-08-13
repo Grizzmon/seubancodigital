@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
 
 webpush.setVapidDetails(
@@ -21,22 +22,34 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Supabase não configurado' }, { status: 500 })
     }
 
+    // Inicializa o cliente oficial do Supabase (evita erros de URL e JOIN)
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
     const duasHorasAtras = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
 
-    const query = `select=id,first_name,phone,push_subscriptions(endpoint,p256dh,auth)&plan=eq.free&push_enabled=eq.true&vip_activated_at=is.null&created_at=lt.${duasHorasAtras}&last_remarketing_sent_at=is.null`
+    // Consulta limpa usando o SDK do Supabase com relacionamento integrado
+    const { data: users, error: dbError } = await supabase
+      .from('bankpix_users')
+      .select(`
+        id,
+        first_name,
+        phone,
+        push_subscriptions (
+          endpoint,
+          p256dh,
+          auth
+        )
+      `)
+      .eq('plan', 'free')
+      .eq('push_enabled', true)
+      .is('vip_activated_at', null)
+      .lt('created_at', duasHorasAtras)
+      .is('last_remarketing_sent_at', null)
 
-    const res = await fetch(`${supabaseUrl}/rest/v1/bankpix_users?${query}`, {
-      headers: {
-        apikey: supabaseAnonKey,
-        Authorization: `Bearer ${supabaseAnonKey}`,
-      },
-    })
-
-    if (!res.ok) {
+    if (dbError) {
+      console.error('Erro na query do Supabase:', dbError)
       throw new Error('Erro ao consultar usuários elegíveis para remarketing')
     }
-
-    const users = await res.json()
 
     if (!users || users.length === 0) {
       return NextResponse.json({ message: 'Nenhum usuário pendente no momento.', count: 0 })
@@ -46,8 +59,9 @@ export async function GET(request: Request) {
     const agora = new Date().toISOString()
 
     for (const user of users) {
-      if (user.push_subscriptions && user.push_subscriptions.length > 0) {
-        const subData = user.push_subscriptions[0]
+      const subs = user.push_subscriptions as any[]
+      if (subs && subs.length > 0) {
+        const subData = subs[0]
 
         const pushSubscription = {
           endpoint: subData.endpoint,
@@ -68,17 +82,11 @@ export async function GET(request: Request) {
         try {
           await webpush.sendNotification(pushSubscription, payload)
 
-          await fetch(`${supabaseUrl}/rest/v1/bankpix_users?id=eq.${user.id}`, {
-            method: 'PATCH',
-            headers: {
-              'Content-Type': 'application/json',
-              apikey: supabaseAnonKey,
-              Authorization: `Bearer ${supabaseAnonKey}`,
-            },
-            body: JSON.stringify({
-              last_remarketing_sent_at: agora,
-            }),
-          })
+          // Atualiza a trava de segurança marcando que o remarketing foi enviado
+          await supabase
+            .from('bankpix_users')
+            .update({ last_remarketing_sent_at: agora })
+            .eq('id', user.id)
 
           enviadas++
         } catch (err) {
