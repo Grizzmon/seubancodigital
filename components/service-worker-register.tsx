@@ -7,7 +7,14 @@ export default function ServiceWorkerRegister() {
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")
-        .then(() => console.log("Service Worker registrado"))
+        .then(async () => {
+          console.log("Service Worker registrado");
+
+          // Pedir permissão de notificação
+          const permission = await Notification.requestPermission();
+
+          console.log("Permissão:", permission);
+        })
         .catch((err) => console.error("Erro ao registrar SW:", err));
     }
   }, []);
