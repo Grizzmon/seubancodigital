@@ -23,7 +23,6 @@ export async function GET(request: Request) {
 
     const duasHorasAtras = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
 
-    // 1. Busca otimizada via JOIN unindo usuário e subscription elegíveis
     const query = `select=id,first_name,phone,push_subscriptions(endpoint,p256dh,auth)&plan=eq.free&push_enabled=eq.true&vip_activated_at=is.null&created_at=lt.${duasHorasAtras}&last_remarketing_sent_at=is.null`
 
     const res = await fetch(`${supabaseUrl}/rest/v1/bankpix_users?${query}`, {
@@ -69,7 +68,6 @@ export async function GET(request: Request) {
         try {
           await webpush.sendNotification(pushSubscription, payload)
 
-          // 2. Trava de segurança: Atualiza o usuário para marcar que o remarketing foi enviado
           await fetch(`${supabaseUrl}/rest/v1/bankpix_users?id=eq.${user.id}`, {
             method: 'PATCH',
             headers: {
