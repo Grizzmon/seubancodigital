@@ -10,12 +10,11 @@ webpush.setVapidDetails(
 
 export async function GET(request: Request) {
   try {
-    // Proteção opcional do cron
     const authHeader = request.headers.get('authorization')
 
     if (
       process.env.CRON_SECRET &&
-      authHeader !== \`Bearer \${process.env.CRON_SECRET}\`
+      authHeader !== `Bearer ${process.env.CRON_SECRET}`
     ) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
@@ -25,32 +24,26 @@ export async function GET(request: Request) {
 
     if (!supabaseUrl || !serviceRole) {
       return NextResponse.json(
-        {
-          error: 'Variáveis do Supabase não configuradas',
-        },
+        { error: 'Supabase não configurado' },
         { status: 500 }
       )
     }
 
     const supabase = createClient(supabaseUrl, serviceRole)
 
-    // Usuários FREE cadastrados há mais de 2 horas
     const duasHorasAtras = new Date(
       Date.now() - 2 * 60 * 60 * 1000
     ).toISOString()
 
     const { data: users, error: userError } = await supabase
       .from('bankpix_users')
-      .select('id, name, phone, access_type, created_at')
+      .select('id, name, created_at')
       .eq('access_type', 'FREE')
       .lt('created_at', duasHorasAtras)
 
     if (userError) {
       return NextResponse.json(
-        {
-          error: 'Erro ao buscar usuários',
-          details: userError.message,
-        },
+        { error: 'Erro ao buscar usuários', details: userError.message },
         { status: 500 }
       )
     }
@@ -64,19 +57,15 @@ export async function GET(request: Request) {
     }
 
     let enviadas = 0
-    let expiradas = 0
 
     for (const user of users) {
-      // Busca a subscription vinculada ao usuário
-      const { data: subs, error: subError } = await supabase
+      const { data: subs } = await supabase
         .from('push_subscriptions')
         .select('id, endpoint, p256dh, auth')
         .eq('user_id', user.id)
         .limit(1)
 
-      if (subError || !subs || subs.length === 0) {
-        continue
-      }
+      if (!subs || subs.length === 0) continue
 
       const sub = subs[0]
 
@@ -90,7 +79,7 @@ export async function GET(request: Request) {
 
       const payload = JSON.stringify({
         title: 'BankPix',
-        body: \`\${user.name || 'Você'}, sua conta VIP ainda não foi ativada. Ative agora e comece a receber seus Pix sem limitações 🚀\`,
+        body: `${user.name || 'Você'}, sua conta VIP ainda não foi ativada. Ative agora e comece a receber seus Pix sem limitações 🚀`,
         icon: '/icon-192.png',
         badge: '/icon-192.png',
         data: {
@@ -102,31 +91,23 @@ export async function GET(request: Request) {
         await webpush.sendNotification(pushSubscription, payload)
         enviadas++
       } catch (err: any) {
-        // Remove subscriptions expiradas automaticamente
         if (err.statusCode === 404 || err.statusCode === 410) {
           await supabase
             .from('push_subscriptions')
             .delete()
             .eq('id', sub.id)
-
-          expiradas++
         } else {
-          console.error(
-            \`Erro ao enviar para \${user.name}:\`,
-            err?.message || err
-          )
+          console.error('Erro ao enviar push:', err)
         }
       }
     }
 
     return NextResponse.json({
       success: true,
-      total_usuarios: users.length,
       notificacoes_enviadas: enviadas,
-      subscriptions_removidas: expiradas,
     })
   } catch (error: any) {
-    console.error('Erro crítico no remarketing:', error)
+    console.error('Erro crítico:', error)
 
     return NextResponse.json(
       {
