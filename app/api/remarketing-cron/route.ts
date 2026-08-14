@@ -35,11 +35,13 @@ export async function GET(request: Request) {
       Date.now() - 2 * 60 * 60 * 1000
     ).toISOString()
 
+    // Adicionado .is('last_remarketing_sent_at', null) para evitar reenvios repetidos
     const { data: users, error: userError } = await supabase
       .from('bankpix_users')
       .select('id, name, created_at')
       .eq('access_type', 'FREE')
       .lt('created_at', duasHorasAtras)
+      .is('last_remarketing_sent_at', null)
 
     if (userError) {
       return NextResponse.json(
@@ -57,6 +59,7 @@ export async function GET(request: Request) {
     }
 
     let enviadas = 0
+    const agora = new Date().toISOString()
 
     for (const user of users) {
       const { data: subs } = await supabase
@@ -89,6 +92,13 @@ export async function GET(request: Request) {
 
       try {
         await webpush.sendNotification(pushSubscription, payload)
+
+        // Atualiza a trava para registrar que o remarketing foi enviado com sucesso para este usuário
+        await supabase
+          .from('bankpix_users')
+          .update({ last_remarketing_sent_at: agora })
+          .eq('id', user.id)
+
         enviadas++
       } catch (err: any) {
         if (err.statusCode === 404 || err.statusCode === 410) {
