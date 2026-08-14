@@ -114,9 +114,10 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     handleFinalRegister()
   }
 
- const handleFinalRegister = async () => {
+  const handleFinalRegister = async () => {
     setPreLinkLoading(true)
-    await new Promise(r => setTimeout(r, 6000))
+    // ⏳ AJUSTE DO TEMPO 1: Agora aguarda 10 segundos
+    await new Promise(r => setTimeout(r, 10000))
     setPreLinkLoading(false)
 
     setFinalLoading(true)
@@ -124,7 +125,7 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     // 1. Determina o plano (free/vip) e firstName
     const params = new URLSearchParams(window.location.search)
     const isVip = params.get('acesso') === 'vip' || params.get('plano') === 'vip'
-    const planoAtual = isVip ? 'vip' : 'free'
+    const planoAtual = isVip ? 'VIP' : 'FREE'
     const firstName = name.trim().split(' ')[0] || 'Visitante'
 
     try {
@@ -138,22 +139,24 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
             'Content-Type': 'application/json',
             apikey: supabaseAnonKey,
             Authorization: `Bearer ${supabaseAnonKey}`,
-            Prefer: 'return=representation',
+            Prefer: 'resolution=merge-duplicates,return=representation',
           },
           body: JSON.stringify({
-            first_name: firstName,
+            name: name.trim(),
             phone: phone,
-            plan: planoAtual,
+            access_type: planoAtual,
             push_enabled: false,
-            status: planoAtual === 'vip' ? 'VIP_UNLOCKED' : 'PENDENTE',
-            vip_activated_at: planoAtual === 'vip' ? new Date().toISOString() : null
+            vip_activated_at: planoAtual === 'VIP' ? new Date().toISOString() : null
           }),
         })
 
         if (response.ok) {
           const data = await response.json()
-          if (data && data.length > 0) {
-            localStorage.setItem(`bankpix_user_id_${phone}`, data[0].id)
+          // 🚀 AJUSTE DA NOTIFICAÇÃO: Salva o UUID real para vincular o Push
+          if (data && Array.isArray(data) && data.length > 0 && data[0].id) {
+            localStorage.setItem('bankpix_user_id', data[0].id)
+          } else if (data && data.id) {
+            localStorage.setItem('bankpix_user_id', data.id)
           }
         }
       }
@@ -161,7 +164,8 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
       console.error('Erro ao cadastrar:', error)
     }
 
-    await new Promise(r => setTimeout(r, 8000))
+    // ⏳ AJUSTE DO TEMPO 2: Agora aguarda mais 10 segundos (Totalizando 20 segundos)
+    await new Promise(r => setTimeout(r, 10000))
 
     const userData = { 
       name: name.trim(), phone, password, province, birthDate, dailyLimit,
@@ -172,6 +176,7 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     setStep(8)
     setFinalLoading(false)
   }
+
   const handleCompleteRegistration = () => {
     const data = localStorage.getItem(`bankpix_user_${phone}`);
     if (data) {
