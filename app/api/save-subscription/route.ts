@@ -1,50 +1,39 @@
-import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
-    const { user_id, endpoint, p256dh, auth } = body;
+    const { userId, subscription } = await request.json()
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    // 1. Salvar na tabela push_subscriptions
-    const response = await fetch(`${supabaseUrl}/rest/v1/push_subscriptions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': supabaseAnonKey!,
-        'Authorization': `Bearer ${supabaseAnonKey!}`,
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({
-        user_id,
-        endpoint,
-        p256dh,
-        auth
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error('Erro ao salvar subscription no Supabase');
+    if (!userId || !subscription || !subscription.endpoint) {
+      return NextResponse.json({ error: 'Dados incompletos' }, { status: 400 })
     }
 
-    // 2. Atualizar o usuário para marcar push_enabled = true
-    await fetch(`${supabaseUrl}/rest/v1/bankpix_users?id=eq.${user_id}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': supabaseAnonKey!,
-        'Authorization': `Bearer ${supabaseAnonKey!}`,
-      },
-      body: JSON.stringify({
-        push_enabled: true
-      })
-    });
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Erro na API save-subscription:', error);
-    return NextResponse.json({ error: 'Falha ao processar subscription' }, { status: 500 });
+    if (!supabaseUrl || !serviceRole) {
+      return NextResponse.json({ error: 'Supabase não configurado' }, { status: 500 })
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRole)
+
+    // Salva ou atualiza a subscription vinculando ao user_id real
+    const { error } = await supabase
+      .from('push_subscriptions')
+      .upsert({
+        user_id: userId,
+        endpoint: subscription.endpoint,
+        p256dh: subscription.keys.p256dh,
+        auth: subscription.keys.auth
+      }, { onConflict: 'endpoint' })
+
+    if (error) {
+      return NextResponse.json({ error: 'Erro ao salvar no banco', details: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    return NextResponse.json({ error: 'Erro interno', details: error.message }, { status: 500 })
   }
 }
