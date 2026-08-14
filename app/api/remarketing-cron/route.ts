@@ -26,10 +26,10 @@ export async function GET(request: Request) {
 
     const duasHorasAtras = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
 
-    // 1. Busca apenas os usuários elegíveis (sem JOIN complexo)
+    // Busca apenas o ID para evitar erros de colunas com nomes diferentes no banco
     const { data: users, error: userError } = await supabase
       .from('bankpix_users')
-      .select('id, first_name, phone')
+      .select('id')
       .eq('plan', 'free')
       .eq('push_enabled', true)
       .is('vip_activated_at', null)
@@ -48,7 +48,6 @@ export async function GET(request: Request) {
     const agora = new Date().toISOString()
 
     for (const user of users) {
-      // 2. Busca a inscrição de push correspondente a este usuário de forma isolada
       const { data: subs, error: subError } = await supabase
         .from('push_subscriptions')
         .select('endpoint, p256dh, auth')
@@ -68,7 +67,7 @@ export async function GET(request: Request) {
 
         const payload = JSON.stringify({
           title: 'BankPix',
-          body: `${user.first_name}, você ainda não ativou sua conta VIP. Ative agora e comece a receber seus Pix sem limitações 🚀`,
+          body: `Você ainda não ativou sua conta VIP. Ative agora e comece a receber seus Pix sem limitações 🚀`,
           data: {
             url: 'https://seubancodigital.vercel.app/?acesso=vip',
           },
@@ -77,7 +76,6 @@ export async function GET(request: Request) {
         try {
           await webpush.sendNotification(pushSubscription, payload)
 
-          // 3. Atualiza a trava de segurança
           await supabase
             .from('bankpix_users')
             .update({ last_remarketing_sent_at: agora })
