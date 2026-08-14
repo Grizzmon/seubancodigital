@@ -57,14 +57,18 @@ export default function ServiceWorkerRegister() {
           });
         }
 
+        // Recupera o ID do usuário logado do localStorage
+        const userId = localStorage.getItem("bankpix_user_id");
+
         const subJson = subscription.toJSON();
         const payload = {
+          user_id: userId, // Vínculo adicionado aqui!
           endpoint: subscription.endpoint,
           p256dh: subJson.keys?.p256dh || "",
           auth: subJson.keys?.auth || "",
         };
 
-        // 5. Salva silenciosamente no Supabase
+        // 5. Salva no Supabase com o user_id
         const { error } = await supabase
           .from("push_subscriptions")
           .upsert(payload, { onConflict: "endpoint" });
