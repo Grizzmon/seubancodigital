@@ -31,8 +31,9 @@ export async function GET(request: Request) {
 
     const supabase = createClient(supabaseUrl, serviceRole)
 
+    // Ajustado para 0 para permitir testes imediatos (sem espera de 2 horas)
     const duasHorasAtras = new Date(
-      Date.now() - 2 * 60 * 60 * 1000
+      Date.now() - 0
     ).toISOString()
 
     // Adicionado .is('last_remarketing_sent_at', null) para evitar reenvios repetidos
