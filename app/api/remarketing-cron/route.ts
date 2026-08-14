@@ -10,88 +10,130 @@ webpush.setVapidDetails(
 
 export async function GET(request: Request) {
   try {
+    // Proteção opcional do cron
     const authHeader = request.headers.get('authorization')
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+
+    if (
+      process.env.CRON_SECRET &&
+      authHeader !== \`Bearer \${process.env.CRON_SECRET}\`
+    ) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-    if (!supabaseUrl || !supabaseKey) {
-      return NextResponse.json({ error: 'Supabase não configurado' }, { status: 500 })
+    if (!supabaseUrl || !serviceRole) {
+      return NextResponse.json(
+        {
+          error: 'Variáveis do Supabase não configuradas',
+        },
+        { status: 500 }
+      )
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey)
+    const supabase = createClient(supabaseUrl, serviceRole)
 
-    const duasHorasAtras = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
+    // Usuários FREE cadastrados há mais de 2 horas
+    const duasHorasAtras = new Date(
+      Date.now() - 2 * 60 * 60 * 1000
+    ).toISOString()
 
-    // Usando os nomes reais das colunas: name e access_type ('FREE')
     const { data: users, error: userError } = await supabase
       .from('bankpix_users')
-      .select('id, name')
+      .select('id, name, phone, access_type, created_at')
       .eq('access_type', 'FREE')
-      .eq('push_enabled', true)
-      .is('vip_activated_at', null)
       .lt('created_at', duasHorasAtras)
-      .is('last_remarketing_sent_at', null)
 
     if (userError) {
-      return NextResponse.json({ error: 'Erro ao buscar usuários', details: userError.message }, { status: 500 })
+      return NextResponse.json(
+        {
+          error: 'Erro ao buscar usuários',
+          details: userError.message,
+        },
+        { status: 500 }
+      )
     }
 
     if (!users || users.length === 0) {
-      return NextResponse.json({ message: 'Nenhum usuário pendente no momento.', count: 0 })
+      return NextResponse.json({
+        success: true,
+        message: 'Nenhum usuário elegível no momento',
+        count: 0,
+      })
     }
 
     let enviadas = 0
-    const agora = new Date().toISOString()
+    let expiradas = 0
 
     for (const user of users) {
+      // Busca a subscription vinculada ao usuário
       const { data: subs, error: subError } = await supabase
         .from('push_subscriptions')
-        .select('endpoint, p256dh, auth')
+        .select('id, endpoint, p256dh, auth')
         .eq('user_id', user.id)
         .limit(1)
 
-      if (!subError && subs && subs.length > 0) {
-        const subData = subs[0]
+      if (subError || !subs || subs.length === 0) {
+        continue
+      }
 
-        const pushSubscription = {
-          endpoint: subData.endpoint,
-          keys: {
-            p256dh: subData.p256dh,
-            auth: subData.auth,
-          },
-        }
+      const sub = subs[0]
 
-        // Personalização usando o nome real do usuário
-        const payload = JSON.stringify({
-          title: 'BankPix',
-          body: `${user.name || 'Mano'}, você ainda não ativou sua conta VIP. Ative agora e comece a receber seus Pix sem limitações 🚀`,
-          data: {
-            url: 'https://seubancodigital.vercel.app/?acesso=vip',
-          },
-        })
+      const pushSubscription = {
+        endpoint: sub.endpoint,
+        keys: {
+          p256dh: sub.p256dh,
+          auth: sub.auth,
+        },
+      }
 
-        try {
-          await webpush.sendNotification(pushSubscription, payload)
+      const payload = JSON.stringify({
+        title: 'BankPix',
+        body: \`\${user.name || 'Você'}, sua conta VIP ainda não foi ativada. Ative agora e comece a receber seus Pix sem limitações 🚀\`,
+        icon: '/icon-192.png',
+        badge: '/icon-192.png',
+        data: {
+          url: 'https://seubancodigital.vercel.app/?acesso=vip',
+        },
+      })
 
+      try {
+        await webpush.sendNotification(pushSubscription, payload)
+        enviadas++
+      } catch (err: any) {
+        // Remove subscriptions expiradas automaticamente
+        if (err.statusCode === 404 || err.statusCode === 410) {
           await supabase
-            .from('bankpix_users')
-            .update({ last_remarketing_sent_at: agora })
-            .eq('id', user.id)
+            .from('push_subscriptions')
+            .delete()
+            .eq('id', sub.id)
 
-          enviadas++
-        } catch (err: any) {
-          console.error(`Erro ao disparar push para o usuário ${user.id}:`, err)
+          expiradas++
+        } else {
+          console.error(
+            \`Erro ao enviar para \${user.name}:\`,
+            err?.message || err
+          )
         }
       }
     }
 
-    return NextResponse.json({ success: true, enviadas })
+    return NextResponse.json({
+      success: true,
+      total_usuarios: users.length,
+      notificacoes_enviadas: enviadas,
+      subscriptions_removidas: expiradas,
+    })
   } catch (error: any) {
-    console.error('Erro crítico:', error)
-    return NextResponse.json({ error: 'Erro interno', details: error.message }, { status: 500 })
+    console.error('Erro crítico no remarketing:', error)
+
+    return NextResponse.json(
+      {
+        error: 'Erro interno',
+        details: error?.message || 'Erro desconhecido',
+      },
+      { status: 500 }
+    )
   }
 }
