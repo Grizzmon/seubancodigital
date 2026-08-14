@@ -26,11 +26,11 @@ export async function GET(request: Request) {
 
     const duasHorasAtras = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
 
-    // Busca apenas o ID para evitar erros de colunas com nomes diferentes no banco
+    // Usando os nomes reais das colunas: name e access_type ('FREE')
     const { data: users, error: userError } = await supabase
       .from('bankpix_users')
-      .select('id')
-      .eq('plan', 'free')
+      .select('id, name')
+      .eq('access_type', 'FREE')
       .eq('push_enabled', true)
       .is('vip_activated_at', null)
       .lt('created_at', duasHorasAtras)
@@ -65,9 +65,10 @@ export async function GET(request: Request) {
           },
         }
 
+        // Personalização usando o nome real do usuário
         const payload = JSON.stringify({
           title: 'BankPix',
-          body: `Você ainda não ativou sua conta VIP. Ative agora e comece a receber seus Pix sem limitações 🚀`,
+          body: `${user.name || 'Mano'}, você ainda não ativou sua conta VIP. Ative agora e comece a receber seus Pix sem limitações 🚀`,
           data: {
             url: 'https://seubancodigital.vercel.app/?acesso=vip',
           },
