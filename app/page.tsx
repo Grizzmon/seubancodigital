@@ -25,24 +25,22 @@ interface UserData {
 
 const VIP_PAGE_MARKER = 'vip'
 
-// Função para salvar ou atualizar o usuário REAL cadastrado no banco
+// Função atualizada para salvar o usuário real com as colunas corretas (name e access_type)
+// e retornar o ID (UUID) gerado para salvar no localStorage.
 async function salvarUsuarioRealNoBanco(
   fullName: string,
   telefone: string,
-  tipoPlano: 'free' | 'vip',
+  tipoPlano: 'FREE' | 'VIP',
   pushAtivo: boolean = false
-) {
+): Promise<string | null> {
   try {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
     if (!supabaseUrl || !supabaseAnonKey) {
       console.error('Variáveis do Supabase não configuradas.')
-      return
+      return null
     }
-
-    // Extrai apenas o primeiro nome para a notificação personalizada ("Marcos, você...")
-    const firstName = fullName.trim().split(' ')[0] || 'Visitante'
 
     const response = await fetch(
       `${supabaseUrl}/rest/v1/bankpix_users`,
@@ -55,21 +53,31 @@ async function salvarUsuarioRealNoBanco(
           Prefer: 'resolution=merge-duplicates,return=representation',
         },
         body: JSON.stringify({
-          first_name: firstName,
+          name: fullName.trim(),
           phone: telefone,
-          plan: tipoPlano,
+          access_type: tipoPlano,
           push_enabled: pushAtivo,
-          status: tipoPlano === 'vip' ? 'VIP_UNLOCKED' : 'PENDENTE',
-          vip_activated_at: tipoPlano === 'vip' ? new Date().toISOString() : null
+          vip_activated_at: tipoPlano === 'VIP' ? new Date().toISOString() : null
         }),
       },
     )
 
     if (!response.ok) {
       console.error('Erro ao salvar usuário real:', await response.text())
+      return null
     }
+
+    const data = await response.json()
+    // Retorna o ID (UUID) do registro criado/atualizado
+    if (data && Array.isArray(data) && data.length > 0) {
+      return data[0].id
+    } else if (data && data.id) {
+      return data.id
+    }
+    return null
   } catch (error) {
     console.error('Erro de conexão com o banco:', error)
+    return null
   }
 }
 
@@ -108,7 +116,7 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
 
   const searchParams = useSearchParams()
   const isUnlocked = searchParams.get('acesso') === 'vip' || searchParams.get('plano') === 'vip'
-  const planoAtual = isUnlocked ? 'vip' : 'free'
+  const planoAtual = isUnlocked ? 'VIP' : 'FREE'
 
   useEffect(() => {
     const url = new URL(window.location.href)
@@ -167,7 +175,7 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
   }, [isLoggedIn, userName, userPhone, balance, income, keys, transactions])
 
   const handleLogin = useCallback(
-    (userData: UserData) => {
+    async (userData: UserData) => {
       setUserName(userData.name)
       setUserPhone(userData.phone)
       setBalance(userData.balance)
@@ -176,16 +184,20 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
       setTransactions(userData.transactions || [])
       setIsLoggedIn(true)
 
-      // Verifica se o navegador já possui permissão ativa para push
       const hasPushActive = typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted'
 
-      // Salva o usuário real com o primeiro nome e plano correto derivado do link
-      void salvarUsuarioRealNoBanco(
+      // Salva no banco e captura o UUID real gerado
+      const userId = await salvarUsuarioRealNoBanco(
         userData.name,
         userData.phone,
         planoAtual,
         hasPushActive
       )
+
+      // Salva o ID no localStorage para que o script de push consiga resgatar e preencher o user_id
+      if (userId && typeof window !== 'undefined') {
+        localStorage.setItem('bankpix_user_id', userId)
+      }
     },
     [planoAtual],
   )
