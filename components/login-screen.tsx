@@ -643,5 +643,3 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     </div>
   )
 }
-
-```
