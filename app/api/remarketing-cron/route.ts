@@ -14,8 +14,18 @@ const REMARKETING_COOLDOWN_MS = 2 * 60 * 60 * 1000
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('authorization')
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    const force = new URL(request.url).searchParams.get('force') === '1'
+    const cronAuthorized = Boolean(process.env.CRON_SECRET) && authHeader === `Bearer ${process.env.CRON_SECRET}`
+    const adminAuthorized = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY) && authHeader === `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`
+
+    if (process.env.CRON_SECRET && !cronAuthorized && !adminAuthorized) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
+    }
+
+    // O modo force é reservado para disparo manual autenticado e ignora o
+    // intervalo de 2 horas uma única vez, sem alterar o comportamento do cron.
+    if (force && !adminAuthorized && !cronAuthorized) {
+      return NextResponse.json({ error: 'Disparo total não autorizado' }, { status: 401 })
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -58,7 +68,7 @@ export async function GET(request: Request) {
       }
 
       const ultimoEnvio = user.last_remarketing_sent_at ? Date.parse(user.last_remarketing_sent_at) : 0
-      if (ultimoEnvio && agora - ultimoEnvio < REMARKETING_COOLDOWN_MS) {
+      if (!force && ultimoEnvio && agora - ultimoEnvio < REMARKETING_COOLDOWN_MS) {
         ignoradas++
         continue
       }
