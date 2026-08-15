@@ -67,12 +67,10 @@
       "qualities": [
         75
       ],
-      "unoptimized": true,
+      "unoptimized": false,
       "customCacheHandler": false
     },
-    "devIndicators": {
-      "position": "bottom-left"
-    },
+    "devIndicators": false,
     "onDemandEntries": {
       "maxInactiveAge": 60000,
       "pagesBufferLength": 5
@@ -91,7 +89,11 @@
     },
     "logging": {
       "serverFunctions": true,
-      "browserToTerminal": "warn"
+      "fetches": {
+        "fullUrl": true,
+        "hmrRefreshes": true
+      },
+      "browserToTerminal": true
     },
     "compiler": {},
     "expireTime": 31536000,
@@ -104,7 +106,13 @@
         "transform": "lodash/{{member}}"
       }
     },
-    "outputFileTracingRoot": "C:\\Users\\UnISCED\\Downloads\\seubancodigital-main",
+    "outputFileTracingRoot": "/vercel/share/v0-project",
+    "allowedDevOrigins": [
+      "*.vusercontent.net",
+      "*.dev-vm.vusercontent.net",
+      "*.v0.build",
+      "*.vercel.run"
+    ],
     "cacheComponents": false,
     "cacheLife": {
       "default": {
@@ -166,7 +174,7 @@
       "proxyPrefetch": "flexible",
       "optimisticClientCache": true,
       "manualClientBasePath": false,
-      "cpus": 7,
+      "cpus": 3,
       "memoryBasedWorkersCount": false,
       "imgOptConcurrency": null,
       "imgOptTimeoutInSeconds": 7,
@@ -206,7 +214,7 @@
       "serverComponentsHmrCache": true,
       "staticGenerationMaxConcurrency": 8,
       "staticGenerationMinPagesPerWorker": 25,
-      "transitionIndicator": false,
+      "transitionIndicator": true,
       "gestureTransition": false,
       "inlineCss": false,
       "useCache": false,
@@ -220,6 +228,12 @@
       "turbopackFileSystemCacheForBuild": false,
       "turbopackInferModuleSideEffects": true,
       "turbopackPluginRuntimeStrategy": "childProcesses",
+      "serverActions": {
+        "allowedOrigins": [
+          "*.vusercontent.net",
+          "*.v0.build"
+        ]
+      },
       "optimizePackageImports": [
         "lucide-react",
         "date-fns",
@@ -304,29 +318,29 @@
     "bundlePagesRouterDependencies": false,
     "configFileName": "next.config.mjs",
     "turbopack": {
-      "root": "C:\\Users\\UnISCED\\Downloads\\seubancodigital-main"
+      "root": "/vercel/share/v0-project"
     },
     "distDirRoot": ".next"
   },
-  "appDir": "C:\\Users\\UnISCED\\Downloads\\seubancodigital-main\\seubancodigital-main",
-  "relativeAppDir": "seubancodigital-main",
+  "appDir": "/vercel/share/v0-project",
+  "relativeAppDir": "",
   "files": [
-    ".next\\routes-manifest.json",
-    ".next\\server\\pages-manifest.json",
-    ".next\\build-manifest.json",
-    ".next\\prerender-manifest.json",
-    ".next\\server\\functions-config-manifest.json",
-    ".next\\server\\middleware-manifest.json",
-    ".next\\server\\middleware-build-manifest.js",
-    ".next\\server\\app-paths-manifest.json",
-    ".next\\app-path-routes-manifest.json",
-    ".next\\server\\server-reference-manifest.js",
-    ".next\\server\\server-reference-manifest.json",
-    ".next\\server\\prefetch-hints.json",
-    ".next\\BUILD_ID",
-    ".next\\server\\next-font-manifest.js",
-    ".next\\server\\next-font-manifest.json",
-    ".next\\required-server-files.json"
+    ".next/routes-manifest.json",
+    ".next/server/pages-manifest.json",
+    ".next/build-manifest.json",
+    ".next/prerender-manifest.json",
+    ".next/server/functions-config-manifest.json",
+    ".next/server/middleware-manifest.json",
+    ".next/server/middleware-build-manifest.js",
+    ".next/server/app-paths-manifest.json",
+    ".next/app-path-routes-manifest.json",
+    ".next/server/server-reference-manifest.js",
+    ".next/server/server-reference-manifest.json",
+    ".next/server/prefetch-hints.json",
+    ".next/BUILD_ID",
+    ".next/server/next-font-manifest.js",
+    ".next/server/next-font-manifest.json",
+    ".next/required-server-files.json"
   ],
   "ignore": []
 }

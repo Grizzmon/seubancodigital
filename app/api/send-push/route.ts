@@ -2,19 +2,32 @@ import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
 
-webpush.setVapidDetails(
-  "mailto:teuemail@gmail.com",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+function getClients() {
+  if (!supabaseUrl || !serviceRole || !vapidPublicKey || !vapidPrivateKey) {
+    return null;
+  }
+
+  const supabase = createClient(supabaseUrl, serviceRole);
+  webpush.setVapidDetails(
+    "mailto:suporte@bankpix.com",
+    vapidPublicKey,
+    vapidPrivateKey
+  );
+  return supabase;
+}
 
 export async function GET() {
   try {
+    const supabase = getClients();
+    if (!supabase) {
+      return NextResponse.json({ error: "Push não configurado" }, { status: 503 });
+    }
+
     const { data, error } = await supabase
       .from("push_subscriptions")
       .select("endpoint, p256dh, auth");

@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { supabase } from "@/lib/supabase";
-
 const VAPID_PUBLIC_KEY =
   process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
   "BKOyYXXQkylmhMhXOq9qfBctTi0edUI6OzjUOzatYko2pgVSj_FU5WbV9WipbJdSyK-1XnWr1oZ46eVFHee00ho";
@@ -94,55 +92,29 @@ export default function ServiceWorkerRegister() {
           return;
         }
 
-        // Payload completo com o UUID do usuário
-        const payload = {
-          user_id: userId,
-          endpoint: subscription.endpoint,
-          p256dh,
-          auth,
-        };
+        console.log("Sincronizando Push para user_id:", userId);
 
-        console.log(
-          "Sincronizando Push para user_id:",
-          userId
-        );
+        // O salvamento passa pelo servidor, que usa a service role e evita
+        // que RLS/anônimos descartem silenciosamente o user_id.
+        const response = await fetch("/api/save-subscription", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            subscription: {
+              endpoint: subscription.endpoint,
+              keys: { p256dh, auth },
+            },
+          }),
+        });
 
-        // Salva ou atualiza a subscription
-        const { error: subscriptionError } =
-          await supabase
-            .from("push_subscriptions")
-            .upsert(payload, {
-              onConflict: "endpoint",
-            });
-
-        if (subscriptionError) {
-          console.error(
-            "Erro ao salvar push_subscriptions:",
-            subscriptionError.message
-          );
+        const result = await response.json().catch(() => null);
+        if (!response.ok) {
+          console.error("Erro ao salvar push_subscriptions:", result);
           return;
         }
 
-        // Marca o usuário como tendo Push ativado
-        const { error: userError } = await supabase
-          .from("bankpix_users")
-          .update({
-            push_enabled: true,
-          })
-          .eq("id", userId);
-
-        if (userError) {
-          console.error(
-            "Erro ao atualizar push_enabled:",
-            userError.message
-          );
-          return;
-        }
-
-        console.log(
-          "Push sincronizado com sucesso para:",
-          userId
-        );
+        console.log("Push sincronizado com sucesso:", result);
       } catch (error) {
         console.error(
           "Erro na rotina de Push Notification:",

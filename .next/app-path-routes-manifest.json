@@ -1,6 +1,11 @@
 {
   "/_global-error/page": "/_global-error",
   "/_not-found/page": "/_not-found",
+  "/api/notify-visit/route": "/api/notify-visit",
+  "/api/remarketing-cron/route": "/api/remarketing-cron",
+  "/api/save-subscription/route": "/api/save-subscription",
+  "/api/send-email/route": "/api/send-email",
+  "/api/send-push/route": "/api/send-push",
   "/download/page": "/download",
   "/page": "/",
   "/v13/page": "/v13"

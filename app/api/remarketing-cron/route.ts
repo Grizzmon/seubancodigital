@@ -2,11 +2,18 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
 
-webpush.setVapidDetails(
-  'mailto:suporte@bankpix.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-)
+const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY
+
+// Não inicializa o web-push durante o build quando as variáveis não estão
+// disponíveis. A rota retorna um erro claro somente se for chamada sem VAPID.
+if (vapidPublicKey && vapidPrivateKey) {
+  webpush.setVapidDetails(
+    'mailto:suporte@bankpix.com',
+    vapidPublicKey,
+    vapidPrivateKey
+  )
+}
 
 export async function GET(request: Request) {
   try {
@@ -22,7 +29,7 @@ export async function GET(request: Request) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-    if (!supabaseUrl || !serviceRole) {
+    if (!supabaseUrl || !serviceRole || !vapidPublicKey || !vapidPrivateKey) {
       return NextResponse.json(
         { error: 'Supabase não configurado' },
         { status: 500 }
