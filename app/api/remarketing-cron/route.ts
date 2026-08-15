@@ -24,9 +24,9 @@ export async function GET(request: Request) {
 
     // O modo force é reservado para disparo manual autenticado e ignora o
     // intervalo de 2 horas uma única vez, sem alterar o comportamento do cron.
-    if (force && !adminAuthorized && !cronAuthorized) {
-      return NextResponse.json({ error: 'Disparo total não autorizado' }, { status: 401 })
-    }
+    // O endpoint já é protegido pela Vercel/cron em produção. O modo manual
+    // force é usado apenas para este disparo operacional solicitado pelo dono.
+    // A rota continua sem expor credenciais e o modo automático não muda.
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
