@@ -1,6 +1,3 @@
-Aqui está o código completo do **`login-screen.tsx`** sem nenhum corte, pronto para você copiar e colar:
-
-
 'use client'
 
 import { useState, useEffect } from 'react'
