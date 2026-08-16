@@ -20,9 +20,11 @@ function getAdminClient(request: NextRequest) {
 }
 
 async function getQueue(supabase: ReturnType<typeof createClient>) {
+  // Usamos somente colunas confirmadas pelo fluxo principal do remarketing.
+  // Colunas opcionais de nome variam entre ambientes e faziam a fila falhar inteira.
   const [{ data: subscriptions, error: subscriptionsError }, { data: users, error: usersError }] = await Promise.all([
-    supabase.from('push_subscriptions').select('id, user_id, endpoint, created_at, updated_at'),
-    supabase.from('bankpix_users').select('id, name, full_name, first_name, last_name, last_remarketing_sent_at'),
+    supabase.from('push_subscriptions').select('id, user_id, endpoint, p256dh, auth'),
+    supabase.from('bankpix_users').select('id, name, last_remarketing_sent_at'),
   ])
 
   if (subscriptionsError) throw subscriptionsError
@@ -33,7 +35,7 @@ async function getQueue(supabase: ReturnType<typeof createClient>) {
   const rows = (subscriptions ?? []).map((subscription) => {
     const user = usersById.get(subscription.user_id)
     const lastSent = user?.last_remarketing_sent_at ? new Date(user.last_remarketing_sent_at).getTime() : 0
-    const name = user?.first_name || user?.name || user?.full_name || [user?.first_name, user?.last_name].filter(Boolean).join(' ') || 'usuário'
+    const name = user?.name?.trim() || 'usuário'
     return { ...subscription, name, userFound: Boolean(user), eligible: !lastSent || now - lastSent >= COOLDOWN_MS }
   })
 
