@@ -25,8 +25,6 @@ interface UserData {
 
 const VIP_PAGE_MARKER = 'vip'
 
-// Função atualizada para salvar o usuário real com as colunas corretas (name e access_type)
-// e retornar o ID (UUID) gerado para salvar no localStorage.
 async function salvarUsuarioRealNoBanco(
   fullName: string,
   telefone: string,
@@ -68,7 +66,6 @@ async function salvarUsuarioRealNoBanco(
     }
 
     const data = await response.json()
-    // Retorna o ID (UUID) do registro criado/atualizado
     if (data && Array.isArray(data) && data.length > 0) {
       return data[0].id
     } else if (data && data.id) {
@@ -78,28 +75,6 @@ async function salvarUsuarioRealNoBanco(
   } catch (error) {
     console.error('Erro de conexão com o banco:', error)
     return null
-  }
-}
-
-async function enviarNotificacaoVip() {
-  try {
-    await fetch('/api/send-email', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        user: 'Visitante VIP',
-        phone: 'Acesso pelo link VIP',
-        accessType: 'VIP_UNLOCKED',
-        timestamp: new Date().toISOString(),
-        url: window.location.href,
-        referrer: document.referrer,
-        userAgent: navigator.userAgent,
-      }),
-    })
-  } catch (error) {
-    console.error('Erro ao enviar notificação VIP:', error)
   }
 }
 
@@ -144,12 +119,7 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
         console.error('[v0] Erro ao enviar alerta VIP:', error)
       })
     }
-
-    const notificationKey = 'vip-email-notified'
-    if (!sessionStorage.getItem(notificationKey)) {
-      sessionStorage.setItem(notificationKey, 'true')
-      void enviarNotificacaoVip()
-    }
+    // O bloco de envio de email foi totalmente removido daqui.
   }, [isUnlocked])
 
   useEffect(() => {
@@ -186,7 +156,6 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
 
       const hasPushActive = typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted'
 
-      // Salva no banco e captura o UUID real gerado
       const userId = await salvarUsuarioRealNoBanco(
         userData.name,
         userData.phone,
@@ -194,7 +163,6 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
         hasPushActive
       )
 
-      // Salva o ID no localStorage para que o script de push consiga resgatar e preencher o user_id
       if (userId && typeof window !== 'undefined') {
         localStorage.setItem('bankpix_user_id', userId)
       }
