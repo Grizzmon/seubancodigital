@@ -23,8 +23,6 @@ interface UserData {
   transactions: Transaction[]
 }
 
-const VIP_PAGE_MARKER = 'vip'
-
 async function salvarUsuarioRealNoBanco(
   fullName: string,
   telefone: string,
@@ -92,35 +90,6 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
   const searchParams = useSearchParams()
   const isUnlocked = searchParams.get('acesso') === 'vip' || searchParams.get('plano') === 'vip'
   const planoAtual = isUnlocked ? 'VIP' : 'FREE'
-
-  useEffect(() => {
-    const url = new URL(window.location.href)
-    const isVipPage =
-      url.pathname.toLowerCase().includes('/vip') || isUnlocked
-
-    if (!isVipPage) return
-
-    const visitKey = `vip-visit-notified:${url.pathname}`
-    if (!sessionStorage.getItem(visitKey)) {
-      sessionStorage.setItem(visitKey, 'true')
-
-      void fetch('/api/notify-visit', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          pageType: VIP_PAGE_MARKER,
-          url: window.location.href,
-          referrer: document.referrer,
-          userAgent: navigator.userAgent,
-        }),
-      }).catch((error) => {
-        console.error('[v0] Erro ao enviar alerta VIP:', error)
-      })
-    }
-    // O bloco de envio de email foi totalmente removido daqui.
-  }, [isUnlocked])
 
   useEffect(() => {
     if (!isLoggedIn || !userPhone) return
