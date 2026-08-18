@@ -11,6 +11,7 @@ import { WithdrawalView } from '@/components/withdrawal-view'
 import { AccountMenu } from '@/components/account-menu'
 import { type PixKey, type Transaction } from '@/lib/store'
 
+
 type View = 'dashboard' | 'create-key' | 'my-keys' | 'withdrawal'
 
 interface UserData {
