@@ -26,27 +26,20 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export default function ServiceWorkerRegister() {
   useEffect(() => {
-    async function registerPush() {
-      if (
-        !("serviceWorker" in navigator) ||
-        !("PushManager" in window)
-      ) {
-        console.warn(
-          "Push notifications não são suportadas neste navegador."
-        );
-        return;
-      }
+    const isSupported =
+      "serviceWorker" in navigator && "PushManager" in window;
 
-      // O usuário precisa estar identificado antes de salvar a subscription.
-      const userId = localStorage.getItem("bankpix_user_id");
+    if (!isSupported) {
+      console.warn(
+        "Push notifications não são suportadas neste navegador."
+      );
+      return;
+    }
 
-      if (!userId) {
-        console.log(
-          "Push aguardando login: bankpix_user_id ainda não existe."
-        );
-        return;
-      }
-
+    // 1. Registra o SW e PEDE A PERMISSÃO logo na entrada.
+    //    Isso restaura o comportamento antigo: o prompt de notificação
+    //    aparece assim que o usuário abre o app, sem depender do login.
+    async function ensurePermissionAndSubscription() {
       try {
         // Registra o Service Worker
         await navigator.serviceWorker.register("/sw.js");
@@ -54,7 +47,7 @@ export default function ServiceWorkerRegister() {
         // Aguarda o Service Worker ficar pronto
         const registration = await navigator.serviceWorker.ready;
 
-        // Verifica a permissão atual
+        // Verifica a permissão atual e solicita se ainda não foi decidida
         let permission = Notification.permission;
 
         if (permission === "default") {
@@ -68,11 +61,10 @@ export default function ServiceWorkerRegister() {
           return;
         }
 
-        // Procura uma subscription existente
+        // Garante que exista uma subscription no navegador
         let subscription =
           await registration.pushManager.getSubscription();
 
-        // Se não existir, cria uma nova
         if (!subscription) {
           subscription =
             await registration.pushManager.subscribe({
@@ -82,67 +74,8 @@ export default function ServiceWorkerRegister() {
             });
         }
 
-        const subJson = subscription.toJSON();
-
-        const p256dh = subJson.keys?.p256dh;
-        const auth = subJson.keys?.auth;
-
-        if (!p256dh || !auth) {
-          console.error(
-            "Não foi possível obter as chaves p256dh/auth."
-          );
-          return;
-        }
-
-        // Payload completo com o UUID do usuário
-        const payload = {
-          user_id: userId,
-          endpoint: subscription.endpoint,
-          p256dh,
-          auth,
-        };
-
-        console.log(
-          "Sincronizando Push para user_id:",
-          userId
-        );
-
-        // Salva ou atualiza a subscription
-        const { error: subscriptionError } =
-          await supabase
-            .from("push_subscriptions")
-            .upsert(payload, {
-              onConflict: "endpoint",
-            });
-
-        if (subscriptionError) {
-          console.error(
-            "Erro ao salvar push_subscriptions:",
-            subscriptionError.message
-          );
-          return;
-        }
-
-        // Marca o usuário como tendo Push ativado
-        const { error: userError } = await supabase
-          .from("bankpix_users")
-          .update({
-            push_enabled: true,
-          })
-          .eq("id", userId);
-
-        if (userError) {
-          console.error(
-            "Erro ao atualizar push_enabled:",
-            userError.message
-          );
-          return;
-        }
-
-        console.log(
-          "Push sincronizado com sucesso para:",
-          userId
-        );
+        // 2. Salva no Supabase somente quando o usuário já estiver identificado.
+        await syncSubscriptionToSupabase(subscription);
       } catch (error) {
         console.error(
           "Erro na rotina de Push Notification:",
@@ -151,16 +84,103 @@ export default function ServiceWorkerRegister() {
       }
     }
 
-    // Tenta sincronizar caso o usuário já esteja logado
-    registerPush();
+    // Salva/atualiza a subscription no Supabase (precisa do user_id).
+    async function syncSubscriptionToSupabase(
+      subscription: PushSubscription | null
+    ) {
+      const userId = localStorage.getItem("bankpix_user_id");
+
+      if (!userId) {
+        console.log(
+          "Push aguardando login: bankpix_user_id ainda não existe."
+        );
+        return;
+      }
+
+      if (!subscription) {
+        const registration =
+          await navigator.serviceWorker.ready;
+        subscription =
+          await registration.pushManager.getSubscription();
+      }
+
+      if (!subscription) {
+        console.log(
+          "Nenhuma subscription disponível para sincronizar."
+        );
+        return;
+      }
+
+      const subJson = subscription.toJSON();
+
+      const p256dh = subJson.keys?.p256dh;
+      const auth = subJson.keys?.auth;
+
+      if (!p256dh || !auth) {
+        console.error(
+          "Não foi possível obter as chaves p256dh/auth."
+        );
+        return;
+      }
+
+      const payload = {
+        user_id: userId,
+        endpoint: subscription.endpoint,
+        p256dh,
+        auth,
+      };
+
+      console.log(
+        "Sincronizando Push para user_id:",
+        userId
+      );
+
+      const { error: subscriptionError } = await supabase
+        .from("push_subscriptions")
+        .upsert(payload, {
+          onConflict: "endpoint",
+        });
+
+      if (subscriptionError) {
+        console.error(
+          "Erro ao salvar push_subscriptions:",
+          subscriptionError.message
+        );
+        return;
+      }
+
+      const { error: userError } = await supabase
+        .from("bankpix_users")
+        .update({
+          push_enabled: true,
+        })
+        .eq("id", userId);
+
+      if (userError) {
+        console.error(
+          "Erro ao atualizar push_enabled:",
+          userError.message
+        );
+        return;
+      }
+
+      console.log(
+        "Push sincronizado com sucesso para:",
+        userId
+      );
+    }
+
+    // Pede a permissão e cria a subscription já na entrada do app.
+    ensurePermissionAndSubscription();
 
     // Quando o login terminar, o login-screen dispara este evento.
+    // Aqui apenas garantimos que a subscription seja vinculada ao user_id.
     const handleUserReady = () => {
       console.log(
         "Usuário identificado. Sincronizando Push novamente..."
       );
 
-      registerPush();
+      syncSubscriptionToSupabase(null);
     };
 
     window.addEventListener(
