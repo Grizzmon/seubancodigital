@@ -1,4 +1,7 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
+  "/api/register-user/route": "app/api/register-user/route.js",
+  "/api/remarketing-cron/route": "app/api/remarketing-cron/route.js",
+  "/api/welcome-push/route": "app/api/welcome-push/route.js",
   "/page": "app/page.js"
 }

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useCallback, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { LoginScreen } from '@/components/login-screen'
 import { AppSidebar } from '@/components/app-sidebar'
 import { DashboardView } from '@/components/dashboard-view'
@@ -24,59 +23,6 @@ interface UserData {
   transactions: Transaction[]
 }
 
-async function salvarUsuarioRealNoBanco(
-  fullName: string,
-  telefone: string,
-  tipoPlano: 'FREE' | 'VIP',
-  pushAtivo: boolean = false
-): Promise<string | null> {
-  try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Variáveis do Supabase não configuradas.')
-      return null
-    }
-
-    const response = await fetch(
-      `${supabaseUrl}/rest/v1/bankpix_users`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: supabaseAnonKey,
-          Authorization: `Bearer ${supabaseAnonKey}`,
-          Prefer: 'resolution=merge-duplicates,return=representation',
-        },
-        body: JSON.stringify({
-          name: fullName.trim(),
-          phone: telefone,
-          access_type: tipoPlano,
-          push_enabled: pushAtivo,
-          vip_activated_at: tipoPlano === 'VIP' ? new Date().toISOString() : null
-        }),
-      },
-    )
-
-    if (!response.ok) {
-      console.error('Erro ao salvar usuário real:', await response.text())
-      return null
-    }
-
-    const data = await response.json()
-    if (data && Array.isArray(data) && data.length > 0) {
-      return data[0].id
-    } else if (data && data.id) {
-      return data.id
-    }
-    return null
-  } catch (error) {
-    console.error('Erro de conexão com o banco:', error)
-    return null
-  }
-}
-
 function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userName, setUserName] = useState('')
@@ -87,10 +33,6 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [currentView, setCurrentView] = useState<View>('dashboard')
   const [showAccountMenu, setShowAccountMenu] = useState(false)
-
-  const searchParams = useSearchParams()
-  const isUnlocked = searchParams.get('acesso') === 'vip' || searchParams.get('plano') === 'vip'
-  const planoAtual = isUnlocked ? 'VIP' : 'FREE'
 
   useEffect(() => {
     if (!isLoggedIn || !userPhone) return
@@ -123,21 +65,10 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
       setKeys(userData.keys || [])
       setTransactions(userData.transactions || [])
       setIsLoggedIn(true)
-
-      const hasPushActive = typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted'
-
-      const userId = await salvarUsuarioRealNoBanco(
-        userData.name,
-        userData.phone,
-        planoAtual,
-        hasPushActive
-      )
-
-      if (userId && typeof window !== 'undefined') {
-        localStorage.setItem('bankpix_user_id', userId)
-      }
+      // O usuário já foi criado/recuperado e vinculado ao push pela LoginScreen
+      // (lib/register-user.ts); nada mais a persistir aqui.
     },
-    [planoAtual],
+    [],
   )
 
   const handleLogout = useCallback(() => {
