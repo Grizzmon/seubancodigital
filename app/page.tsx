@@ -83,6 +83,7 @@ function MainApp() {
           userName={userName}
           balance={balance}
           onOpenPix={() => setCurrentView('pix')}
+          onOpenWithdraw={() => setCurrentView('withdraw')}
           onOpenStatement={() => setCurrentView('statement')}
           onLogout={handleLogout}
         />
@@ -110,10 +111,10 @@ function MainApp() {
         <WithdrawFlow
           balance={balance}
           transactionPin={profile?.transactionPin}
-          linkedWallets={profile?.wallets}
           onWithdrawal={handleWithdrawal}
           onDone={() => setCurrentView('home')}
-          onCancel={() => setCurrentView('pix')}
+          onGoToPix={() => setCurrentView('pix')}
+          onCancel={() => setCurrentView('home')}
         />
       )}
 

@@ -1,7 +1,7 @@
 'use client'
 
-import Image from 'next/image'
 import { ShieldCheck } from 'lucide-react'
+import { DotsLoader } from '@/components/ui/dots-loader'
 
 interface TransitionScreenProps {
   message: string
@@ -9,7 +9,7 @@ interface TransitionScreenProps {
 }
 
 // Tela intermediária mostrada entre uma seção e a próxima do cadastro.
-// A barra inferior esvazia no mesmo tempo da transição.
+// A barra inferior enche no mesmo tempo da transição.
 export function TransitionScreen({ message, durationMs }: TransitionScreenProps) {
   return (
     <div
@@ -17,18 +17,7 @@ export function TransitionScreen({ message, durationMs }: TransitionScreenProps)
       aria-live="polite"
       className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-10 bg-background px-8 text-center animate-fade-in"
     >
-      <div className="relative flex h-36 w-36 items-center justify-center">
-        <span className="absolute inset-0 rounded-full bg-accent animate-soft-pulse" />
-        <span className="absolute inset-3 rounded-full border-[3px] border-primary/15" />
-        <span className="absolute inset-3 rounded-full border-[3px] border-transparent border-t-primary animate-spin-slow" />
-        <Image
-          src="/images/realpayz-icon.png"
-          alt=""
-          width={64}
-          height={64}
-          className="relative h-16 w-16 rounded-2xl shadow-lg shadow-primary/30"
-        />
-      </div>
+      <DotsLoader size={16} className="text-primary" />
 
       <div className="flex flex-col gap-2">
         <p className="text-balance text-2xl font-bold text-foreground">{message}</p>

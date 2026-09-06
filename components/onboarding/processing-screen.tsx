@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, type ReactNode } from 'react'
-import { CheckCircle2, Loader2 } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
+import { DotsLoader } from '@/components/ui/dots-loader'
 
 interface ProcessingScreenProps {
   title: ReactNode
@@ -57,7 +58,7 @@ export function ProcessingScreen({ title, subtitle, messages, progress }: Proces
               {done ? (
                 <CheckCircle2 className="h-5 w-5 shrink-0 text-success animate-pop-in" />
               ) : active ? (
-                <Loader2 className="h-5 w-5 shrink-0 animate-spin text-primary" />
+                <DotsLoader size={5} className="w-5 shrink-0 text-primary" />
               ) : (
                 <span className="h-5 w-5 shrink-0 rounded-full border-2 border-border" />
               )}

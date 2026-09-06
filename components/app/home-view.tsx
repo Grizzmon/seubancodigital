@@ -8,7 +8,7 @@ import {
   EyeOff,
   Search,
   ChevronRight,
-  ArrowLeftRight,
+  Banknote,
   Barcode,
   CreditCard,
   CircleDollarSign,
@@ -33,6 +33,7 @@ interface HomeViewProps {
   userName: string
   balance: number
   onOpenPix: () => void
+  onOpenWithdraw: () => void
   onOpenStatement: () => void
   onLogout: () => void
 }
@@ -66,14 +67,14 @@ const BENEFITS = [
   },
 ]
 
-export function HomeView({ userName, balance, onOpenPix, onOpenStatement, onLogout }: HomeViewProps) {
+export function HomeView({ userName, balance, onOpenPix, onOpenWithdraw, onOpenStatement, onLogout }: HomeViewProps) {
   const [showBalance, setShowBalance] = useState(true)
   const { message, notify } = useInactiveToast()
 
   const name = capitalizeWords(firstName(userName)) || 'Cliente'
 
   const favorites: Favorite[] = [
-    { id: 'transfer', label: 'Transferências', icon: <ArrowLeftRight className="h-7 w-7" /> },
+    { id: 'withdraw', label: 'Levantamento', icon: <Banknote className="h-7 w-7" />, active: true },
     { id: 'pix', label: 'Pix', icon: <PixSymbol className="h-7 w-7" />, active: true },
     { id: 'payments', label: 'Pagamentos', icon: <Barcode className="h-7 w-7" /> },
     { id: 'cards', label: 'Cartões', icon: <CreditCard className="h-7 w-7" /> },
@@ -84,10 +85,8 @@ export function HomeView({ userName, balance, onOpenPix, onOpenStatement, onLogo
   ]
 
   const handleFavorite = (item: Favorite) => {
-    if (item.active) {
-      onOpenPix()
-      return
-    }
+    if (item.id === 'pix') return onOpenPix()
+    if (item.id === 'withdraw') return onOpenWithdraw()
     notify(item.label)
   }
 

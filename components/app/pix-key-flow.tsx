@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Check, Copy, Landmark } from 'lucide-react'
+import { Check, Copy } from 'lucide-react'
+import { DotsLoader } from '@/components/ui/dots-loader'
 import type { PixKey } from '@/lib/store'
 import { generatePixCPF, generatePixCelular, generatePixRandomKey, PIX_KEY_TYPES, pixKeyTypeLabel } from '@/lib/pix-keys'
 import { capitalizeWords, isValidEmail } from '@/lib/onboarding-format'
@@ -155,13 +156,7 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel }: PixKeyFlowP
     const progress = ((messageIndex + 1) / GENERATING_MESSAGES.length) * 100
     return (
       <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-10 bg-background px-6 animate-fade-in">
-        <div className="relative flex h-32 w-32 items-center justify-center">
-          <span className="absolute inset-0 rounded-full border-4 border-accent" />
-          <span className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin" />
-          <span className="flex h-20 w-20 items-center justify-center rounded-full bg-brand-gradient text-primary-foreground">
-            <Landmark className="h-9 w-9" />
-          </span>
-        </div>
+        <DotsLoader size={16} className="text-primary" />
         <div className="flex flex-col items-center gap-3 text-center">
           <p className="text-xl font-semibold">{GENERATING_MESSAGES[messageIndex]}</p>
           <p className="text-sm text-muted-foreground">Não feche o aplicativo</p>

@@ -298,6 +298,23 @@
   animation: soft-pulse 2.4s ease-in-out infinite;
 }
 
+@keyframes dot-grow {
+  0%,
+  60%,
+  100% {
+    transform: scale(0.55);
+    opacity: 0.35;
+  }
+  25% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+}
+
+.animate-dot-grow {
+  animation: dot-grow 1.1s ease-in-out infinite both;
+}
+
 @keyframes sheet-up {
   from {
     opacity: 0;

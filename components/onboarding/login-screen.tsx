@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { ShieldCheck } from 'lucide-react'
+import { DotsLoader } from '@/components/ui/dots-loader'
 import { StepShell, UnderlineInput, PinField, PrimaryButton, GhostButton, BrandMark } from './ui'
 import { formatMozPhone, isValidMozPhone } from '@/lib/onboarding-format'
 import { registerUserAndLinkPush } from '@/lib/register-user'
@@ -54,11 +54,7 @@ export function LoginScreen({ onBack, onCreateAccount, onLogin }: LoginScreenPro
   if (connecting) {
     return (
       <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-6 bg-background px-8 text-center animate-fade-in">
-        <div className="relative flex h-20 w-20 items-center justify-center">
-          <span className="absolute inset-0 rounded-full border-4 border-accent" />
-          <span className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-primary" />
-          <ShieldCheck className="relative h-8 w-8 text-primary" />
-        </div>
+        <DotsLoader size={16} className="text-primary" />
         <div className="flex flex-col gap-2">
           <p className="text-xl font-bold text-foreground">Conexão segura</p>
           <p className="text-pretty text-muted-foreground">Autenticando o seu dispositivo...</p>
