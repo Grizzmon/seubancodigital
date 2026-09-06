@@ -1,48 +1,39 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import webpush from 'web-push'
+import { getServerSupabase, sendToSubscriptions, type StoredSubscription } from '@/lib/push-server'
+import {
+  WELCOME_PUSH_DELAY_MINUTES,
+  WELCOME_PUSH_MAX_AGE_HOURS,
+  WELCOME_PUSH_MODE,
+  buildWelcomePushPayload,
+} from '@/lib/push-config'
 
-webpush.setVapidDetails(
-  'mailto:suporte@bankpix.com',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-)
-
+// Executado pelo Vercel Cron (ver vercel.json).
+// Envia o push "conta aprovada" para todo usuário que:
+//   - foi criado há pelo menos X minutos (X = 0 no modo 'immediate', WELCOME_PUSH_DELAY_MINUTES no modo 'delayed')
+//   - ainda não recebeu (last_remarketing_sent_at nulo)
+//   - possui pelo menos uma inscrição de push vinculada
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('authorization')
 
-    if (
-      process.env.CRON_SECRET &&
-      authHeader !== `Bearer ${process.env.CRON_SECRET}`
-    ) {
+    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Não autorizado' }, { status: 401 })
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY
+    const supabase = getServerSupabase()
 
-    if (!supabaseUrl || !serviceRole) {
-      return NextResponse.json(
-        { error: 'Supabase não configurado' },
-        { status: 500 }
-      )
-    }
+    const delayMinutes = WELCOME_PUSH_MODE === 'delayed' ? WELCOME_PUSH_DELAY_MINUTES : 0
+    const limite = new Date(Date.now() - delayMinutes * 60_000).toISOString()
+    const janelaInicio = new Date(Date.now() - WELCOME_PUSH_MAX_AGE_HOURS * 3_600_000).toISOString()
 
-    const supabase = createClient(supabaseUrl, serviceRole)
-
-    // Ajustado para 0 para permitir testes imediatos (sem espera de 2 horas)
-    const duasHorasAtras = new Date(
-      Date.now() - 0
-    ).toISOString()
-
-    // Adicionado .is('last_remarketing_sent_at', null) para evitar reenvios repetidos
     const { data: users, error: userError } = await supabase
       .from('bankpix_users')
       .select('id, name, created_at')
-      .eq('access_type', 'FREE')
-      .lt('created_at', duasHorasAtras)
+      .lte('created_at', limite)
+      .gte('created_at', janelaInicio)
       .is('last_remarketing_sent_at', null)
+      .order('created_at', { ascending: false })
+      .limit(500)
 
     if (userError) {
       return NextResponse.json(
@@ -52,79 +43,66 @@ export async function GET(request: Request) {
     }
 
     if (!users || users.length === 0) {
-      return NextResponse.json({
-        success: true,
-        message: 'Nenhum usuário elegível no momento',
-        count: 0,
-      })
+      return NextResponse.json({ success: true, message: 'Nenhum usuário elegível', count: 0 })
     }
 
-    let enviadas = 0
+    const userIds = users.map((u) => u.id)
+
+    const { data: subs, error: subsError } = await supabase
+      .from('push_subscriptions')
+      .select('id, endpoint, p256dh, auth, user_id')
+      .in('user_id', userIds)
+
+    if (subsError) {
+      return NextResponse.json(
+        { error: 'Erro ao buscar inscrições', details: subsError.message },
+        { status: 500 }
+      )
+    }
+
+    const subsByUser = new Map<string, StoredSubscription[]>()
+    for (const sub of subs || []) {
+      const list = subsByUser.get(sub.user_id) || []
+      list.push(sub)
+      subsByUser.set(sub.user_id, list)
+    }
+
+    let usuariosNotificados = 0
+    let notificacoesEnviadas = 0
+    let expiradasRemovidas = 0
     const agora = new Date().toISOString()
 
     for (const user of users) {
-      const { data: subs } = await supabase
-        .from('push_subscriptions')
-        .select('id, endpoint, p256dh, auth')
-        .eq('user_id', user.id)
-        .limit(1)
+      const userSubs = subsByUser.get(user.id)
+      if (!userSubs || userSubs.length === 0) continue
 
-      if (!subs || subs.length === 0) continue
+      const result = await sendToSubscriptions(supabase, userSubs, buildWelcomePushPayload(user.name))
 
-      const sub = subs[0]
+      notificacoesEnviadas += result.enviadas
+      expiradasRemovidas += result.expiradas
 
-      const pushSubscription = {
-        endpoint: sub.endpoint,
-        keys: {
-          p256dh: sub.p256dh,
-          auth: sub.auth,
-        },
-      }
-
-      const payload = JSON.stringify({
-        title: 'BankPix',
-        body: `${user.name || 'Você'}, sua conta VIP ainda não foi ativada. Ative agora e comece a receber seus Pix sem limitações 🚀`,
-        icon: '/icon-192.png',
-        badge: '/icon-192.png',
-        data: {
-          url: 'https://seubancodigital.vercel.app/?acesso=vip',
-        },
-      })
-
-      try {
-        await webpush.sendNotification(pushSubscription, payload)
-
-        // Atualiza a trava para registrar que o remarketing foi enviado com sucesso para este usuário
+      if (result.enviadas > 0) {
+        usuariosNotificados++
         await supabase
           .from('bankpix_users')
           .update({ last_remarketing_sent_at: agora })
           .eq('id', user.id)
-
-        enviadas++
-      } catch (err: any) {
-        if (err.statusCode === 404 || err.statusCode === 410) {
-          await supabase
-            .from('push_subscriptions')
-            .delete()
-            .eq('id', sub.id)
-        } else {
-          console.error('Erro ao enviar push:', err)
-        }
       }
     }
 
     return NextResponse.json({
       success: true,
-      notificacoes_enviadas: enviadas,
+      modo: WELCOME_PUSH_MODE,
+      atraso_minutos: delayMinutes,
+      usuarios_elegiveis: users.length,
+      usuarios_notificados: usuariosNotificados,
+      notificacoes_enviadas: notificacoesEnviadas,
+      expiradas_removidas: expiradasRemovidas,
     })
   } catch (error: any) {
-    console.error('Erro crítico:', error)
-
+    console.error('Erro crítico no cron:', error)
     return NextResponse.json(
-      {
-        error: 'Erro interno',
-        details: error?.message || 'Erro desconhecido',
-      },
+      { error: 'Erro interno', details: error?.message || 'Erro desconhecido' },
       { status: 500 }
     )
   }

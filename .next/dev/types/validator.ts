@@ -83,6 +83,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../../app/api/register-user/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/register-user">> = Specific
+  const handler = {} as typeof import("../../../app/api/register-user/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../../app/api/remarketing-cron/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/remarketing-cron">> = Specific
@@ -114,6 +123,15 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/send-push">> = Specific
   const handler = {} as typeof import("../../../app/api/send-push/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../../app/api/welcome-push/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/welcome-push">> = Specific
+  const handler = {} as typeof import("../../../app/api/welcome-push/route.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check

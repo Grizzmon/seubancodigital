@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ArrowRight, ArrowLeft, Phone, User, Lock, CheckCircle, Wallet, Calendar, BarChart3, MapPin, Eye, EyeOff, ShieldCheck, Sparkles, UploadCloud, Zap } from 'lucide-react'
 import { showInstallPrompt } from './install-prompt'
+import { registerUserAndLinkPush } from '@/lib/register-user'
 
 export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login')
@@ -77,48 +78,16 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
 
       setPreLinkLoading(true);
 
-      // Recupera o UUID real do usuário no Supabase
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      const params = new URLSearchParams(window.location.search);
+      const isVip = params.get('acesso') === 'vip' || params.get('plano') === 'vip';
 
-      if (supabaseUrl && supabaseAnonKey) {
-        const response = await fetch(
-          `${supabaseUrl}/rest/v1/bankpix_users?phone=eq.${encodeURIComponent(
-            phone
-          )}&select=id,name,phone,access_type`,
-          {
-            headers: {
-              apikey: supabaseAnonKey,
-              Authorization: `Bearer ${supabaseAnonKey}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const users = await response.json();
-
-          if (Array.isArray(users) && users.length > 0) {
-            const user = users[0];
-
-            // Guarda o UUID real
-            localStorage.setItem(
-              "bankpix_user_id",
-              user.id
-            );
-
-            // Avisa o Service Worker Register
-            // que o usuário já está identificado
-            window.dispatchEvent(
-              new Event("bankpix-user-ready")
-            );
-
-            console.log(
-              "Usuário identificado:",
-              user.id
-            );
-          }
-        }
-      }
+      // Recupera (ou cria, se faltar) o usuário real e vincula o push ao seu id
+      await registerUserAndLinkPush({
+        name: userData.name || '',
+        phone,
+        accessType: isVip ? 'VIP' : 'FREE',
+        newAccount: false,
+      });
 
       await new Promise((r) => setTimeout(r, 6000));
 
@@ -186,75 +155,17 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
     const isVip = params.get('acesso') === 'vip' || params.get('plano') === 'vip'
     const planoAtual = isVip ? 'VIP' : 'FREE'
 
-    try {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    // Cria o usuário no servidor, vincula a inscrição de push e dispara
+    // a notificação "conta aprovada" (ver lib/push-config.ts).
+    const userId = await registerUserAndLinkPush({
+      name: name.trim(),
+      phone,
+      accessType: planoAtual,
+      newAccount: true,
+    })
 
-      if (supabaseUrl && supabaseAnonKey) {
-        const response = await fetch(`${supabaseUrl}/rest/v1/bankpix_users`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            apikey: supabaseAnonKey,
-            Authorization: `Bearer ${supabaseAnonKey}`,
-            Prefer: 'resolution=merge-duplicates,return=representation',
-          },
-          body: JSON.stringify({
-            name: name.trim(),
-            phone: phone,
-            access_type: planoAtual,
-            push_enabled: false,
-            vip_activated_at: planoAtual === 'VIP' ? new Date().toISOString() : null
-          }),
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          if (
-            data &&
-            Array.isArray(data) &&
-            data.length > 0 &&
-            data[0].id
-          ) {
-            const userId = data[0].id;
-
-            // Guarda o UUID real do usuário
-            localStorage.setItem(
-              "bankpix_user_id",
-              userId
-            );
-
-            // Avisa o Service Worker Register
-            // que o usuário já foi identificado
-            window.dispatchEvent(
-              new Event("bankpix-user-ready")
-            );
-
-            console.log(
-              "Usuário cadastrado e vinculado ao Push:",
-              userId
-            );
-          } else if (data && data.id) {
-            const userId = data.id;
-
-            localStorage.setItem(
-              "bankpix_user_id",
-              userId
-            );
-
-            window.dispatchEvent(
-              new Event("bankpix-user-ready")
-            );
-
-            console.log(
-              "Usuário cadastrado e vinculado ao Push:",
-              userId
-            );
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Erro ao cadastrar:', error)
+    if (userId) {
+      console.log('Usuário cadastrado e vinculado ao Push:', userId)
     }
 
     // ⏳ AJUSTE DO TEMPO 2: Agora aguarda mais 10 segundos (Totalizando 20 segundos)
