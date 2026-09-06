@@ -27,7 +27,7 @@ export interface Transaction {
   type: 'withdrawal' | 'income'
   amount: number
   amountMZN: number
-  method: 'mpesa' | 'emola' | 'transfer'
+  method: 'mpesa' | 'emola' | 'mkesh' | 'transfer'
   date: Date
   status: 'completed' | 'pending'
   senderName?: string
@@ -44,10 +44,11 @@ export function formatBRL(value: number): string {
 }
 
 export function formatMZN(value: number): string {
-  return new Intl.NumberFormat('pt-MZ', {
-    style: 'currency',
-    currency: 'MZN'
+  const number = new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(value)
+  return `${number} MZN`
 }
 
 export function convertToMZN(brl: number): number {

@@ -3,20 +3,16 @@
 import { useState, useCallback, useEffect, Suspense } from 'react'
 import { AuthFlow } from '@/components/onboarding/auth-flow'
 import { loadStoredUser, saveStoredUser, type StoredUser } from '@/lib/stored-user'
-import { AppSidebar } from '@/components/app-sidebar'
-import { DashboardView } from '@/components/dashboard-view'
-import { CreateKeyView } from '@/components/create-key-view'
-import { MyKeysView } from '@/components/my-keys-view'
-import { WithdrawalView } from '@/components/withdrawal-view'
-import { AccountMenu } from '@/components/account-menu'
+import { HomeView } from '@/components/app/home-view'
+import { PixAreaView } from '@/components/app/pix-area-view'
+import { PixKeyFlow } from '@/components/app/pix-key-flow'
+import { WithdrawFlow } from '@/components/app/withdraw-flow'
+import { StatementView } from '@/components/app/statement-view'
 import { type PixKey, type Transaction } from '@/lib/store'
 
+type View = 'home' | 'pix' | 'create-key' | 'withdraw' | 'statement'
 
-type View = 'dashboard' | 'create-key' | 'my-keys' | 'withdrawal'
-
-type UserData = StoredUser
-
-function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
+function MainApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userName, setUserName] = useState('')
   const [userPhone, setUserPhone] = useState('')
@@ -24,8 +20,8 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
   const [income, setIncome] = useState(0)
   const [keys, setKeys] = useState<PixKey[]>([])
   const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [currentView, setCurrentView] = useState<View>('dashboard')
-  const [showAccountMenu, setShowAccountMenu] = useState(false)
+  const [profile, setProfile] = useState<StoredUser | null>(null)
+  const [currentView, setCurrentView] = useState<View>('home')
 
   useEffect(() => {
     if (!isLoggedIn || !userPhone) return
@@ -43,119 +39,92 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
     })
   }, [isLoggedIn, userName, userPhone, balance, income, keys, transactions])
 
-  const handleLogin = useCallback(
-    async (userData: UserData) => {
-      setUserName(userData.name)
-      setUserPhone(userData.phone)
-      setBalance(userData.balance)
-      setIncome(userData.income)
-      setKeys(userData.keys || [])
-      setTransactions(userData.transactions || [])
-      setIsLoggedIn(true)
-      // O usuário já foi criado/recuperado e vinculado ao push pela LoginScreen
-      // (lib/register-user.ts); nada mais a persistir aqui.
-    },
-    [],
-  )
+  const handleLogin = useCallback(async (userData: StoredUser) => {
+    setUserName(userData.name)
+    setUserPhone(userData.phone)
+    setBalance(userData.balance)
+    setIncome(userData.income)
+    setKeys(userData.keys || [])
+    setTransactions(userData.transactions || [])
+    setProfile(loadStoredUser(userData.phone) ?? userData)
+    setCurrentView('home')
+    setIsLoggedIn(true)
+  }, [])
 
   const handleLogout = useCallback(() => {
     setIsLoggedIn(false)
     setUserName('')
     setUserPhone('')
-    setCurrentView('dashboard')
+    setProfile(null)
+    setCurrentView('home')
     setKeys([])
     setTransactions([])
     setBalance(0)
     setIncome(0)
-    setShowAccountMenu(false)
-  }, [])
-
-  const handleNavigate = useCallback((view: View) => {
-    setCurrentView(view)
   }, [])
 
   const handleAddKey = useCallback((key: PixKey) => {
     setKeys((previousKeys) => [key, ...previousKeys])
   }, [])
 
-  const handleWithdrawal = useCallback(
-    (transaction: Transaction) => {
-      setBalance((currentBalance) => currentBalance - transaction.amount)
-      setTransactions((previousTransactions) => [transaction, ...previousTransactions])
-    },
-    [],
-  )
+  const handleWithdrawal = useCallback((transaction: Transaction) => {
+    setBalance((currentBalance) => currentBalance - transaction.amount)
+    setTransactions((previousTransactions) => [transaction, ...previousTransactions])
+  }, [])
 
   if (!isLoggedIn) {
     return <AuthFlow onLogin={handleLogin} />
   }
 
-  // A área interna ainda usa o tema escuro anterior; será redesenhada na próxima fase.
   return (
-    <div className="dark flex min-h-screen flex-col bg-gray-950 text-white lg:flex-row">
-      <AccountMenu
-        isOpen={showAccountMenu}
-        onClose={() => setShowAccountMenu(false)}
-        userName={userName}
-        userPhone={userPhone}
-      />
-
-      <div className="hidden lg:block">
-        <AppSidebar
-          currentView={currentView}
-          onViewChange={setCurrentView}
+    <div className="mx-auto min-h-dvh w-full max-w-md bg-background text-foreground">
+      {currentView === 'home' && (
+        <HomeView
           userName={userName}
-          userPhone={userPhone}
+          balance={balance}
+          onOpenPix={() => setCurrentView('pix')}
+          onOpenStatement={() => setCurrentView('statement')}
           onLogout={handleLogout}
-          onOpenAccountMenu={() => setShowAccountMenu(true)}
         />
-      </div>
+      )}
 
-      <main className="m-0 min-h-screen w-full p-0 lg:pl-64">
-        <div className="w-full p-0 md:p-6 lg:p-8">
-          {currentView === 'dashboard' && (
-            <DashboardView
-              userName={userName}
-              balance={balance}
-              income={income}
-              keys={keys}
-              transactions={transactions}
-              onNavigate={handleNavigate}
-              vslVersion={vslVersion}
-            />
-          )}
+      {currentView === 'pix' && (
+        <PixAreaView
+          keys={keys}
+          onBack={() => setCurrentView('home')}
+          onCreateKey={() => setCurrentView('create-key')}
+          onWithdraw={() => setCurrentView('withdraw')}
+        />
+      )}
 
-          {currentView === 'create-key' && (
-            <CreateKeyView
-              userName={userName}
-              onAddKey={handleAddKey}
-              onBack={() => setCurrentView('dashboard')}
-              vslVersion={vslVersion}
-            />
-          )}
+      {currentView === 'create-key' && (
+        <PixKeyFlow
+          userName={userName}
+          onAddKey={handleAddKey}
+          onDone={() => setCurrentView('pix')}
+          onCancel={() => setCurrentView('pix')}
+        />
+      )}
 
-          {currentView === 'my-keys' && (
-            <MyKeysView
-              keys={keys}
-              onCreateKey={() => setCurrentView('create-key')}
-              onBack={() => setCurrentView('dashboard')}
-            />
-          )}
+      {currentView === 'withdraw' && (
+        <WithdrawFlow
+          balance={balance}
+          transactionPin={profile?.transactionPin}
+          linkedWallets={profile?.wallets}
+          onWithdrawal={handleWithdrawal}
+          onDone={() => setCurrentView('home')}
+          onCancel={() => setCurrentView('pix')}
+        />
+      )}
 
-          {currentView === 'withdrawal' && (
-            <WithdrawalView
-              balance={balance}
-              onWithdrawal={handleWithdrawal}
-              onBack={() => setCurrentView('dashboard')}
-            />
-          )}
-        </div>
-      </main>
+      {currentView === 'statement' && (
+        <StatementView balance={balance} transactions={transactions} onBack={() => setCurrentView('home')} />
+      )}
     </div>
   )
 }
 
-export default function Home(props: { vslVersion?: string }) {
+export default function Home() {
   return (
     <Suspense
       fallback={
@@ -164,7 +133,7 @@ export default function Home(props: { vslVersion?: string }) {
         </div>
       }
     >
-      <MainApp {...props} />
+      <MainApp />
     </Suspense>
   )
 }
