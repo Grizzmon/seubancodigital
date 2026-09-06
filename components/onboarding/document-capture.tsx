@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Camera, CheckCircle2, XCircle, RefreshCw, ImageUp } from 'lucide-react'
 import { PrimaryButton, GhostButton } from './ui'
 import { cn } from '@/lib/utils'
+import { TIMING } from '@/lib/timing'
 
 type Status = 'idle' | 'capturing' | 'analyzing' | 'success' | 'error'
 
@@ -68,7 +69,7 @@ export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
     const attempt = attempts + 1
     setAttempts(attempt)
     const approved = attempt > 1 || Math.random() > 0.3
-    window.setTimeout(() => setStatus(approved ? 'success' : 'error'), 1800)
+    window.setTimeout(() => setStatus(approved ? 'success' : 'error'), TIMING.documentAnalysis)
   }
 
   const takePhoto = () => {

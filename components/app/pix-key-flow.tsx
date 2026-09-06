@@ -5,6 +5,7 @@ import { Check, Copy, Landmark } from 'lucide-react'
 import type { PixKey } from '@/lib/store'
 import { generatePixCPF, generatePixCelular, generatePixRandomKey, PIX_KEY_TYPES, pixKeyTypeLabel } from '@/lib/pix-keys'
 import { capitalizeWords, isValidEmail } from '@/lib/onboarding-format'
+import { TIMING } from '@/lib/timing'
 import { StepShell, UnderlineInput, PrimaryButton, OptionRow } from '@/components/onboarding/ui'
 import { PixSymbol } from './pix-symbol'
 
@@ -70,10 +71,10 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel }: PixKeyFlowP
         onAddKey(key)
         setCreated(key)
         go('success')
-      }, 900)
+      }, TIMING.successHold)
       return () => clearTimeout(finish)
     }
-    const timer = setTimeout(() => setMessageIndex((i) => i + 1), 1100)
+    const timer = setTimeout(() => setMessageIndex((i) => i + 1), TIMING.pixKeyMessage)
     return () => clearTimeout(timer)
   }, [step, messageIndex, type, email, name, onAddKey])
 

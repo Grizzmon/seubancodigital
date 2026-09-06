@@ -7,6 +7,7 @@ import { formatBRL, formatMZN, convertToMZN, BRL_TO_MZN, type Transaction } from
 import { MOBILE_WALLETS, formatMozPhone, isValidMozPhone, formatCurrencyInput, currencyInputToNumber } from '@/lib/onboarding-format'
 import { StepShell, PrimaryButton, OptionRow, PinField } from '@/components/onboarding/ui'
 import { cn } from '@/lib/utils'
+import { TIMING } from '@/lib/timing'
 
 type WalletId = (typeof MOBILE_WALLETS)[number]['id']
 type Step = 'amount' | 'wallet' | 'phone' | 'pin' | 'processing' | 'success'
@@ -83,10 +84,10 @@ export function WithdrawFlow({ balance, transactionPin, linkedWallets, onWithdra
         onWithdrawal(transaction)
         setResult(transaction)
         go('success')
-      }, 900)
+      }, TIMING.successHold)
       return () => clearTimeout(finish)
     }
-    const timer = setTimeout(() => setMessageIndex((i) => i + 1), 1200)
+    const timer = setTimeout(() => setMessageIndex((i) => i + 1), TIMING.withdrawMessage)
     return () => clearTimeout(timer)
   }, [step, messageIndex, wallet, amount, amountMZN, onWithdrawal])
 

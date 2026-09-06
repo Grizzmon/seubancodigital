@@ -12,6 +12,9 @@ import {
   PinField,
 } from './ui'
 import { DocumentCapture } from './document-capture'
+import { TransitionScreen } from './transition-screen'
+import { ProcessingScreen, useTimedProgress } from './processing-screen'
+import { TIMING } from '@/lib/timing'
 import {
   PROVINCES,
   LEAD_REASONS,
@@ -50,6 +53,7 @@ const STEPS = [
   'docInstructions',
   'docFront',
   'docBack',
+  'opening',
   'accountOpen',
   'txPin',
   'wallets',
@@ -58,7 +62,46 @@ const STEPS = [
 type Step = (typeof STEPS)[number]
 
 // Telas em que não faz sentido voltar (processos já concluídos).
-const NO_BACK: Step[] = ['processing', 'approved', 'pin6', 'accountOpen', 'txPin', 'wallets']
+const NO_BACK: Step[] = ['processing', 'approved', 'pin6', 'opening', 'accountOpen', 'txPin', 'wallets']
+
+// Telas que já são um "processamento": não precisam da tela de transição antes.
+const LOADER_STEPS: Step[] = ['processing', 'opening']
+
+// Mensagem da tela de transição, de acordo com a tela para onde o usuário vai.
+const TRANSITION_MESSAGES: Partial<Record<Step, string>> = {
+  email: 'Validando o seu número de celular...',
+  name: 'Confirmando o seu e-mail...',
+  leadConfirm: 'Guardando os seus dados com segurança...',
+  reasons: 'Registando o seu aceite...',
+  pin6: 'Preparando a segurança da sua conta...',
+  birth: 'Senha guardada. Continuando o cadastro...',
+  mother: 'Confirmando a sua data de nascimento...',
+  province: 'Verificando as suas informações...',
+  income: 'Localizando a sua província...',
+  occupation: 'Analisando o seu perfil financeiro...',
+  docType: 'Preparando a verificação de identidade...',
+  docInstructions: 'Configurando a leitura do documento...',
+  docFront: 'Preparando a câmera...',
+  docBack: 'Frente do documento recebida. Agora o verso...',
+  txPin: 'Ativando a sua conta...',
+  wallets: 'Buscando carteiras móveis disponíveis...',
+}
+
+const PROCESSING_MESSAGES = [
+  'Validando os dados informados',
+  'Consultando bases de segurança',
+  'Verificando o número de celular',
+  'Criando o seu cadastro',
+  'Aguardando aprovação',
+] as const
+
+const OPENING_MESSAGES = [
+  'Analisando as fotos do documento',
+  'Confirmando a sua identidade',
+  'Gerando o número da sua conta',
+  'Habilitando o Pix internacional',
+  'Finalizando a abertura',
+] as const
 
 interface SignupFlowProps {
   onExit: () => void
@@ -84,62 +127,102 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
   const [txPinConfirm, setTxPinConfirm] = useState('')
   const [wallets, setWallets] = useState<string[]>(MOBILE_WALLETS.map((w) => w.id))
 
-  const [progress, setProgress] = useState(0)
+  // Tela para onde estamos indo enquanto a transição "Verificando..." é exibida.
+  const [transitionTo, setTransitionTo] = useState<Step | null>(null)
+  const [registered, setRegistered] = useState(false)
+  const [approvedReady, setApprovedReady] = useState(false)
 
   const step = STEPS[index]
   const phoneDigits = phone.replace(/\D/g, '')
   const userFirstName = useMemo(() => capitalizeWords(firstName(name)), [name])
 
-  const go = (delta: 1 | -1) => {
-    setDirection(delta === 1 ? 'forward' : 'backward')
-    setIndex((i) => Math.min(Math.max(i + delta, 0), STEPS.length - 1))
+  const jumpTo = (target: Step, dir: 'forward' | 'backward') => {
+    setDirection(dir)
+    setIndex(STEPS.indexOf(target))
   }
-  const next = () => go(1)
-  const back = () => (index === 0 ? onExit() : go(-1))
+
+  // Avançar mostra a tela de transição por alguns segundos antes da próxima seção.
+  const next = () => {
+    const target = STEPS[Math.min(index + 1, STEPS.length - 1)]
+    if (LOADER_STEPS.includes(target)) {
+      jumpTo(target, 'forward')
+      return
+    }
+    setTransitionTo(target)
+  }
+  // Voltar é imediato.
+  const back = () => (index === 0 ? onExit() : jumpTo(STEPS[index - 1], 'backward'))
   const canGoBack = !NO_BACK.includes(step)
 
-  // TELA 7: barra de 0 a 100% enquanto o usuário é criado no servidor
+  useEffect(() => {
+    if (!transitionTo) return
+    const timer = window.setTimeout(() => {
+      jumpTo(transitionTo, 'forward')
+      setTransitionTo(null)
+    }, TIMING.stepTransition)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transitionTo])
+
+  // TELA 7: o usuário é criado no servidor enquanto a barra avança
   // (isso dispara a notificação "conta aprovada" para quem permitiu push).
+  const processingProgress = useTimedProgress(step === 'processing', TIMING.processingData, registered)
   useEffect(() => {
     if (step !== 'processing') return
     let cancelled = false
-    setProgress(0)
-
-    const startedAt = Date.now()
-    const duration = 4200
-    const tick = window.setInterval(() => {
-      const pct = Math.min(99, Math.round(((Date.now() - startedAt) / duration) * 100))
-      setProgress(pct)
-    }, 60)
+    setRegistered(false)
 
     const params = new URLSearchParams(window.location.search)
     const isVip = params.get('acesso') === 'vip' || params.get('plano') === 'vip'
 
-    Promise.all([
-      registerUserAndLinkPush({
-        name: capitalizeWords(name.trim()),
-        phone: phoneDigits,
-        accessType: isVip ? 'VIP' : 'FREE',
-        newAccount: true,
-      }),
-      new Promise((r) => setTimeout(r, duration)),
-    ]).then(() => {
-      if (cancelled) return
-      window.clearInterval(tick)
-      setProgress(100)
-      window.setTimeout(() => {
-        if (!cancelled) {
-          setDirection('forward')
-          setIndex(STEPS.indexOf('approved'))
-        }
-      }, 500)
+    registerUserAndLinkPush({
+      name: capitalizeWords(name.trim()),
+      phone: phoneDigits,
+      accessType: isVip ? 'VIP' : 'FREE',
+      newAccount: true,
     })
+      .catch(() => null)
+      .then(() => {
+        if (!cancelled) setRegistered(true)
+      })
 
     return () => {
       cancelled = true
-      window.clearInterval(tick)
     }
   }, [step, name, phoneDigits])
+
+  useEffect(() => {
+    if (step !== 'processing' || processingProgress < 100) return
+    const timer = window.setTimeout(() => jumpTo('approved', 'forward'), 900)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, processingProgress])
+
+  // TELA "Cadastro aprovado": o botão só aparece depois da animação de revelação.
+  useEffect(() => {
+    if (step !== 'approved') return
+    setApprovedReady(false)
+    const timer = window.setTimeout(() => setApprovedReady(true), TIMING.approvedReveal)
+    return () => window.clearTimeout(timer)
+  }, [step])
+
+  // Abertura da conta depois das fotos do documento.
+  const openingProgress = useTimedProgress(step === 'opening', TIMING.accountOpening)
+  useEffect(() => {
+    if (step !== 'opening' || openingProgress < 100) return
+    const timer = window.setTimeout(() => jumpTo('accountOpen', 'forward'), 900)
+    return () => window.clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, openingProgress])
+
+  if (transitionTo) {
+    return (
+      <TransitionScreen
+        message={TRANSITION_MESSAGES[transitionTo] ?? 'Verificando as suas informações...'}
+        durationMs={TIMING.stepTransition}
+      />
+    )
+  }
 
   const trackLead = () => {
     const fbq = (window as unknown as { fbq?: (...args: unknown[]) => void }).fbq
@@ -329,21 +412,24 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
 
     case 'processing':
       return (
-        <div
+        <ProcessingScreen
           key={step}
-          className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-10 bg-background px-8 text-center animate-fade-in"
-        >
-          <div className="flex flex-col gap-2">
-            <p className="text-2xl font-bold text-foreground">Enviando seus dados...</p>
-            <p className="text-muted-foreground">Estamos preparando a sua conta RealPayz.</p>
-          </div>
-          <div className="flex w-full flex-col gap-3">
-            <div className="h-3 w-full overflow-hidden rounded-full bg-muted" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
-              <div className="h-full rounded-full bg-brand-gradient transition-[width] duration-100 ease-linear" style={{ width: `${progress}%` }} />
-            </div>
-            <p className="text-right text-sm font-semibold tabular-nums text-primary">{progress}%</p>
-          </div>
-        </div>
+          title="Enviando seus dados..."
+          subtitle="Estamos preparando a sua conta RealPayz. Não feche o app."
+          messages={PROCESSING_MESSAGES}
+          progress={processingProgress}
+        />
+      )
+
+    case 'opening':
+      return (
+        <ProcessingScreen
+          key={step}
+          title={<>Vamos abrir a sua conta agora, {userFirstName}.</>}
+          subtitle="Estamos concluindo a verificação da sua identidade."
+          messages={OPENING_MESSAGES}
+          progress={openingProgress}
+        />
       )
 
     case 'approved':
@@ -365,19 +451,29 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
           </div>
           <div className="relative flex flex-col gap-6 px-6 pb-10 pt-6 text-center">
             <div className="flex flex-col gap-3">
-              <span className="mx-auto flex items-center gap-2 rounded-full bg-success/10 px-4 py-1.5 text-sm font-semibold text-success">
+              <span className="mx-auto flex items-center gap-2 rounded-full bg-success/10 px-4 py-1.5 text-sm font-semibold text-success animate-pop-in [animation-delay:600ms]">
                 <CheckCircle2 className="h-4 w-4" /> Cadastro aprovado
               </span>
-              <h1 className="text-balance text-3xl font-bold leading-tight text-foreground">
+              <h1 className="text-balance text-3xl font-bold leading-tight text-foreground animate-fade-in [animation-delay:1200ms]">
                 Bem-vindo à sua Conta RealPayz, {userFirstName}.
               </h1>
-              <p className="text-pretty text-muted-foreground">
+              <p className="text-pretty text-muted-foreground animate-fade-in [animation-delay:1800ms]">
                 Agora vamos configurar a segurança e concluir a verificação da sua identidade.
               </p>
             </div>
-            <PrimaryButton onClick={next}>
-              Continuar cadastro <ArrowRight className="h-5 w-5" />
-            </PrimaryButton>
+            <div className="min-h-14">
+              {approvedReady ? (
+                <div className="animate-pop-in">
+                  <PrimaryButton onClick={next}>
+                    Continuar cadastro <ArrowRight className="h-5 w-5" />
+                  </PrimaryButton>
+                </div>
+              ) : (
+                <p className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
+                  <span className="h-2 w-2 rounded-full bg-primary animate-soft-pulse" /> Preparando as próximas etapas...
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )
