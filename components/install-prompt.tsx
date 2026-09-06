@@ -66,36 +66,36 @@ export function InstallPrompt() {
       
       {/* Modal */}
       <div className="fixed inset-x-4 bottom-6 z-[9999] max-w-sm mx-auto">
-        <div className="bg-[#0f172a] rounded-3xl border border-white/10 shadow-2xl p-6">
+        <div className="relative bg-background rounded-3xl border border-border shadow-2xl p-6">
           {/* Botao fechar */}
-          <button onClick={handleClose} className="absolute top-4 right-4 p-1 text-white/50 hover:text-white">
+          <button onClick={handleClose} aria-label="Fechar" className="absolute top-4 right-4 p-1 text-muted-foreground hover:text-foreground">
             <X className="w-5 h-5" />
           </button>
           
           {/* Icone */}
           <div className="flex justify-center mb-4">
-            <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center">
-              <Download className="w-8 h-8 text-primary" />
+            <div className="w-16 h-16 rounded-2xl bg-brand-gradient flex items-center justify-center shadow-lg shadow-primary/30">
+              <Download className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
           
           {/* Texto */}
-          <h2 className="text-xl font-bold text-white text-center mb-2">Baixar o App BankPix</h2>
-          <p className="text-sm text-white/60 text-center mb-6">
-            Adicione o BankPix na sua tela inicial para acesso rapido
+          <h2 className="text-xl font-bold text-foreground text-center mb-2">Instalar o RealPayz</h2>
+          <p className="text-sm text-muted-foreground text-center mb-6">
+            Adicione o RealPayz à sua tela inicial para acesso rápido
           </p>
           
           {/* Botao instalar */}
           <button
             onClick={handleInstall}
-            className="w-full py-4 rounded-xl bg-primary text-white font-bold text-lg shadow-lg shadow-primary/30 active:scale-95 transition-transform"
+            className="w-full h-14 rounded-full bg-brand-gradient text-primary-foreground font-semibold text-base shadow-lg shadow-primary/30 active:scale-[0.98] transition-transform"
           >
-            BAIXAR AGORA
+            Instalar agora
           </button>
           
           {/* Link cancelar */}
-          <button onClick={handleClose} className="w-full mt-3 py-2 text-white/50 text-sm">
-            Agora nao
+          <button onClick={handleClose} className="w-full mt-3 py-2 text-muted-foreground text-sm font-medium">
+            Agora não
           </button>
         </div>
       </div>

@@ -1,24 +1,23 @@
 {
-  "name": "BankPix_2.0 Pro",
-  "short_name": "BankPix",
-  "description": "Seu pix no Bolço",
+  "name": "RealPayz",
+  "short_name": "RealPayz",
+  "description": "Seu dinheiro sem fronteiras, no seu ritmo.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#3b82f6",
-
-"icons": [
-  {
-    "src": "/launchericon-192x192.png",
-    "sizes": "192x192",
-    "type": "image/png",
-    "purpose": "any"
-  },
-  {
-    "src": "/launchericon-512x512.png",
-    "sizes": "512x512",
-    "type": "image/png",
-    "purpose": "any"
-  }
-]
+  "theme_color": "#d21f2d",
+  "icons": [
+    {
+      "src": "/images/realpayz-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/images/realpayz-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
 }

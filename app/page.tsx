@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useCallback, useEffect, Suspense } from 'react'
-import { LoginScreen } from '@/components/login-screen'
+import { AuthFlow } from '@/components/onboarding/auth-flow'
+import { loadStoredUser, saveStoredUser, type StoredUser } from '@/lib/stored-user'
 import { AppSidebar } from '@/components/app-sidebar'
 import { DashboardView } from '@/components/dashboard-view'
 import { CreateKeyView } from '@/components/create-key-view'
@@ -13,15 +14,7 @@ import { type PixKey, type Transaction } from '@/lib/store'
 
 type View = 'dashboard' | 'create-key' | 'my-keys' | 'withdrawal'
 
-interface UserData {
-  name: string
-  phone: string
-  password: string
-  balance: number
-  income: number
-  keys: PixKey[]
-  transactions: Transaction[]
-}
+type UserData = StoredUser
 
 function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -37,23 +30,17 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
   useEffect(() => {
     if (!isLoggedIn || !userPhone) return
 
-    const userData: UserData = {
+    // Mantém os dados do perfil (senhas, documento, carteiras) e atualiza só o que muda no app.
+    const existing = loadStoredUser(userPhone)
+    saveStoredUser({
+      ...(existing ?? { password: '' }),
       name: userName,
       phone: userPhone,
-      password: '',
       balance,
       income,
       keys,
       transactions,
-    }
-
-    const savedUser = localStorage.getItem(`bankpix_user_${userPhone}`)
-    if (savedUser) {
-      const existingData = JSON.parse(savedUser)
-      userData.password = existingData.password
-    }
-
-    localStorage.setItem(`bankpix_user_${userPhone}`, JSON.stringify(userData))
+    })
   }, [isLoggedIn, userName, userPhone, balance, income, keys, transactions])
 
   const handleLogin = useCallback(
@@ -100,16 +87,12 @@ function MainApp({ vslVersion = '9' }: { vslVersion?: string }) {
   )
 
   if (!isLoggedIn) {
-    return (
-      <LoginScreen
-        onLogin={handleLogin}
-        vslVersion={vslVersion}
-      />
-    )
+    return <AuthFlow onLogin={handleLogin} />
   }
 
+  // A área interna ainda usa o tema escuro anterior; será redesenhada na próxima fase.
   return (
-    <div className="flex min-h-screen flex-col bg-gray-950 text-white lg:flex-row">
+    <div className="dark flex min-h-screen flex-col bg-gray-950 text-white lg:flex-row">
       <AccountMenu
         isOpen={showAccountMenu}
         onClose={() => setShowAccountMenu(false)}
@@ -176,7 +159,7 @@ export default function Home(props: { vslVersion?: string }) {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center bg-gray-950 text-white">
+        <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
           Carregando...
         </div>
       }

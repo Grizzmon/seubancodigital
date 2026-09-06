@@ -3,41 +3,44 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* RealPayz — tema claro (onboarding, cadastro e login) */
 :root {
-  --background: oklch(0.13 0.02 260);
-  --foreground: oklch(0.97 0 0);
-  --card: oklch(0.17 0.02 260);
-  --card-foreground: oklch(0.97 0 0);
-  --popover: oklch(0.17 0.02 260);
-  --popover-foreground: oklch(0.97 0 0);
-  --primary: oklch(0.65 0.2 145);
-  --primary-foreground: oklch(0.13 0.02 260);
-  --secondary: oklch(0.22 0.02 260);
-  --secondary-foreground: oklch(0.97 0 0);
-  --muted: oklch(0.22 0.02 260);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.65 0.2 145);
-  --accent-foreground: oklch(0.13 0.02 260);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.2 0.01 20);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.2 0.01 20);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2 0.01 20);
+  --primary: oklch(0.58 0.22 25);
+  --primary-foreground: oklch(1 0 0);
+  --primary-deep: oklch(0.44 0.19 22);
+  --primary-light: oklch(0.66 0.22 27);
+  --secondary: oklch(0.96 0.008 20);
+  --secondary-foreground: oklch(0.2 0.01 20);
+  --muted: oklch(0.96 0.008 20);
+  --muted-foreground: oklch(0.5 0.01 20);
+  --accent: oklch(0.96 0.03 22);
+  --accent-foreground: oklch(0.44 0.19 22);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.97 0 0);
-  --border: oklch(0.28 0.02 260);
-  --input: oklch(0.22 0.02 260);
-  --ring: oklch(0.65 0.2 145);
-  --chart-1: oklch(0.65 0.2 145);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.91 0.005 20);
+  --input: oklch(0.91 0.005 20);
+  --ring: oklch(0.58 0.22 25);
+  --chart-1: oklch(0.58 0.22 25);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.75rem;
-  --sidebar: oklch(0.11 0.02 260);
-  --sidebar-foreground: oklch(0.97 0 0);
-  --sidebar-primary: oklch(0.65 0.2 145);
-  --sidebar-primary-foreground: oklch(0.13 0.02 260);
-  --sidebar-accent: oklch(0.22 0.02 260);
-  --sidebar-accent-foreground: oklch(0.97 0 0);
-  --sidebar-border: oklch(0.28 0.02 260);
-  --sidebar-ring: oklch(0.65 0.2 145);
-  --success: oklch(0.72 0.19 145);
+  --radius: 1rem;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.2 0.01 20);
+  --sidebar-primary: oklch(0.58 0.22 25);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.96 0.008 20);
+  --sidebar-accent-foreground: oklch(0.2 0.01 20);
+  --sidebar-border: oklch(0.91 0.005 20);
+  --sidebar-ring: oklch(0.58 0.22 25);
+  --success: oklch(0.62 0.17 150);
   --warning: oklch(0.75 0.18 60);
 }
 
@@ -50,6 +53,8 @@
   --popover-foreground: oklch(0.97 0 0);
   --primary: oklch(0.65 0.2 145);
   --primary-foreground: oklch(0.13 0.02 260);
+  --primary-deep: oklch(0.44 0.19 22);
+  --primary-light: oklch(0.66 0.22 27);
   --secondary: oklch(0.22 0.02 260);
   --secondary-foreground: oklch(0.97 0 0);
   --muted: oklch(0.22 0.02 260);
@@ -66,6 +71,7 @@
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
+  --success: oklch(0.72 0.19 145);
   --sidebar: oklch(0.11 0.02 260);
   --sidebar-foreground: oklch(0.97 0 0);
   --sidebar-primary: oklch(0.65 0.2 145);
@@ -117,6 +123,24 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --color-success: var(--success);
   --color-warning: var(--warning);
+  --color-primary-deep: var(--primary-deep);
+  --color-primary-light: var(--primary-light);
+}
+
+@utility bg-brand-gradient {
+  background-image: linear-gradient(
+    135deg,
+    var(--primary-light) 0%,
+    var(--primary) 55%,
+    var(--primary-deep) 100%
+  );
+}
+
+@utility text-brand-gradient {
+  background-image: linear-gradient(135deg, var(--primary-light), var(--primary-deep));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 @layer base {
@@ -211,4 +235,76 @@
 
 .animate-shrink-width {
   animation: shrink-width 5s linear forwards;
+}
+
+/* Transições de tela do onboarding (uma pergunta por vez) */
+@keyframes step-forward {
+  from {
+    opacity: 0;
+    transform: translateX(48px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes step-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-48px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-step-forward {
+  animation: step-forward 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-step-backward {
+  animation: step-backward 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes scan-line {
+  0%,
+  100% {
+    transform: translateY(-46%);
+  }
+  50% {
+    transform: translateY(46%);
+  }
+}
+
+.animate-scan-line {
+  animation: scan-line 2.2s ease-in-out infinite;
+}
+
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.08);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-pop-in {
+  animation: pop-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-step-forward,
+  .animate-step-backward,
+  .animate-scan-line,
+  .animate-pop-in {
+    animation: none;
+  }
 }
