@@ -263,7 +263,7 @@ export function LoginScreen({ onLogin }: { onLogin: (userData: any) => void }) {
               </span>
             </div>
 
-            <h1 className="text-3xl font-black tracking-tight text-blue-900 mb-3 leading-tight">Bem-vindo de volta!</h1>
+            <h1 className="text-3xl font-black tracking-tight text-blue-900 mb-3 leading-tight">Bem-vindo teste!</h1>
             <p className="text-base text-blue-600 font-semibold mb-10">Acesse sua conta com suas credenciais.</p>
             
             <form onSubmit={handleActualLogin} className="space-y-6">
