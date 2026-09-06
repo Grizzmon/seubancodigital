@@ -23,7 +23,7 @@ export function buildWelcomePushPayload(name?: string | null) {
     : 'Cliente'
 
   return JSON.stringify({
-    title: 'BankPix',
+    title: 'BankPix - BEM VINDO DE VOLTA TESTE',
     body: `Parabéns! ${displayName}, sua conta foi aprovada. Conclua os passos e use o Pix sem limites!`,
     icon: '/icon-192.png',
     badge: '/icon-192.png',
