@@ -49,7 +49,7 @@ export function StatementView({ balance, transactions, onBack }: { balance: numb
                   <span className="flex min-w-0 flex-1 flex-col">
                     <span className="truncate font-semibold">{incoming ? t.senderName || 'Pix recebido' : `Levantamento ${METHOD_LABEL[t.method]}`}</span>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(t.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      {new Date(t.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' })} às {new Date(t.date).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </span>
                   <span className="flex flex-col items-end">

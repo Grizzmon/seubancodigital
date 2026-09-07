@@ -12,6 +12,30 @@ import { type PixKey, type Transaction } from '@/lib/store'
 
 type View = 'home' | 'pix' | 'create-key' | 'withdraw' | 'statement'
 
+// TEMPORÁRIO PARA TESTES: desative com false antes de publicar para reativar o login.
+const DEMO_BYPASS_AUTH = true
+
+const DEMO_TRANSACTIONS: Transaction[] = [
+  { id: 'demo-1', type: 'income', amount: 50, amountMZN: 700, method: 'transfer', date: new Date('2026-09-07T10:33:00'), status: 'completed', senderName: 'Mario Luís' } as Transaction,
+  { id: 'demo-2', type: 'income', amount: 125.5, amountMZN: 1757, method: 'transfer', date: new Date('2026-09-06T14:18:00'), status: 'completed', senderName: 'Ana Beatriz' } as Transaction,
+  { id: 'demo-3', type: 'income', amount: 80, amountMZN: 1120, method: 'transfer', date: new Date('2026-09-05T09:42:00'), status: 'completed', senderName: 'Carlos Manuel' } as Transaction,
+  { id: 'demo-4', type: 'income', amount: 310.25, amountMZN: 4343.5, method: 'transfer', date: new Date('2026-09-04T16:07:00'), status: 'completed', senderName: 'Beatriz João' } as Transaction,
+  { id: 'demo-5', type: 'income', amount: 45, amountMZN: 630, method: 'transfer', date: new Date('2026-09-03T11:26:00'), status: 'completed', senderName: 'Pedro Luís' } as Transaction,
+  { id: 'demo-6', type: 'income', amount: 200, amountMZN: 2800, method: 'transfer', date: new Date('2026-09-02T18:51:00'), status: 'completed', senderName: 'Marta Alberto' } as Transaction,
+]
+
+const DEMO_USER: StoredUser = {
+  name: 'Joel Armando',
+  phone: '841234567',
+  password: '123456',
+  transactionPin: '1234',
+  wallets: ['mpesa', 'emola', 'mkesh'],
+  balance: 3880.67,
+  income: 3880.67,
+  keys: [],
+  transactions: DEMO_TRANSACTIONS,
+}
+
 function MainApp() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [userName, setUserName] = useState('')
@@ -50,6 +74,12 @@ function MainApp() {
     setCurrentView('home')
     setIsLoggedIn(true)
   }, [])
+
+  useEffect(() => {
+    if (DEMO_BYPASS_AUTH && !isLoggedIn) {
+      handleLogin(DEMO_USER)
+    }
+  }, [isLoggedIn, handleLogin])
 
   const handleLogout = useCallback(() => {
     setIsLoggedIn(false)
