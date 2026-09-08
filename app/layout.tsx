@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { InstallPrompt } from "@/components/install-prompt";
-import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import ServiceWorkerRegister from "@/components/service-worker-register";
 import "./globals.css";
 
@@ -12,23 +11,24 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Bankpix_2.0 Pro",
-  description: "Descrição",
+  title: "RealPayz — Seu dinheiro sem fronteiras",
+  description:
+    "RealPayz: conta digital com Pix internacional e saques nas carteiras móveis M-Pesa, e-Mola e mKesh. Seu dinheiro sem fronteiras, no seu ritmo.",
   manifest: "/manifest.json",
   icons: {
-    icon: "/app-icon.png",
-    apple: "/launchericon-192x192.png",
+    icon: "/images/realpayz-icon.png",
+    apple: "/images/realpayz-icon.png",
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
-    title: "BankPix",
+    statusBarStyle: "default",
+    title: "RealPayz",
   },
 };
 
 export const viewport: Viewport = {
-  colorScheme: "light dark",
-  themeColor: "#3b82f6",
+  colorScheme: "light",
+  themeColor: "#d21f2d",
   viewportFit: "cover",
   width: "device-width",
   initialScale: 1,
@@ -40,22 +40,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className="dark">
+    <html lang="pt-BR" className="bg-background">
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta
           name="apple-mobile-web-app-status-bar-style"
-          content="black-translucent"
+          content="default"
         />
-        <meta name="apple-mobile-web-app-title" content="BankPix" />
-        <meta name="application-name" content="BankPix" />
-        <meta name="msapplication-TileColor" content="#0f172a" />
+        <meta name="apple-mobile-web-app-title" content="RealPayz" />
+        <meta name="application-name" content="RealPayz" />
+        <meta name="msapplication-TileColor" content="#d21f2d" />
 
-        <link
-          rel="apple-touch-icon"
-          href="/launchericon-192x192.png"
-        />
+        <link rel="apple-touch-icon" href="/images/realpayz-icon.png" />
 
         <script
           dangerouslySetInnerHTML={{
@@ -96,7 +93,6 @@ export default function RootLayout({
         <ServiceWorkerRegister />
         {children}
         <InstallPrompt />
-        <PwaInstallPrompt />
         <Analytics />
       </body>
     </html>
