@@ -2,20 +2,27 @@ import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  // Usa a service role para não esbarrar em RLS ao ler/limpar inscrições
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Criados só no momento do pedido para o build não depender das variáveis de ambiente.
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    // Usa a service role para não esbarrar em RLS ao ler/limpar inscrições
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
-webpush.setVapidDetails(
-  "mailto:suporte@bankpix.com",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
+function configureVapid() {
+  webpush.setVapidDetails(
+    "mailto:suporte@bankpix.com",
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+    process.env.VAPID_PRIVATE_KEY!
+  );
+}
 
 export async function GET() {
   try {
+    const supabase = getSupabase();
+    configureVapid();
     const { data, error } = await supabase
       .from("push_subscriptions")
       .select("id, endpoint, p256dh, auth");
