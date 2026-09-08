@@ -22,12 +22,13 @@ import {
   Wallet,
   Globe,
   ShieldCheck,
+  Sparkles,
 } from 'lucide-react'
 import { formatBRL, formatMZN, convertToMZN } from '@/lib/store'
 import { capitalizeWords, firstName } from '@/lib/onboarding-format'
 import { cn } from '@/lib/utils'
 import { PixSymbol } from './pix-symbol'
-import { InactiveToast, useInactiveToast } from './inactive-toast'
+import { ProGateSheet } from './pro-gate-sheet'
 
 interface HomeViewProps {
   userName: string
@@ -35,6 +36,7 @@ interface HomeViewProps {
   onOpenPix: () => void
   onOpenWithdraw: () => void
   onOpenStatement: () => void
+  onOpenPro: () => void
   onLogout: () => void
 }
 
@@ -67,9 +69,10 @@ const BENEFITS = [
   },
 ]
 
-export function HomeView({ userName, balance, onOpenPix, onOpenWithdraw, onOpenStatement, onLogout }: HomeViewProps) {
+export function HomeView({ userName, balance, onOpenPix, onOpenWithdraw, onOpenStatement, onOpenPro, onLogout }: HomeViewProps) {
   const [showBalance, setShowBalance] = useState(true)
-  const { message, notify } = useInactiveToast()
+  const [lockedFeature, setLockedFeature] = useState<string | null>(null)
+  const notify = (feature: string) => setLockedFeature(feature)
 
   const name = capitalizeWords(firstName(userName)) || 'Cliente'
 
@@ -177,6 +180,22 @@ export function HomeView({ userName, balance, onOpenPix, onOpenWithdraw, onOpenS
       </header>
 
       <main className="flex flex-col gap-8 px-6 pt-4">
+        {/* Faixa de ativação Pro */}
+        <button
+          type="button"
+          onClick={onOpenPro}
+          className="flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-accent px-4 py-3 text-left transition-transform active:scale-[0.99]"
+        >
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-gradient text-primary-foreground">
+            <Sparkles className="h-5 w-5" />
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="text-sm font-bold text-primary">Sua conta ainda não é Pro</span>
+            <span className="text-pretty text-xs text-muted-foreground">Ative para liberar Pix, chaves, crédito e levantamentos.</span>
+          </span>
+          <span className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">Ativar</span>
+        </button>
+
         {/* Favoritos */}
         <section className="flex flex-col gap-5">
           <h2 className="text-2xl font-semibold">Favoritos</h2>
@@ -282,7 +301,16 @@ export function HomeView({ userName, balance, onOpenPix, onOpenWithdraw, onOpenS
         </div>
       </nav>
 
-      <InactiveToast message={message} />
+      <ProGateSheet
+        open={lockedFeature !== null}
+        variant="feature"
+        featureName={lockedFeature ?? undefined}
+        onClose={() => setLockedFeature(null)}
+        onActivate={() => {
+          setLockedFeature(null)
+          onOpenPro()
+        }}
+      />
     </div>
   )
 }

@@ -1,20 +1,23 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Check, Copy } from 'lucide-react'
+import { Check, Copy, Lock } from 'lucide-react'
 import { DotsLoader } from '@/components/ui/dots-loader'
 import type { PixKey } from '@/lib/store'
 import { generatePixCPF, generatePixCelular, generatePixRandomKey, PIX_KEY_TYPES, pixKeyTypeLabel } from '@/lib/pix-keys'
-import { capitalizeWords, isValidEmail } from '@/lib/onboarding-format'
+import { capitalizeWords } from '@/lib/onboarding-format'
+import { maskPixKey } from '@/lib/pro'
 import { TIMING } from '@/lib/timing'
 import { StepShell, UnderlineInput, PrimaryButton, OptionRow } from '@/components/onboarding/ui'
 import { PixSymbol } from './pix-symbol'
+import { ProGateSheet } from './pro-gate-sheet'
 
 interface PixKeyFlowProps {
   userName: string
   onAddKey: (key: PixKey) => void
   onDone: () => void
   onCancel: () => void
+  onOpenPro: () => void
 }
 
 type Step = 'name' | 'type' | 'generating' | 'success'
@@ -27,22 +30,19 @@ const GENERATING_MESSAGES = [
   'Chave ativada!',
 ]
 
-export function PixKeyFlow({ userName, onAddKey, onDone, onCancel }: PixKeyFlowProps) {
+export function PixKeyFlow({ userName, onAddKey, onDone, onCancel, onOpenPro }: PixKeyFlowProps) {
   const [step, setStep] = useState<Step>('name')
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
   const [name, setName] = useState(capitalizeWords(userName))
   const [type, setType] = useState<PixKey['type']>('cpf')
-  const [email, setEmail] = useState('')
   const [messageIndex, setMessageIndex] = useState(0)
   const [created, setCreated] = useState<PixKey | null>(null)
-  const [copied, setCopied] = useState(false)
+  const [gateOpen, setGateOpen] = useState(false)
 
   const go = (next: Step, dir: 'forward' | 'backward' = 'forward') => {
     setDirection(dir)
     setStep(next)
   }
-
-  const canContinueType = type !== 'email' || isValidEmail(email)
 
   const handleGenerate = () => {
     setMessageIndex(0)
@@ -52,14 +52,7 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel }: PixKeyFlowP
   useEffect(() => {
     if (step !== 'generating') return
     if (messageIndex >= GENERATING_MESSAGES.length - 1) {
-      const value =
-        type === 'cpf'
-          ? generatePixCPF()
-          : type === 'celular'
-            ? generatePixCelular()
-            : type === 'email'
-              ? email.trim().toLowerCase()
-              : generatePixRandomKey()
+      const value = type === 'cpf' ? generatePixCPF() : type === 'celular' ? generatePixCelular() : generatePixRandomKey()
 
       const key: PixKey = {
         id: crypto.randomUUID(),
@@ -77,14 +70,7 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel }: PixKeyFlowP
     }
     const timer = setTimeout(() => setMessageIndex((i) => i + 1), TIMING.pixKeyMessage)
     return () => clearTimeout(timer)
-  }, [step, messageIndex, type, email, name, onAddKey])
-
-  const handleCopy = async () => {
-    if (!created) return
-    await navigator.clipboard.writeText(created.value)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 1800)
-  }
+  }, [step, messageIndex, type, name, onAddKey])
 
   if (step === 'name') {
     return (
@@ -122,7 +108,7 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel }: PixKeyFlowP
         onBack={() => go('name', 'backward')}
         title="Escolha o tipo de chave"
         subtitle={`A chave ficará vinculada a ${name.trim()}.`}
-        footer={<PrimaryButton disabled={!canContinueType} onClick={handleGenerate}>Cadastrar chave</PrimaryButton>}
+        footer={<PrimaryButton onClick={handleGenerate}>Cadastrar chave</PrimaryButton>}
       >
         <div className="flex flex-col gap-3">
           {PIX_KEY_TYPES.map((option) => (
@@ -131,23 +117,7 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel }: PixKeyFlowP
             </OptionRow>
           ))}
         </div>
-        {type === 'email' ? (
-          <div className="flex flex-col gap-2 animate-fade-in">
-            <label htmlFor="pix-email" className="text-sm font-semibold text-muted-foreground">
-              Seu e-mail
-            </label>
-            <UnderlineInput
-              id="pix-email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="nome@exemplo.com"
-              className="text-xl"
-            />
-          </div>
-        ) : null}
+        <p className="text-sm text-muted-foreground">Chaves por e-mail não estão disponíveis: todas as chaves são geradas automaticamente.</p>
       </StepShell>
     )
   }
@@ -177,7 +147,7 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel }: PixKeyFlowP
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold">Chave cadastrada!</h1>
           <p className="text-pretty text-lg text-muted-foreground">
-            Sua chave já aparece na Área Pix e está pronta para receber.
+            Sua chave já aparece na Área Pix. Ative a conta Pro para vê-la completa e começar a receber.
           </p>
         </div>
 
@@ -187,21 +157,24 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel }: PixKeyFlowP
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-primary">
                 <PixSymbol className="h-5 w-5" />
               </span>
-              <div className="flex flex-col">
+              <div className="flex flex-1 flex-col">
                 <span className="text-xs font-semibold uppercase tracking-wide text-primary">
                   {pixKeyTypeLabel(created.type)}
                 </span>
                 <span className="text-sm text-muted-foreground">{created.name}</span>
               </div>
+              <Lock className="h-5 w-5 text-muted-foreground" aria-label="Chave bloqueada" />
             </div>
-            <p className="break-all text-base font-semibold tabular-nums tracking-wide">{created.value}</p>
+            <p className="break-all text-base font-semibold tabular-nums tracking-wide blur-[1.5px] select-none">
+              {maskPixKey(created)}
+            </p>
             <button
               type="button"
-              onClick={handleCopy}
+              onClick={() => setGateOpen(true)}
               className="flex h-12 items-center justify-center gap-2 rounded-full border-2 border-primary text-sm font-semibold text-primary transition-colors hover:bg-accent"
             >
-              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              {copied ? 'Chave copiada' : 'Copiar chave'}
+              <Copy className="h-4 w-4" />
+              Ver e copiar chave
             </button>
           </div>
         ) : null}
@@ -210,6 +183,16 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel }: PixKeyFlowP
       <div className="pt-8">
         <PrimaryButton onClick={onDone}>Concluir</PrimaryButton>
       </div>
+
+      <ProGateSheet
+        open={gateOpen}
+        variant="keys"
+        onClose={() => setGateOpen(false)}
+        onActivate={() => {
+          setGateOpen(false)
+          onOpenPro()
+        }}
+      />
     </div>
   )
 }

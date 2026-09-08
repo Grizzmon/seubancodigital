@@ -24,10 +24,10 @@ export function generatePixRandomKey(): string {
 export const PIX_KEY_TYPES: { id: PixKey['type']; label: string; hint: string }[] = [
   { id: 'cpf', label: 'CPF', hint: 'Gerado automaticamente' },
   { id: 'celular', label: 'Celular', hint: 'Número brasileiro gerado' },
-  { id: 'email', label: 'E-mail', hint: 'Você informa o seu e-mail' },
   { id: 'aleatorio', label: 'Chave aleatória', hint: 'Código de 32 caracteres' },
 ]
 
 export function pixKeyTypeLabel(type: PixKey['type']): string {
+  if (type === 'email') return 'E-mail'
   return PIX_KEY_TYPES.find((t) => t.id === type)?.label ?? type
 }

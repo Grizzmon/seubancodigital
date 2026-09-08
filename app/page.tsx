@@ -8,21 +8,13 @@ import { PixAreaView } from '@/components/app/pix-area-view'
 import { PixKeyFlow } from '@/components/app/pix-key-flow'
 import { WithdrawFlow } from '@/components/app/withdraw-flow'
 import { StatementView } from '@/components/app/statement-view'
+import { ProIntro } from '@/components/app/pro-intro'
 import { type PixKey, type Transaction } from '@/lib/store'
 
-type View = 'home' | 'pix' | 'create-key' | 'withdraw' | 'statement'
+type View = 'home' | 'pix' | 'create-key' | 'withdraw' | 'statement' | 'pro-intro'
 
 // TEMPORÁRIO PARA TESTES: desative com false antes de publicar para reativar o login.
 const DEMO_BYPASS_AUTH = true
-
-const DEMO_TRANSACTIONS: Transaction[] = [
-  { id: 'demo-1', type: 'income', amount: 50, amountMZN: 700, method: 'transfer', date: new Date('2026-09-07T10:33:00'), status: 'completed', senderName: 'Mario Luís' } as Transaction,
-  { id: 'demo-2', type: 'income', amount: 125.5, amountMZN: 1757, method: 'transfer', date: new Date('2026-09-06T14:18:00'), status: 'completed', senderName: 'Ana Beatriz' } as Transaction,
-  { id: 'demo-3', type: 'income', amount: 80, amountMZN: 1120, method: 'transfer', date: new Date('2026-09-05T09:42:00'), status: 'completed', senderName: 'Carlos Manuel' } as Transaction,
-  { id: 'demo-4', type: 'income', amount: 310.25, amountMZN: 4343.5, method: 'transfer', date: new Date('2026-09-04T16:07:00'), status: 'completed', senderName: 'Beatriz João' } as Transaction,
-  { id: 'demo-5', type: 'income', amount: 45, amountMZN: 630, method: 'transfer', date: new Date('2026-09-03T11:26:00'), status: 'completed', senderName: 'Pedro Luís' } as Transaction,
-  { id: 'demo-6', type: 'income', amount: 200, amountMZN: 2800, method: 'transfer', date: new Date('2026-09-02T18:51:00'), status: 'completed', senderName: 'Marta Alberto' } as Transaction,
-]
 
 const DEMO_USER: StoredUser = {
   name: 'Joel Armando',
@@ -30,10 +22,10 @@ const DEMO_USER: StoredUser = {
   password: '123456',
   transactionPin: '1234',
   wallets: ['mpesa', 'emola', 'mkesh'],
-  balance: 3880.67,
-  income: 3880.67,
+  balance: 0,
+  income: 0,
   keys: [],
-  transactions: DEMO_TRANSACTIONS,
+  transactions: [],
 }
 
 function MainApp() {
@@ -46,6 +38,7 @@ function MainApp() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [profile, setProfile] = useState<StoredUser | null>(null)
   const [currentView, setCurrentView] = useState<View>('home')
+  const [proReturnView, setProReturnView] = useState<View>('home')
 
   useEffect(() => {
     if (!isLoggedIn || !userPhone) return
@@ -106,6 +99,12 @@ function MainApp() {
     return <AuthFlow onLogin={handleLogin} />
   }
 
+  // Guarda a tela de origem para voltar ao fechar a apresentação Pro.
+  const openPro = (from: View) => {
+    setProReturnView(from)
+    setCurrentView('pro-intro')
+  }
+
   return (
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background text-foreground">
       {currentView === 'home' && (
@@ -115,6 +114,7 @@ function MainApp() {
           onOpenPix={() => setCurrentView('pix')}
           onOpenWithdraw={() => setCurrentView('withdraw')}
           onOpenStatement={() => setCurrentView('statement')}
+          onOpenPro={() => openPro('home')}
           onLogout={handleLogout}
         />
       )}
@@ -125,6 +125,7 @@ function MainApp() {
           onBack={() => setCurrentView('home')}
           onCreateKey={() => setCurrentView('create-key')}
           onWithdraw={() => setCurrentView('withdraw')}
+          onOpenPro={() => openPro('pix')}
         />
       )}
 
@@ -134,8 +135,11 @@ function MainApp() {
           onAddKey={handleAddKey}
           onDone={() => setCurrentView('pix')}
           onCancel={() => setCurrentView('pix')}
+          onOpenPro={() => openPro('pix')}
         />
       )}
+
+      {currentView === 'pro-intro' && <ProIntro onClose={() => setCurrentView(proReturnView)} />}
 
       {currentView === 'withdraw' && (
         <WithdrawFlow

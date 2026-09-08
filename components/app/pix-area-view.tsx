@@ -1,27 +1,27 @@
 'use client'
 
 import { useState } from 'react'
-import { ChevronLeft, Plus, Copy, Check, Banknote, KeyRound } from 'lucide-react'
+import { ChevronLeft, Plus, Lock, Banknote, KeyRound, Sparkles } from 'lucide-react'
 import type { PixKey } from '@/lib/store'
 import { pixKeyTypeLabel } from '@/lib/pix-keys'
+import { maskPixKey } from '@/lib/pro'
 import { PrimaryButton } from '@/components/onboarding/ui'
 import { PixSymbol } from './pix-symbol'
+import { ProGateSheet, type ProGateVariant } from './pro-gate-sheet'
 
 interface PixAreaViewProps {
   keys: PixKey[]
   onBack: () => void
   onCreateKey: () => void
   onWithdraw: () => void
+  onOpenPro: () => void
 }
 
-export function PixAreaView({ keys, onBack, onCreateKey, onWithdraw }: PixAreaViewProps) {
-  const [copiedId, setCopiedId] = useState<string | null>(null)
+export function PixAreaView({ keys, onBack, onCreateKey, onWithdraw, onOpenPro }: PixAreaViewProps) {
+  const [gate, setGate] = useState<ProGateVariant | null>(null)
 
-  const handleCopy = async (key: PixKey) => {
-    await navigator.clipboard.writeText(key.value)
-    setCopiedId(key.id)
-    setTimeout(() => setCopiedId(null), 1800)
-  }
+  // Conta gratuita: só a primeira chave pode ser cadastrada.
+  const handleCreateKey = () => (keys.length === 0 ? onCreateKey() : setGate('more-keys'))
 
   return (
     <div className="flex min-h-dvh flex-col bg-background animate-step-forward">
@@ -43,7 +43,9 @@ export function PixAreaView({ keys, onBack, onCreateKey, onWithdraw }: PixAreaVi
           <div className="flex flex-col">
             <h1 className="text-2xl font-bold">Área Pix</h1>
             <p className="text-sm text-primary-foreground/80">
-              {keys.length === 0 ? 'Nenhuma chave ativa' : `${keys.length} chave${keys.length > 1 ? 's' : ''} disponível${keys.length > 1 ? 'is' : ''}`}
+              {keys.length === 0
+                ? 'Nenhuma chave cadastrada'
+                : `${keys.length} chave${keys.length > 1 ? 's' : ''} aguardando ativação`}
             </p>
           </div>
         </div>
@@ -61,38 +63,54 @@ export function PixAreaView({ keys, onBack, onCreateKey, onWithdraw }: PixAreaVi
                 Cadastre uma chave para começar a receber Pix do Brasil direto na sua conta.
               </p>
             </div>
-            <PrimaryButton onClick={onCreateKey}>
+            <PrimaryButton onClick={handleCreateKey}>
               <Plus className="h-5 w-5" />
               Cadastrar Nova Chave
             </PrimaryButton>
           </div>
         ) : (
           <>
+            <button
+              type="button"
+              onClick={() => setGate('keys')}
+              className="flex items-center gap-3 rounded-2xl bg-accent px-4 py-3 text-left"
+            >
+              <Lock className="h-5 w-5 shrink-0 text-primary" />
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="text-sm font-bold text-primary">Chaves aguardando ativação</span>
+                <span className="text-pretty text-xs text-muted-foreground">Ative a conta Pro para ver e copiar. Leva menos de 1 minuto.</span>
+              </span>
+              <span className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">Ativar</span>
+            </button>
+
             <section className="flex flex-col gap-3">
               <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Minhas chaves</h2>
               <ul className="flex flex-col gap-3">
                 {keys.map((key) => (
-                  <li
-                    key={key.id}
-                    className="flex items-center gap-4 rounded-2xl border-2 border-border bg-card p-4"
-                  >
-                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
-                      <PixSymbol className="h-5 w-5" />
-                    </span>
-                    <span className="flex min-w-0 flex-1 flex-col">
-                      <span className="text-xs font-semibold uppercase tracking-wide text-primary">
-                        {pixKeyTypeLabel(key.type)}
-                      </span>
-                      <span className="truncate text-sm font-semibold tabular-nums tracking-wide">{key.value}</span>
-                      <span className="truncate text-xs text-muted-foreground">{key.name}</span>
-                    </span>
+                  <li key={key.id}>
                     <button
                       type="button"
-                      onClick={() => handleCopy(key)}
-                      aria-label="Copiar chave"
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted"
+                      onClick={() => setGate('keys')}
+                      className="flex w-full items-center gap-4 rounded-2xl border-2 border-border bg-card p-4 text-left transition-colors hover:border-primary/40"
                     >
-                      {copiedId === key.id ? <Check className="h-5 w-5 text-success" /> : <Copy className="h-5 w-5" />}
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-primary">
+                        <PixSymbol className="h-5 w-5" />
+                      </span>
+                      <span className="flex min-w-0 flex-1 flex-col">
+                        <span className="text-xs font-semibold uppercase tracking-wide text-primary">
+                          {pixKeyTypeLabel(key.type)}
+                        </span>
+                        <span className="truncate text-sm font-semibold tabular-nums tracking-wide blur-[1.5px] select-none">
+                          {maskPixKey(key)}
+                        </span>
+                        <span className="truncate text-xs text-muted-foreground">{key.name}</span>
+                      </span>
+                      <span
+                        aria-label="Chave bloqueada"
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground"
+                      >
+                        <Lock className="h-4 w-4" />
+                      </span>
                     </button>
                   </li>
                 ))}
@@ -100,7 +118,7 @@ export function PixAreaView({ keys, onBack, onCreateKey, onWithdraw }: PixAreaVi
             </section>
 
             <div className="flex flex-col gap-3 pt-2">
-              <PrimaryButton onClick={onCreateKey}>
+              <PrimaryButton onClick={handleCreateKey}>
                 <Plus className="h-5 w-5" />
                 Cadastrar Nova Chave
               </PrimaryButton>
@@ -112,10 +130,27 @@ export function PixAreaView({ keys, onBack, onCreateKey, onWithdraw }: PixAreaVi
                 <Banknote className="h-5 w-5" />
                 Levantar para carteira móvel
               </button>
+              <button
+                type="button"
+                onClick={onOpenPro}
+                className="flex h-11 items-center justify-center gap-2 text-sm font-semibold text-primary"
+              >
+                <Sparkles className="h-4 w-4" /> Veja como ser Pro
+              </button>
             </div>
           </>
         )}
       </main>
+
+      <ProGateSheet
+        open={gate !== null}
+        variant={gate ?? 'keys'}
+        onClose={() => setGate(null)}
+        onActivate={() => {
+          setGate(null)
+          onOpenPro()
+        }}
+      />
     </div>
   )
 }
