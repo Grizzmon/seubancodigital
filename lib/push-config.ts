@@ -16,6 +16,12 @@ export const WELCOME_PUSH_MAX_AGE_HOURS = 24
 
 export const APP_URL = 'https://seubancodigital.vercel.app/'
 
+// Identidade usada em todas as notificações (deve bater com public/sw.js).
+export const APP_NAME = 'RealPayz'
+export const NOTIFICATION_ICON = '/notification-icon-192.png'
+export const NOTIFICATION_BADGE = '/notification-badge-96.png'
+export const VAPID_CONTACT = 'mailto:suporte@realpayz.app'
+
 export function buildWelcomePushPayload(name?: string | null) {
   const firstName = (name || '').trim().split(/\s+/)[0]
   const displayName = firstName
@@ -23,10 +29,11 @@ export function buildWelcomePushPayload(name?: string | null) {
     : 'Cliente'
 
   return JSON.stringify({
-    title: 'BankPix',
+    title: APP_NAME,
     body: `Parabéns! ${displayName}, sua conta foi aprovada. Conclua os passos e use o Pix sem limites!`,
-    icon: '/icon-192.png',
-    badge: '/icon-192.png',
+    icon: NOTIFICATION_ICON,
+    badge: NOTIFICATION_BADGE,
+    tag: 'realpayz-welcome',
     data: { url: APP_URL },
   })
 }

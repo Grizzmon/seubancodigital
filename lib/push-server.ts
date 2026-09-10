@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import webpush from 'web-push'
+import { VAPID_CONTACT } from './push-config'
 
 // Mesmos valores públicos usados em lib/supabase.ts (a anon key é pública por design).
 // Em produção o SUPABASE_SERVICE_ROLE_KEY tem prioridade para não esbarrar em RLS.
@@ -29,7 +30,7 @@ export function ensureVapid() {
     throw new Error('Chaves VAPID não configuradas')
   }
 
-  webpush.setVapidDetails('mailto:suporte@bankpix.com', publicKey, privateKey)
+  webpush.setVapidDetails(VAPID_CONTACT, publicKey, privateKey)
   vapidConfigured = true
 }
 

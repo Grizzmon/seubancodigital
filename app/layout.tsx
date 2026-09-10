@@ -14,10 +14,10 @@ export const metadata: Metadata = {
   title: "RealPayz — Seu dinheiro sem fronteiras",
   description:
     "RealPayz: conta digital com Pix internacional e saques nas carteiras móveis M-Pesa, e-Mola e mKesh. Seu dinheiro sem fronteiras, no seu ritmo.",
-  manifest: "/manifest.json",
+  manifest: "/manifest.json?v=2",
   icons: {
-    icon: "/images/realpayz-icon.png",
-    apple: "/images/realpayz-icon.png",
+    icon: "/icon-192.png?v=2",
+    apple: "/icon-192.png?v=2",
   },
   appleWebApp: {
     capable: true,
@@ -52,7 +52,7 @@ export default function RootLayout({
         <meta name="application-name" content="RealPayz" />
         <meta name="msapplication-TileColor" content="#d21f2d" />
 
-        <link rel="apple-touch-icon" href="/images/realpayz-icon.png" />
+        <link rel="apple-touch-icon" href="/icon-192.png?v=2" />
 
         <script
           dangerouslySetInnerHTML={{

@@ -43,7 +43,7 @@ export default function DownloadPage() {
   }, [stage])
 
   const handleOpen = () => {
-    window.open('https://bankpix.vercel.app/', '_blank')
+    window.open('https://seubancodigital.vercel.app/', '_blank')
   }
 
   // Landing page
@@ -55,21 +55,21 @@ export default function DownloadPage() {
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-2xl shadow-primary/30">
-                <span className="text-4xl font-bold text-primary-foreground">B</span>
+                <span className="text-4xl font-bold text-primary-foreground">R</span>
               </div>
               <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-card border-2 border-primary flex items-center justify-center">
                 <Smartphone className="w-4 h-4 text-primary" />
               </div>
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-foreground">BankPix</h1>
-              <p className="text-muted-foreground mt-1">Seu banco digital completo</p>
+              <h1 className="text-3xl font-bold text-foreground">RealPayz</h1>
+              <p className="text-muted-foreground mt-1">Seu dinheiro sem fronteiras</p>
             </div>
           </div>
 
           {/* Features */}
           <div className="bg-card border border-border rounded-2xl p-6 space-y-4">
-            <h2 className="font-semibold text-foreground text-lg">Baixar BankPix</h2>
+            <h2 className="font-semibold text-foreground text-lg">Baixar RealPayz</h2>
             <p className="text-sm text-muted-foreground">
               Faca transacoes, receba pagamentos e gerencie suas financas de forma simples e segura.
             </p>
@@ -127,10 +127,10 @@ export default function DownloadPage() {
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-2xl shadow-primary/30 animate-pulse">
-                <span className="text-5xl font-bold text-primary-foreground">B</span>
+                <span className="text-5xl font-bold text-primary-foreground">R</span>
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-foreground">BankPix</h1>
+            <h1 className="text-2xl font-bold text-foreground">RealPayz</h1>
           </div>
 
           {/* Loading spinner */}
@@ -157,7 +157,7 @@ export default function DownloadPage() {
           <div className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-2xl shadow-primary/30">
-                <span className="text-5xl font-bold text-primary-foreground">B</span>
+                <span className="text-5xl font-bold text-primary-foreground">R</span>
               </div>
               {/* Animated download indicator */}
               <div className="absolute -bottom-2 left-1/2 -translate-x-1/2">
@@ -168,7 +168,7 @@ export default function DownloadPage() {
                 </div>
               </div>
             </div>
-            <h1 className="text-2xl font-bold text-foreground">BankPix</h1>
+            <h1 className="text-2xl font-bold text-foreground">RealPayz</h1>
           </div>
 
           {/* Progress section */}
@@ -211,14 +211,14 @@ export default function DownloadPage() {
         <div className="flex flex-col items-center gap-4">
           <div className="relative">
             <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-2xl shadow-primary/30">
-              <span className="text-5xl font-bold text-primary-foreground">B</span>
+              <span className="text-5xl font-bold text-primary-foreground">R</span>
             </div>
             {/* Success checkmark */}
             <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg animate-bounce">
               <CheckCircle className="w-6 h-6 text-primary-foreground" />
             </div>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">BankPix</h1>
+          <h1 className="text-2xl font-bold text-foreground">RealPayz</h1>
         </div>
 
         {/* Success message */}
@@ -228,7 +228,7 @@ export default function DownloadPage() {
             <span className="font-semibold">Download concluido!</span>
           </div>
           <p className="text-sm text-muted-foreground">
-            O aplicativo BankPix foi baixado com sucesso. Clique no botao abaixo para abrir.
+            O aplicativo RealPayz foi baixado com sucesso. Clique no botao abaixo para abrir.
           </p>
         </div>
 
