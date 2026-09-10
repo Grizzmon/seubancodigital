@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
 import { createClient } from "@supabase/supabase-js";
+import { APP_NAME, APP_URL, NOTIFICATION_BADGE, NOTIFICATION_ICON, VAPID_CONTACT } from "@/lib/push-config";
 
 // Criados só no momento do pedido para o build não depender das variáveis de ambiente.
 function getSupabase() {
@@ -13,7 +14,7 @@ function getSupabase() {
 
 function configureVapid() {
   webpush.setVapidDetails(
-    "mailto:suporte@bankpix.com",
+    VAPID_CONTACT,
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
     process.env.VAPID_PRIVATE_KEY!
   );
@@ -48,11 +49,12 @@ export async function GET() {
     const falhas: { id: string; status?: number; message: string }[] = [];
 
     const payload = JSON.stringify({
-      title: "BankPix",
-      body: "Sua primeira notificação push chegou com sucesso! 🚀",
-      icon: "/icon-192.png",
-      badge: "/icon-192.png",
-      data: { url: "https://seubancodigital.vercel.app/" },
+      title: APP_NAME,
+      body: "Sua primeira notificação push chegou com sucesso!",
+      icon: NOTIFICATION_ICON,
+      badge: NOTIFICATION_BADGE,
+      tag: "realpayz-test",
+      data: { url: APP_URL },
     });
 
     // Trata cada inscrição isoladamente para que uma expirada não derrube o restante

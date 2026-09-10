@@ -143,7 +143,10 @@ export default function ServiceWorkerRegister() {
 
     async function boot() {
       try {
-        await navigator.serviceWorker.register("/sw.js");
+        // updateViaCache: "none" faz o navegador buscar sempre o sw.js mais recente
+        // em vez de reutilizar a cópia em cache HTTP (evita o worker antigo "BankPix").
+        const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
+        await registration.update().catch(() => null);
         // Pede permissão já na entrada (comportamento original do app).
         await syncSubscription(true);
       } catch (error) {
