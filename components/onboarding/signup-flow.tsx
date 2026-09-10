@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import { ArrowRight, Camera, CheckCircle2, FileText, Lock, ShieldCheck, Sparkles } from 'lucide-react'
 import {
@@ -15,6 +15,7 @@ import { DocumentCapture } from './document-capture'
 import { TransitionScreen } from './transition-screen'
 import { ProcessingScreen, useTimedProgress } from './processing-screen'
 import { TIMING } from '@/lib/timing'
+import { analytics } from '@/lib/analytics'
 import {
   PROVINCES,
   LEAD_REASONS,
@@ -141,8 +142,16 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
     setIndex(STEPS.indexOf(target))
   }
 
+  const startedTracked = useRef(false)
+  useEffect(() => {
+    if (startedTracked.current) return
+    startedTracked.current = true
+    analytics.signupStarted()
+  }, [])
+
   // Avançar mostra a tela de transição por alguns segundos antes da próxima seção.
   const next = () => {
+    if (step === 'phone') analytics.signupPhone()
     const target = STEPS[Math.min(index + 1, STEPS.length - 1)]
     if (LOADER_STEPS.includes(target)) {
       jumpTo(target, 'forward')
@@ -150,8 +159,15 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
     }
     setTransitionTo(target)
   }
-  // Voltar é imediato.
-  const back = () => (index === 0 ? onExit() : jumpTo(STEPS[index - 1], 'backward'))
+  // Voltar é imediato; sair da primeira tela conta como abandono.
+  const back = () => {
+    if (index === 0) {
+      analytics.signupAbandoned(step)
+      onExit()
+      return
+    }
+    jumpTo(STEPS[index - 1], 'backward')
+  }
   const canGoBack = !NO_BACK.includes(step)
 
   useEffect(() => {
@@ -193,7 +209,10 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
 
   useEffect(() => {
     if (step !== 'processing' || processingProgress < 100) return
-    const timer = window.setTimeout(() => jumpTo('approved', 'forward'), 900)
+    const timer = window.setTimeout(() => {
+      analytics.signupApproved()
+      jumpTo('approved', 'forward')
+    }, 900)
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, processingProgress])
@@ -210,7 +229,10 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
   const openingProgress = useTimedProgress(step === 'opening', TIMING.accountOpening)
   useEffect(() => {
     if (step !== 'opening' || openingProgress < 100) return
-    const timer = window.setTimeout(() => jumpTo('accountOpen', 'forward'), 900)
+    const timer = window.setTimeout(() => {
+      analytics.accountOpened()
+      jumpTo('accountOpen', 'forward')
+    }, 900)
     return () => window.clearTimeout(timer)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, openingProgress])
@@ -224,12 +246,8 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
     )
   }
 
-  const trackLead = () => {
-    const fbq = (window as unknown as { fbq?: (...args: unknown[]) => void }).fbq
-    fbq?.('track', 'Lead', { content_name: 'Cadastro RealPayz', status: 'Iniciado' })
-  }
-
   const finish = () => {
+    analytics.signupCompleted()
     const user: StoredUser = {
       name: capitalizeWords(name.trim()),
       phone: phoneDigits,
@@ -364,7 +382,7 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
           footer={
             <PrimaryButton
               onClick={() => {
-                trackLead()
+                analytics.leadCadastro()
                 next()
               }}
             >

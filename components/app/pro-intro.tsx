@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Users, Trophy, Globe, Wallet, KeyRound, Banknote, ArrowRight, Sparkles, ExternalLink } from 'lucide-react'
 import { PrimaryButton } from '@/components/onboarding/ui'
 import { PixSymbol } from './pix-symbol'
 import { openProActivation } from '@/lib/pro'
+import { analytics } from '@/lib/analytics'
 import { cn } from '@/lib/utils'
 
 interface ProIntroProps {
@@ -42,7 +43,12 @@ export function ProIntro({ onClose }: ProIntroProps) {
   const step = STEPS[index]
   const isLast = index === STEPS.length - 1
 
+  useEffect(() => {
+    analytics.proIntroViewed('app')
+  }, [])
+
   const handleActivate = () => {
+    analytics.proActivateClicked()
     openProActivation()
     onClose()
   }

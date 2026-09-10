@@ -27,6 +27,7 @@ import {
 import { formatBRL, formatMZN, convertToMZN } from '@/lib/store'
 import { capitalizeWords, firstName } from '@/lib/onboarding-format'
 import { cn } from '@/lib/utils'
+import { analytics } from '@/lib/analytics'
 import { PixSymbol } from './pix-symbol'
 import { ProGateSheet } from './pro-gate-sheet'
 
@@ -72,7 +73,10 @@ const BENEFITS = [
 export function HomeView({ userName, balance, onOpenPix, onOpenWithdraw, onOpenStatement, onOpenPro, onLogout }: HomeViewProps) {
   const [showBalance, setShowBalance] = useState(true)
   const [lockedFeature, setLockedFeature] = useState<string | null>(null)
-  const notify = (feature: string) => setLockedFeature(feature)
+  const notify = (feature: string) => {
+    analytics.proGateShown(feature)
+    setLockedFeature(feature)
+  }
 
   const name = capitalizeWords(firstName(userName)) || 'Cliente'
 
