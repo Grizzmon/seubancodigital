@@ -7,6 +7,7 @@ import { formatMozPhone, isValidMozPhone } from '@/lib/onboarding-format'
 import { registerUserAndLinkPush } from '@/lib/register-user'
 import type { StoredUser } from '@/lib/stored-user'
 import { loadStoredUser } from '@/lib/stored-user'
+import { analytics } from '@/lib/analytics'
 
 interface LoginScreenProps {
   onBack: () => void
@@ -48,6 +49,7 @@ export function LoginScreen({ onBack, onCreateAccount, onLogin }: LoginScreenPro
       new Promise((r) => setTimeout(r, 2200)),
     ])
 
+    analytics.login()
     onLogin(user)
   }
 

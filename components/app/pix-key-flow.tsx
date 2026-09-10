@@ -8,6 +8,7 @@ import { generatePixCPF, generatePixCelular, generatePixRandomKey, PIX_KEY_TYPES
 import { capitalizeWords } from '@/lib/onboarding-format'
 import { maskPixKey } from '@/lib/pro'
 import { TIMING } from '@/lib/timing'
+import { analytics } from '@/lib/analytics'
 import { StepShell, UnderlineInput, PrimaryButton, OptionRow } from '@/components/onboarding/ui'
 import { PixSymbol } from './pix-symbol'
 import { ProGateSheet } from './pro-gate-sheet'
@@ -62,6 +63,7 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel, onOpenPro }: 
         createdAt: new Date(),
       }
       const finish = setTimeout(() => {
+        analytics.pixKeyCreated(type)
         onAddKey(key)
         setCreated(key)
         go('success')

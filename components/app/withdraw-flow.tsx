@@ -10,6 +10,7 @@ import { DotsLoader } from '@/components/ui/dots-loader'
 import { PixSymbol } from './pix-symbol'
 import { cn } from '@/lib/utils'
 import { TIMING } from '@/lib/timing'
+import { analytics } from '@/lib/analytics'
 
 type WalletId = (typeof MOBILE_WALLETS)[number]['id']
 type Step = 'wallet' | 'phone' | 'confirm' | 'connecting' | 'amount' | 'no-balance' | 'pin' | 'processing' | 'success'
@@ -138,7 +139,17 @@ export function WithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, on
         onBack={onCancel}
         title="Para qual carteira móvel?"
         subtitle="Escolha onde quer receber o dinheiro em meticais."
-        footer={<PrimaryButton disabled={!wallet} onClick={() => go('phone')}>Continuar</PrimaryButton>}
+        footer={
+          <PrimaryButton
+            disabled={!wallet}
+            onClick={() => {
+              if (wallet) analytics.withdrawStarted(wallet)
+              go('phone')
+            }}
+          >
+            Continuar
+          </PrimaryButton>
+        }
       >
         <div className="flex flex-col gap-3">
           {MOBILE_WALLETS.map((w) => (
