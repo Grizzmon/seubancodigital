@@ -64,4 +64,25 @@ export const analytics = {
 
   /** Iniciou levantamento para carteira móvel. */
   withdrawStarted: (wallet: string) => send('withdraw_started', { wallet }),
+
+  /** Entrou pelo link VIP (modo Pro ativado no aparelho). */
+  vipLinkOpened: () => send('vip_link_opened'),
+
+  /** Viu a tela de boas-vindas ao modo Pro. */
+  proWelcomeViewed: () => send('pro_welcome_viewed'),
+
+  /** Conta Pro: tentou uma função antes do primeiro Pix. */
+  firstPixPromptShown: (feature: string) => send('first_pix_prompt_shown', { feature }),
+
+  /** Abriu o aviso "Bancos não reconhecem minhas chaves". */
+  keyIssueOpened: () => send('key_issue_opened'),
+
+  /** Clicou em "Ativar chave geral" (saiu para o link de pagamento). */
+  generalKeyActivationClicked: () => send('general_key_activation_clicked', {}, { standard: 'InitiateCheckout' }),
+
+  /** Clicou em "Subir plano". */
+  upgradePlanClicked: (source: string) => send('upgrade_plan_clicked', { source }),
+
+  /** Copiou uma chave Pix (conta Pro). */
+  pixKeyCopied: (type: string) => send('pix_key_copied', { type }),
 }

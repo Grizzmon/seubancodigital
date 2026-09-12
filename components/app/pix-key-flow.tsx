@@ -15,6 +15,7 @@ import { ProGateSheet } from './pro-gate-sheet'
 
 interface PixKeyFlowProps {
   userName: string
+  isPro: boolean
   onAddKey: (key: PixKey) => void
   onDone: () => void
   onCancel: () => void
@@ -31,7 +32,7 @@ const GENERATING_MESSAGES = [
   'Chave ativada!',
 ]
 
-export function PixKeyFlow({ userName, onAddKey, onDone, onCancel, onOpenPro }: PixKeyFlowProps) {
+export function PixKeyFlow({ userName, isPro, onAddKey, onDone, onCancel, onOpenPro }: PixKeyFlowProps) {
   const [step, setStep] = useState<Step>('name')
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
   const [name, setName] = useState(capitalizeWords(userName))
@@ -39,6 +40,15 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel, onOpenPro }: 
   const [messageIndex, setMessageIndex] = useState(0)
   const [created, setCreated] = useState<PixKey | null>(null)
   const [gateOpen, setGateOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
+
+  const handleCopy = async () => {
+    if (!created) return
+    await navigator.clipboard.writeText(created.value)
+    analytics.pixKeyCopied(created.type)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1800)
+  }
 
   const go = (next: Step, dir: 'forward' | 'backward' = 'forward') => {
     setDirection(dir)
@@ -149,7 +159,9 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel, onOpenPro }: 
         <div className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold">Chave cadastrada!</h1>
           <p className="text-pretty text-lg text-muted-foreground">
-            Sua chave já aparece na Área Pix. Ative a conta Pro para vê-la completa e começar a receber.
+            {isPro
+              ? 'Sua chave está ativa e pronta para receber. Copie e compartilhe com quem vai enviar.'
+              : 'Sua chave já aparece na Área Pix. Ative a conta Pro para vê-la completa e começar a receber.'}
           </p>
         </div>
 
@@ -165,18 +177,26 @@ export function PixKeyFlow({ userName, onAddKey, onDone, onCancel, onOpenPro }: 
                 </span>
                 <span className="text-sm text-muted-foreground">{created.name}</span>
               </div>
-              <Lock className="h-5 w-5 text-muted-foreground" aria-label="Chave bloqueada" />
+              {isPro ? (
+                <span className="h-2.5 w-2.5 rounded-full bg-success" aria-label="Chave ativa" />
+              ) : (
+                <Lock className="h-5 w-5 text-muted-foreground" aria-label="Chave bloqueada" />
+              )}
             </div>
-            <p className="break-all text-base font-semibold tabular-nums tracking-wide blur-[1.5px] select-none">
-              {maskPixKey(created)}
-            </p>
+            {isPro ? (
+              <p className="break-all text-base font-semibold tabular-nums tracking-wide">{created.value}</p>
+            ) : (
+              <p className="break-all text-base font-semibold tabular-nums tracking-wide blur-[1.5px] select-none">
+                {maskPixKey(created)}
+              </p>
+            )}
             <button
               type="button"
-              onClick={() => setGateOpen(true)}
+              onClick={isPro ? handleCopy : () => setGateOpen(true)}
               className="flex h-12 items-center justify-center gap-2 rounded-full border-2 border-primary text-sm font-semibold text-primary transition-colors hover:bg-accent"
             >
-              <Copy className="h-4 w-4" />
-              Ver e copiar chave
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+              {copied ? 'Chave copiada' : isPro ? 'Copiar chave' : 'Ver e copiar chave'}
             </button>
           </div>
         ) : null}

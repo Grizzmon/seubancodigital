@@ -23,17 +23,23 @@ import {
   Globe,
   ShieldCheck,
   Sparkles,
+  BadgeCheck,
+  TrendingUp,
 } from 'lucide-react'
 import { formatBRL, formatMZN, convertToMZN } from '@/lib/store'
 import { capitalizeWords, firstName } from '@/lib/onboarding-format'
 import { cn } from '@/lib/utils'
 import { analytics } from '@/lib/analytics'
+import { openUpgradePlan } from '@/lib/pro'
 import { PixSymbol } from './pix-symbol'
 import { ProGateSheet } from './pro-gate-sheet'
+import { FirstPixSheet } from './first-pix-sheet'
 
 interface HomeViewProps {
   userName: string
   balance: number
+  isPro: boolean
+  hasTransactions: boolean
   onOpenPix: () => void
   onOpenWithdraw: () => void
   onOpenStatement: () => void
@@ -70,12 +76,36 @@ const BENEFITS = [
   },
 ]
 
-export function HomeView({ userName, balance, onOpenPix, onOpenWithdraw, onOpenStatement, onOpenPro, onLogout }: HomeViewProps) {
+export function HomeView({
+  userName,
+  balance,
+  isPro,
+  hasTransactions,
+  onOpenPix,
+  onOpenWithdraw,
+  onOpenStatement,
+  onOpenPro,
+  onLogout,
+}: HomeViewProps) {
   const [showBalance, setShowBalance] = useState(true)
   const [lockedFeature, setLockedFeature] = useState<string | null>(null)
+  const [firstPixFeature, setFirstPixFeature] = useState<string | null>(null)
+
+  // Não Pro: aviso para ativar. Pro sem movimentações: orienta a fazer o primeiro Pix.
   const notify = (feature: string) => {
+    if (isPro) {
+      if (hasTransactions) return
+      analytics.firstPixPromptShown(feature)
+      setFirstPixFeature(feature)
+      return
+    }
     analytics.proGateShown(feature)
     setLockedFeature(feature)
+  }
+
+  const handleUpgrade = () => {
+    analytics.upgradePlanClicked('home')
+    openUpgradePlan()
   }
 
   const name = capitalizeWords(firstName(userName)) || 'Cliente'
@@ -116,7 +146,18 @@ export function HomeView({ userName, balance, onOpenPix, onOpenWithdraw, onOpenS
         </div>
 
         <div className="flex items-center justify-between px-6 pt-6">
-          <p className="text-xl font-medium">Olá, {name}</p>
+          <div className="flex flex-col gap-1">
+            <p className="text-xl font-medium">Olá, {name}</p>
+            {isPro ? (
+              <span className="flex items-center gap-2 text-xs font-semibold text-primary-foreground/90">
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-70" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-success" />
+                </span>
+                Pro · Conta ativa
+              </span>
+            ) : null}
+          </div>
           <button
             type="button"
             onClick={onLogout}
@@ -184,21 +225,41 @@ export function HomeView({ userName, balance, onOpenPix, onOpenWithdraw, onOpenS
       </header>
 
       <main className="flex flex-col gap-8 px-6 pt-4">
-        {/* Faixa de ativação Pro */}
-        <button
-          type="button"
-          onClick={onOpenPro}
-          className="flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-accent px-4 py-3 text-left transition-transform active:scale-[0.99]"
-        >
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-gradient text-primary-foreground">
-            <Sparkles className="h-5 w-5" />
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-sm font-bold text-primary">Sua conta ainda não é Pro</span>
-            <span className="text-pretty text-xs text-muted-foreground">Ative para liberar Pix, chaves, crédito e levantamentos.</span>
-          </span>
-          <span className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">Ativar</span>
-        </button>
+        {isPro ? (
+          /* Estado da conta Pro + subir plano */
+          <div className="flex items-center gap-3 rounded-2xl border-2 border-success/30 bg-success/10 px-4 py-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success text-background">
+              <BadgeCheck className="h-5 w-5" />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="text-sm font-bold text-success">Conta Pro ativa</span>
+              <span className="text-pretty text-xs text-muted-foreground">Pix, chaves e levantamentos liberados.</span>
+            </span>
+            <button
+              type="button"
+              onClick={handleUpgrade}
+              className="flex shrink-0 items-center gap-1 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground"
+            >
+              <TrendingUp className="h-3.5 w-3.5" /> Subir plano
+            </button>
+          </div>
+        ) : (
+          /* Faixa de ativação Pro */
+          <button
+            type="button"
+            onClick={onOpenPro}
+            className="flex items-center gap-3 rounded-2xl border-2 border-primary/30 bg-accent px-4 py-3 text-left transition-transform active:scale-[0.99]"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-gradient text-primary-foreground">
+              <Sparkles className="h-5 w-5" />
+            </span>
+            <span className="flex min-w-0 flex-1 flex-col">
+              <span className="text-sm font-bold text-primary">Sua conta ainda não é Pro</span>
+              <span className="text-pretty text-xs text-muted-foreground">Ative para liberar Pix, chaves, crédito e levantamentos.</span>
+            </span>
+            <span className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">Ativar</span>
+          </button>
+        )}
 
         {/* Favoritos */}
         <section className="flex flex-col gap-5">
@@ -313,6 +374,16 @@ export function HomeView({ userName, balance, onOpenPix, onOpenWithdraw, onOpenS
         onActivate={() => {
           setLockedFeature(null)
           onOpenPro()
+        }}
+      />
+
+      <FirstPixSheet
+        open={firstPixFeature !== null}
+        featureName={firstPixFeature ?? undefined}
+        onClose={() => setFirstPixFeature(null)}
+        onGoToPix={() => {
+          setFirstPixFeature(null)
+          onOpenPix()
         }}
       />
     </div>
