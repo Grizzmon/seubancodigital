@@ -9,9 +9,11 @@ import { PixKeyFlow } from '@/components/app/pix-key-flow'
 import { WithdrawFlow } from '@/components/app/withdraw-flow'
 import { StatementView } from '@/components/app/statement-view'
 import { ProIntro } from '@/components/app/pro-intro'
+import { ProWelcome } from '@/components/app/pro-welcome'
+import { consumeProWelcome, getPlan } from '@/lib/pro'
 import { type PixKey, type Transaction } from '@/lib/store'
 
-type View = 'home' | 'pix' | 'create-key' | 'withdraw' | 'statement' | 'pro-intro'
+type View = 'home' | 'pix' | 'create-key' | 'withdraw' | 'statement' | 'pro-intro' | 'pro-welcome'
 
 // Guarda quem está com sessão aberta para não pedir login a cada abertura do app.
 const SESSION_KEY = 'realpayz_session_phone'
@@ -28,6 +30,7 @@ function MainApp() {
   const [currentView, setCurrentView] = useState<View>('home')
   const [proReturnView, setProReturnView] = useState<View>('home')
   const [sessionChecked, setSessionChecked] = useState(false)
+  const [isPro, setIsPro] = useState(false)
 
   useEffect(() => {
     if (!isLoggedIn || !userPhone) return
@@ -53,7 +56,10 @@ function MainApp() {
     setKeys(userData.keys || [])
     setTransactions(userData.transactions || [])
     setProfile(loadStoredUser(userData.phone) ?? userData)
-    setCurrentView('home')
+    const pro = getPlan() === 'pro'
+    setIsPro(pro)
+    // Quem chegou pelo link VIP vê as boas-vindas ao modo Pro uma única vez.
+    setCurrentView(pro && consumeProWelcome() ? 'pro-welcome' : 'home')
     setIsLoggedIn(true)
     localStorage.setItem(SESSION_KEY, userData.phone)
   }, [])
@@ -107,10 +113,14 @@ function MainApp() {
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-md bg-background text-foreground">
+      {currentView === 'pro-welcome' && <ProWelcome userName={userName} onContinue={() => setCurrentView('home')} />}
+
       {currentView === 'home' && (
         <HomeView
           userName={userName}
           balance={balance}
+          isPro={isPro}
+          hasTransactions={transactions.length > 0}
           onOpenPix={() => setCurrentView('pix')}
           onOpenWithdraw={() => setCurrentView('withdraw')}
           onOpenStatement={() => setCurrentView('statement')}
@@ -122,6 +132,7 @@ function MainApp() {
       {currentView === 'pix' && (
         <PixAreaView
           keys={keys}
+          isPro={isPro}
           onBack={() => setCurrentView('home')}
           onCreateKey={() => setCurrentView('create-key')}
           onWithdraw={() => setCurrentView('withdraw')}
@@ -132,6 +143,7 @@ function MainApp() {
       {currentView === 'create-key' && (
         <PixKeyFlow
           userName={userName}
+          isPro={isPro}
           onAddKey={handleAddKey}
           onDone={() => setCurrentView('pix')}
           onCancel={() => setCurrentView('pix')}
