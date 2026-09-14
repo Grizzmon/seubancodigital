@@ -1,17 +1,16 @@
 import { NextResponse } from 'next/server'
 import { getServerSupabase, sendToSubscriptions, type StoredSubscription } from '@/lib/push-server'
 import {
+  REMARKETING_MAX_AGE_DAYS,
   WELCOME_PUSH_DELAY_MINUTES,
-  WELCOME_PUSH_MAX_AGE_HOURS,
   WELCOME_PUSH_MODE,
-  buildWelcomePushPayload,
+  buildRemarketingPayload,
+  nextRemarketingStep,
 } from '@/lib/push-config'
 
 // Executado pelo Vercel Cron (ver vercel.json).
-// Envia o push "conta aprovada" para todo usuário que:
-//   - foi criado há pelo menos X minutos (X = 0 no modo 'immediate', WELCOME_PUSH_DELAY_MINUTES no modo 'delayed')
-//   - ainda não recebeu (last_remarketing_sent_at nulo)
-//   - possui pelo menos uma inscrição de push vinculada
+// Para cada utilizador com inscrição de push, envia o próximo passo da sequência
+// de remarketing (lib/push-config.ts) cujo tempo mínimo já passou e ainda não foi enviado.
 export async function GET(request: Request) {
   try {
     const authHeader = request.headers.get('authorization')
@@ -21,19 +20,17 @@ export async function GET(request: Request) {
     }
 
     const supabase = getServerSupabase()
+    const now = Date.now()
 
-    const delayMinutes = WELCOME_PUSH_MODE === 'delayed' ? WELCOME_PUSH_DELAY_MINUTES : 0
-    const limite = new Date(Date.now() - delayMinutes * 60_000).toISOString()
-    const janelaInicio = new Date(Date.now() - WELCOME_PUSH_MAX_AGE_HOURS * 3_600_000).toISOString()
+    const welcomeDelayMs = (WELCOME_PUSH_MODE === 'delayed' ? WELCOME_PUSH_DELAY_MINUTES : 0) * 60_000
+    const janelaInicio = new Date(now - REMARKETING_MAX_AGE_DAYS * 86_400_000).toISOString()
 
     const { data: users, error: userError } = await supabase
       .from('bankpix_users')
-      .select('id, name, created_at')
-      .lte('created_at', limite)
+      .select('id, name, access_type, created_at, last_remarketing_sent_at')
       .gte('created_at', janelaInicio)
-      .is('last_remarketing_sent_at', null)
       .order('created_at', { ascending: false })
-      .limit(500)
+      .limit(1000)
 
     if (userError) {
       return NextResponse.json(
@@ -42,11 +39,26 @@ export async function GET(request: Request) {
       )
     }
 
-    if (!users || users.length === 0) {
+    // Só quem tem algo pendente na sequência.
+    const pendentes = (users || [])
+      .map((user) => {
+        const step = nextRemarketingStep(user.created_at, user.last_remarketing_sent_at, now)
+        return step === null ? null : { user, step }
+      })
+      .filter((item): item is { user: NonNullable<typeof users>[number]; step: number } => {
+        if (!item) return false
+        // No modo 'delayed' a primeira mensagem espera o atraso configurado.
+        if (item.step === 0 && welcomeDelayMs > 0) {
+          return now - new Date(item.user.created_at).getTime() >= welcomeDelayMs
+        }
+        return true
+      })
+
+    if (pendentes.length === 0) {
       return NextResponse.json({ success: true, message: 'Nenhum usuário elegível', count: 0 })
     }
 
-    const userIds = users.map((u) => u.id)
+    const userIds = pendentes.map((p) => p.user.id)
 
     const { data: subs, error: subsError } = await supabase
       .from('push_subscriptions')
@@ -70,19 +82,25 @@ export async function GET(request: Request) {
     let usuariosNotificados = 0
     let notificacoesEnviadas = 0
     let expiradasRemovidas = 0
+    const porPasso: Record<number, number> = {}
     const agora = new Date().toISOString()
 
-    for (const user of users) {
+    for (const { user, step } of pendentes) {
       const userSubs = subsByUser.get(user.id)
       if (!userSubs || userSubs.length === 0) continue
 
-      const result = await sendToSubscriptions(supabase, userSubs, buildWelcomePushPayload(user.name))
+      const result = await sendToSubscriptions(
+        supabase,
+        userSubs,
+        buildRemarketingPayload(step, user.name, user.access_type)
+      )
 
       notificacoesEnviadas += result.enviadas
       expiradasRemovidas += result.expiradas
 
       if (result.enviadas > 0) {
         usuariosNotificados++
+        porPasso[step] = (porPasso[step] || 0) + 1
         await supabase
           .from('bankpix_users')
           .update({ last_remarketing_sent_at: agora })
@@ -93,11 +111,11 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       modo: WELCOME_PUSH_MODE,
-      atraso_minutos: delayMinutes,
-      usuarios_elegiveis: users.length,
+      usuarios_pendentes: pendentes.length,
       usuarios_notificados: usuariosNotificados,
       notificacoes_enviadas: notificacoesEnviadas,
       expiradas_removidas: expiradasRemovidas,
+      por_passo: porPasso,
     })
   } catch (error: any) {
     console.error('Erro crítico no cron:', error)

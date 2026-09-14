@@ -10,6 +10,7 @@ const VAPID_PUBLIC_KEY =
 const USER_ID_KEY = "bankpix_user_id";
 const WELCOME_PENDING_KEY = "bankpix_welcome_pending";
 const WELCOME_SENT_PREFIX = "bankpix_welcome_sent_";
+const LINKED_ENDPOINT_PREFIX = "realpayz_push_linked_";
 
 export interface UserReadyDetail {
   userId?: string;
@@ -40,21 +41,26 @@ function urlBase64ToUint8Array(base64String: string) {
 
 export default function ServiceWorkerRegister() {
   useEffect(() => {
-    const isSupported = "serviceWorker" in navigator && "PushManager" in window;
+    const isSupported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
 
     if (!isSupported) {
-      console.warn("Push notifications não são suportadas neste navegador.");
+      console.warn("[push] notificações não são suportadas neste navegador.");
       return;
     }
 
     let syncing: Promise<void> | null = null;
+    let permissionAsked = false;
 
+    // Pede a permissão e cria a inscrição. Não depende do usuário estar identificado:
+    // a inscrição fica pronta no navegador e é vinculada assim que houver userId.
     async function getOrCreateSubscription(requestIfDefault: boolean) {
       const registration = await navigator.serviceWorker.ready;
 
       let permission = Notification.permission;
-      if (permission === "default" && requestIfDefault) {
+      if (permission === "default" && requestIfDefault && !permissionAsked) {
+        permissionAsked = true;
         permission = await Notification.requestPermission();
+        permissionAsked = false;
       }
       if (permission !== "granted") return null;
 
@@ -67,43 +73,46 @@ export default function ServiceWorkerRegister() {
       });
     }
 
-    // Salva a inscrição no servidor (service role) vinculada ao user_id
-    // e, se houver boas-vindas pendente, dispara o push.
+    // Garante a inscrição e, se houver usuário identificado, vincula no servidor
+    // (só uma vez por endpoint+usuário) e dispara o push de boas-vindas pendente.
     async function syncSubscription(requestIfDefault: boolean) {
       if (syncing) return syncing;
 
       syncing = (async () => {
         try {
-          const userId = localStorage.getItem(USER_ID_KEY);
-          if (!userId) {
-            console.log("[push] aguardando identificação do usuário");
+          const subscription = await getOrCreateSubscription(requestIfDefault);
+          if (!subscription) {
+            console.log("[push] permissão ainda não concedida");
             return;
           }
 
-          const subscription = await getOrCreateSubscription(requestIfDefault);
-          if (!subscription) {
-            console.log("[push] permissão não concedida ainda; tentará novamente depois");
+          const userId = localStorage.getItem(USER_ID_KEY);
+          if (!userId) {
+            console.log("[push] inscrição pronta; aguardando identificação do usuário");
             return;
           }
 
           const json = subscription.toJSON();
-          if (!json.keys?.p256dh || !json.keys?.auth) {
+          if (!json.keys?.p256dh || !json.keys?.auth || !json.endpoint) {
             console.error("[push] inscrição sem chaves p256dh/auth");
             return;
           }
 
-          const res = await fetch("/api/save-subscription", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, subscription: json }),
-          });
+          const linkedKey = LINKED_ENDPOINT_PREFIX + userId;
+          if (localStorage.getItem(linkedKey) !== json.endpoint) {
+            const res = await fetch("/api/save-subscription", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId, subscription: json }),
+            });
 
-          if (!res.ok) {
-            console.error("[push] falha ao salvar inscrição:", await res.text());
-            return;
+            if (!res.ok) {
+              console.error("[push] falha ao salvar inscrição:", await res.text());
+              return;
+            }
+            localStorage.setItem(linkedKey, json.endpoint);
+            console.log("[push] inscrição vinculada ao usuário", userId);
           }
-
-          console.log("[push] inscrição vinculada ao usuário", userId);
 
           await sendWelcomeIfPending(userId);
         } catch (error) {
@@ -147,7 +156,7 @@ export default function ServiceWorkerRegister() {
         // em vez de reutilizar a cópia em cache HTTP (evita o worker antigo "BankPix").
         const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
         await registration.update().catch(() => null);
-        // Pede permissão já na entrada (comportamento original do app).
+        // Tenta já na entrada; navegadores que exigem gesto caem no primeiro toque abaixo.
         await syncSubscription(true);
       } catch (error) {
         console.error("[push] erro ao registrar service worker:", error);
@@ -155,6 +164,26 @@ export default function ServiceWorkerRegister() {
     }
 
     boot();
+
+    // Android/Chrome só mostram o pedido de permissão de forma visível quando vem
+    // de uma interação do usuário. O primeiro toque em qualquer lugar do app faz o pedido.
+    const handleFirstInteraction = () => {
+      if (Notification.permission !== "default") {
+        removeInteractionListeners();
+        return;
+      }
+      syncSubscription(true).finally(() => {
+        if (Notification.permission !== "default") removeInteractionListeners();
+      });
+    };
+
+    const removeInteractionListeners = () => {
+      window.removeEventListener("pointerdown", handleFirstInteraction, true);
+      window.removeEventListener("keydown", handleFirstInteraction, true);
+    };
+
+    window.addEventListener("pointerdown", handleFirstInteraction, true);
+    window.addEventListener("keydown", handleFirstInteraction, true);
 
     const handleUserReady = () => {
       syncSubscription(true);
@@ -169,6 +198,7 @@ export default function ServiceWorkerRegister() {
     document.addEventListener("visibilitychange", handleVisibility);
 
     return () => {
+      removeInteractionListeners();
       window.removeEventListener("bankpix-user-ready", handleUserReady);
       document.removeEventListener("visibilitychange", handleVisibility);
     };
