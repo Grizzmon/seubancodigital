@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getServerSupabase, isUuid } from '@/lib/push-server'
+import { WELCOME_PUSH_MODE } from '@/lib/push-config'
+import { sendWelcomePush } from '@/lib/welcome-push'
 
 export async function POST(request: Request) {
   try {
@@ -34,7 +36,19 @@ export async function POST(request: Request) {
       )
     }
 
-    return NextResponse.json({ success: true })
+    // A inscrição acabou de ficar utilizável: dispara as boas-vindas já do lado do servidor,
+    // sem depender de o cliente chamar /api/welcome-push a seguir. Só sai uma vez por usuário.
+    let welcome: string | undefined
+    if (WELCOME_PUSH_MODE === 'immediate') {
+      const outcome = await sendWelcomePush(supabase, userId).catch((err: any) => ({
+        status: 'error' as const,
+        message: err?.message || 'erro desconhecido',
+      }))
+      welcome = outcome.status
+      if (outcome.status === 'error') console.error('[save-subscription] boas-vindas:', outcome.message)
+    }
+
+    return NextResponse.json({ success: true, welcome })
   } catch (error: any) {
     return NextResponse.json({ error: 'Erro interno', details: error.message }, { status: 500 })
   }

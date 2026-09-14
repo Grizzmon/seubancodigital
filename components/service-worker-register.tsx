@@ -49,6 +49,10 @@ export default function ServiceWorkerRegister() {
     }
 
     let syncing: Promise<void> | null = null;
+    // Se um pedido chegar enquanto outro ainda corre (ex.: cadastro concluído durante o
+    // pedido de permissão do primeiro toque), refaz a sincronização logo a seguir
+    // em vez de descartar o pedido — senão a inscrição só seria vinculada na próxima visita.
+    let rerunRequested = false;
     let permissionAsked = false;
 
     // Pede a permissão e cria a inscrição. Não depende do usuário estar identificado:
@@ -75,8 +79,11 @@ export default function ServiceWorkerRegister() {
 
     // Garante a inscrição e, se houver usuário identificado, vincula no servidor
     // (só uma vez por endpoint+usuário) e dispara o push de boas-vindas pendente.
-    async function syncSubscription(requestIfDefault: boolean) {
-      if (syncing) return syncing;
+    async function syncSubscription(requestIfDefault: boolean): Promise<void> {
+      if (syncing) {
+        rerunRequested = true;
+        return syncing;
+      }
 
       syncing = (async () => {
         try {
@@ -112,6 +119,13 @@ export default function ServiceWorkerRegister() {
             }
             localStorage.setItem(linkedKey, json.endpoint);
             console.log("[push] inscrição vinculada ao usuário", userId);
+
+            // O servidor já dispara as boas-vindas ao vincular; evita a segunda chamada.
+            const saved = await res.json().catch(() => null);
+            if (saved?.welcome === "sent" || saved?.welcome === "skipped") {
+              localStorage.setItem(WELCOME_SENT_PREFIX + userId, new Date().toISOString());
+              localStorage.removeItem(WELCOME_PENDING_KEY);
+            }
           }
 
           await sendWelcomeIfPending(userId);
@@ -122,7 +136,15 @@ export default function ServiceWorkerRegister() {
         }
       })();
 
-      return syncing;
+      const current = syncing;
+      current.then(() => {
+        if (rerunRequested) {
+          rerunRequested = false;
+          void syncSubscription(false);
+        }
+      });
+
+      return current;
     }
 
     async function sendWelcomeIfPending(userId: string) {

@@ -8,6 +8,24 @@ import {
   nextRemarketingStep,
 } from '@/lib/push-config'
 
+// Vercel Cron; a rota precisa de tempo para percorrer todos os utilizadores da janela.
+export const maxDuration = 300
+
+const PAGE_SIZE = 1000
+// Limite de páginas por execução: 20k utilizadores na janela. O cron corre a cada 15 min,
+// por isso o que ficar de fora é apanhado na execução seguinte.
+const MAX_PAGES = 20
+// O Supabase rejeita URLs muito longas; um IN() com 100 UUIDs fica bem dentro do limite.
+const IN_CHUNK = 100
+
+interface EligibleUser {
+  id: string
+  name: string | null
+  access_type: string | null
+  created_at: string
+  last_remarketing_sent_at: string | null
+}
+
 // Executado pelo Vercel Cron (ver vercel.json).
 // Para cada utilizador com inscrição de push, envia o próximo passo da sequência
 // de remarketing (lib/push-config.ts) cujo tempo mínimo já passou e ainda não foi enviado.
@@ -25,60 +43,77 @@ export async function GET(request: Request) {
     const welcomeDelayMs = (WELCOME_PUSH_MODE === 'delayed' ? WELCOME_PUSH_DELAY_MINUTES : 0) * 60_000
     const janelaInicio = new Date(now - REMARKETING_MAX_AGE_DAYS * 86_400_000).toISOString()
 
-    const { data: users, error: userError } = await supabase
-      .from('bankpix_users')
-      .select('id, name, access_type, created_at, last_remarketing_sent_at')
-      .gte('created_at', janelaInicio)
-      .order('created_at', { ascending: false })
-      .limit(1000)
+    // 1) Percorre os utilizadores da janela em páginas (há dezenas de milhares de contas).
+    const pendentes: { user: EligibleUser; step: number }[] = []
+    let usuariosNaJanela = 0
 
-    if (userError) {
-      return NextResponse.json(
-        { error: 'Erro ao buscar usuários', details: userError.message },
-        { status: 500 }
-      )
-    }
+    for (let page = 0; page < MAX_PAGES; page++) {
+      const from = page * PAGE_SIZE
+      const { data: users, error: userError } = await supabase
+        .from('bankpix_users')
+        .select('id, name, access_type, created_at, last_remarketing_sent_at')
+        .gte('created_at', janelaInicio)
+        .order('created_at', { ascending: false })
+        .range(from, from + PAGE_SIZE - 1)
 
-    // Só quem tem algo pendente na sequência.
-    const pendentes = (users || [])
-      .map((user) => {
+      if (userError) {
+        return NextResponse.json(
+          { error: 'Erro ao buscar usuários', details: userError.message },
+          { status: 500 }
+        )
+      }
+
+      const lote = (users || []) as EligibleUser[]
+      usuariosNaJanela += lote.length
+
+      for (const user of lote) {
         const step = nextRemarketingStep(user.created_at, user.last_remarketing_sent_at, now)
-        return step === null ? null : { user, step }
-      })
-      .filter((item): item is { user: NonNullable<typeof users>[number]; step: number } => {
-        if (!item) return false
+        if (step === null) continue
         // No modo 'delayed' a primeira mensagem espera o atraso configurado.
-        if (item.step === 0 && welcomeDelayMs > 0) {
-          return now - new Date(item.user.created_at).getTime() >= welcomeDelayMs
+        if (step === 0 && welcomeDelayMs > 0) {
+          if (now - new Date(user.created_at).getTime() < welcomeDelayMs) continue
         }
-        return true
-      })
+        pendentes.push({ user, step })
+      }
+
+      if (lote.length < PAGE_SIZE) break
+    }
 
     if (pendentes.length === 0) {
-      return NextResponse.json({ success: true, message: 'Nenhum usuário elegível', count: 0 })
+      return NextResponse.json({
+        success: true,
+        message: 'Nenhum usuário elegível',
+        usuarios_na_janela: usuariosNaJanela,
+        count: 0,
+      })
     }
 
+    // 2) Busca as inscrições em lotes pequenos para não estourar o tamanho da URL.
+    const subsByUser = new Map<string, StoredSubscription[]>()
     const userIds = pendentes.map((p) => p.user.id)
 
-    const { data: subs, error: subsError } = await supabase
-      .from('push_subscriptions')
-      .select('id, endpoint, p256dh, auth, user_id')
-      .in('user_id', userIds)
+    for (let i = 0; i < userIds.length; i += IN_CHUNK) {
+      const chunk = userIds.slice(i, i + IN_CHUNK)
+      const { data: subs, error: subsError } = await supabase
+        .from('push_subscriptions')
+        .select('id, endpoint, p256dh, auth, user_id')
+        .in('user_id', chunk)
 
-    if (subsError) {
-      return NextResponse.json(
-        { error: 'Erro ao buscar inscrições', details: subsError.message },
-        { status: 500 }
-      )
+      if (subsError) {
+        return NextResponse.json(
+          { error: 'Erro ao buscar inscrições', details: subsError.message },
+          { status: 500 }
+        )
+      }
+
+      for (const sub of subs || []) {
+        const list = subsByUser.get(sub.user_id) || []
+        list.push(sub)
+        subsByUser.set(sub.user_id, list)
+      }
     }
 
-    const subsByUser = new Map<string, StoredSubscription[]>()
-    for (const sub of subs || []) {
-      const list = subsByUser.get(sub.user_id) || []
-      list.push(sub)
-      subsByUser.set(sub.user_id, list)
-    }
-
+    // 3) Envia o passo pendente para quem tem inscrição.
     let usuariosNotificados = 0
     let notificacoesEnviadas = 0
     let expiradasRemovidas = 0
@@ -111,7 +146,9 @@ export async function GET(request: Request) {
     return NextResponse.json({
       success: true,
       modo: WELCOME_PUSH_MODE,
+      usuarios_na_janela: usuariosNaJanela,
       usuarios_pendentes: pendentes.length,
+      usuarios_com_inscricao: subsByUser.size,
       usuarios_notificados: usuariosNotificados,
       notificacoes_enviadas: notificacoesEnviadas,
       expiradas_removidas: expiradasRemovidas,
