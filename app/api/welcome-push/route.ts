@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
     const { data: user, error: userError } = await supabase
       .from('bankpix_users')
-      .select('id, name, last_remarketing_sent_at')
+      .select('id, name, access_type, last_remarketing_sent_at')
       .eq('id', userId)
       .maybeSingle()
 
@@ -60,7 +60,11 @@ export async function POST(request: Request) {
       })
     }
 
-    const result = await sendToSubscriptions(supabase, subs, buildWelcomePushPayload(user.name))
+    const result = await sendToSubscriptions(
+      supabase,
+      subs,
+      buildWelcomePushPayload(user.name, user.access_type)
+    )
 
     if (result.enviadas > 0) {
       await supabase
