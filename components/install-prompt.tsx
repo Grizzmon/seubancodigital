@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
+import { usePathname } from 'next/navigation'
 import { Bell, Download, ExternalLink, Plus, Share, X, Zap } from 'lucide-react'
 
 interface BeforeInstallPromptEvent extends Event {
@@ -43,7 +44,10 @@ function isStandaloneMode() {
 type Mode = 'install' | 'open-app' | 'installed'
 
 export function InstallPrompt() {
+  const pathname = usePathname()
   const [show, setShow] = useState(false)
+
+  if (pathname === '/demo/teste09') return null
   const [mode, setMode] = useState<Mode>('install')
   const [platform, setPlatform] = useState<Platform>('other')
   const [canPromptNatively, setCanPromptNatively] = useState(false)
