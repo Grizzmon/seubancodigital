@@ -1,7 +1,7 @@
 // RealPayz Service Worker
 // Ao mudar ícones, nome ou comportamento das notificações, incremente SW_VERSION:
 // isso força o Android/Chrome a instalar o novo worker e descartar caches antigos (BankPix).
-const SW_VERSION = "realpayz-v2";
+const SW_VERSION = "realpayz-v3";
 
 const APP_NAME = "RealPayz";
 const NOTIFICATION_ICON = "/notification-icon-192.png";
@@ -47,6 +47,33 @@ self.addEventListener("push", (event) => {
   const title = !data.title || /bankpix/i.test(data.title) ? APP_NAME : data.title;
 
   event.waitUntil(self.registration.showNotification(title, options));
+});
+
+// O navegador pode invalidar a inscrição (rotação de chaves, limpeza de dados, FCM).
+// Renovamos sozinhos para o utilizador não ficar sem notificações.
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(
+    (async () => {
+      const oldEndpoint = event.oldSubscription?.endpoint;
+      const applicationServerKey =
+        event.oldSubscription?.options?.applicationServerKey ||
+        event.newSubscription?.options?.applicationServerKey;
+      if (!oldEndpoint) return;
+
+      const subscription =
+        event.newSubscription ||
+        (applicationServerKey
+          ? await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })
+          : null);
+      if (!subscription) return;
+
+      await fetch("/api/renew-subscription", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ oldEndpoint, subscription: subscription.toJSON() }),
+      });
+    })()
+  );
 });
 
 self.addEventListener("notificationclick", (event) => {
