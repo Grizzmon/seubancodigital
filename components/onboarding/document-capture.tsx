@@ -26,41 +26,63 @@ export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
   const [snapshot, setSnapshot] = useState<string | null>(null)
   const [attempts, setAttempts] = useState(0)
 
-  useEffect(() => {
-    let cancelled = false
+  const cancelledRef = useRef(false)
 
-    async function start() {
-      if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
-        setCameraBlocked(true)
+  const attachStream = async (stream: MediaStream) => {
+    const video = videoRef.current
+    if (!video) return
+    if (video.srcObject !== stream) video.srcObject = stream
+    await video.play().catch(() => undefined)
+  }
+
+  const startCamera = async () => {
+    if (typeof navigator === 'undefined' || !navigator.mediaDevices?.getUserMedia) {
+      setCameraBlocked(true)
+      return
+    }
+    const current = streamRef.current
+    const alive = current?.getVideoTracks().some((t) => t.readyState === 'live')
+    if (current && alive) {
+      await attachStream(current)
+      setCameraReady(true)
+      return
+    }
+    current?.getTracks().forEach((t) => t.stop())
+    streamRef.current = null
+    setCameraReady(false)
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
+        audio: false,
+      })
+      if (cancelledRef.current) {
+        stream.getTracks().forEach((t) => t.stop())
         return
       }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 } },
-          audio: false,
-        })
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop())
-          return
-        }
-        streamRef.current = stream
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream
-          await videoRef.current.play().catch(() => undefined)
-        }
-        setCameraReady(true)
-      } catch {
-        setCameraBlocked(true)
-      }
+      streamRef.current = stream
+      await attachStream(stream)
+      setCameraReady(true)
+    } catch {
+      setCameraBlocked(true)
     }
+  }
 
-    start()
+  useEffect(() => {
+    cancelledRef.current = false
+    startCamera()
+
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') startCamera()
+    }
+    document.addEventListener('visibilitychange', onVisible)
 
     return () => {
-      cancelled = true
+      cancelledRef.current = true
+      document.removeEventListener('visibilitychange', onVisible)
       streamRef.current?.getTracks().forEach((t) => t.stop())
       streamRef.current = null
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const runValidation = (image: string) => {
@@ -96,6 +118,7 @@ export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
   const retry = () => {
     setSnapshot(null)
     setStatus('idle')
+    void startCamera()
   }
 
   const sideLabel = side === 'frente' ? 'FRENTE' : 'VERSO'
@@ -103,12 +126,15 @@ export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
   return (
     <div className="flex flex-1 flex-col gap-6">
       <div className="relative overflow-hidden rounded-3xl bg-foreground" style={{ aspectRatio: '3 / 4' }}>
+        <video ref={videoRef} autoPlay playsInline muted className="h-full w-full object-cover" />
         {snapshot ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={snapshot} alt={`Foto do ${side} do documento`} className="h-full w-full object-cover" />
-        ) : (
-          <video ref={videoRef} playsInline muted className="h-full w-full object-cover" />
-        )}
+          <img
+            src={snapshot}
+            alt={`Foto do ${side} do documento`}
+            className="absolute inset-0 h-full w-full object-cover"
+          />
+        ) : null}
 
         {!cameraReady && !snapshot ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-8 text-center text-background">

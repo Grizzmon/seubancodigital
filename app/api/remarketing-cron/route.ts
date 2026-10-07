@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getServerSupabase, sendToSubscriptions, type StoredSubscription } from '@/lib/push-server'
+import { getServerSupabase, runPool, sendToSubscriptions, type StoredSubscription } from '@/lib/push-server'
 import {
   REMARKETING_MAX_AGE_DAYS,
   WELCOME_PUSH_DELAY_MINUTES,
@@ -17,6 +17,8 @@ const PAGE_SIZE = 1000
 const MAX_PAGES = 20
 // O Supabase rejeita URLs muito longas; um IN() com 100 UUIDs fica bem dentro do limite.
 const IN_CHUNK = 100
+// Utilizadores processados em paralelo no envio.
+const SEND_CONCURRENCY = 25
 
 interface EligibleUser {
   id: string
@@ -120,9 +122,15 @@ export async function GET(request: Request) {
     const porPasso: Record<number, number> = {}
     const agora = new Date().toISOString()
 
-    for (const { user, step } of pendentes) {
+    let falhasDefinitivas = 0
+    let semInscricao = 0
+
+    await runPool(pendentes, SEND_CONCURRENCY, async ({ user, step }) => {
       const userSubs = subsByUser.get(user.id)
-      if (!userSubs || userSubs.length === 0) continue
+      if (!userSubs || userSubs.length === 0) {
+        semInscricao++
+        return
+      }
 
       const result = await sendToSubscriptions(
         supabase,
@@ -132,7 +140,10 @@ export async function GET(request: Request) {
 
       notificacoesEnviadas += result.enviadas
       expiradasRemovidas += result.expiradas
+      falhasDefinitivas += result.falhas.length
 
+      // Se nenhuma inscrição aceitou a mensagem, last_remarketing_sent_at não é atualizado:
+      // o utilizador continua pendente e o próximo cron (15 min) tenta de novo.
       if (result.enviadas > 0) {
         usuariosNotificados++
         porPasso[step] = (porPasso[step] || 0) + 1
@@ -141,7 +152,7 @@ export async function GET(request: Request) {
           .update({ last_remarketing_sent_at: agora })
           .eq('id', user.id)
       }
-    }
+    })
 
     return NextResponse.json({
       success: true,
@@ -149,6 +160,8 @@ export async function GET(request: Request) {
       usuarios_na_janela: usuariosNaJanela,
       usuarios_pendentes: pendentes.length,
       usuarios_com_inscricao: subsByUser.size,
+      usuarios_sem_inscricao: semInscricao,
+      falhas_definitivas: falhasDefinitivas,
       usuarios_notificados: usuariosNotificados,
       notificacoes_enviadas: notificacoesEnviadas,
       expiradas_removidas: expiradasRemovidas,

@@ -54,6 +54,9 @@ export default function ServiceWorkerRegister() {
     // em vez de descartar o pedido — senão a inscrição só seria vinculada na próxima visita.
     let rerunRequested = false;
     let permissionAsked = false;
+    // O iOS só mostra o pedido de permissão dentro de um toque real (click/touchend).
+    // Pedir fora de um gesto não aparece e pode ficar pendente, bloqueando o pedido seguinte.
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
 
     // Pede a permissão e cria a inscrição. Não depende do usuário estar identificado:
     // a inscrição fica pronta no navegador e é vinculada assim que houver userId.
@@ -179,7 +182,7 @@ export default function ServiceWorkerRegister() {
         const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
         await registration.update().catch(() => null);
         // Tenta já na entrada; navegadores que exigem gesto caem no primeiro toque abaixo.
-        await syncSubscription(true);
+        await syncSubscription(!isIOS);
       } catch (error) {
         console.error("[push] erro ao registrar service worker:", error);
       }
@@ -199,16 +202,16 @@ export default function ServiceWorkerRegister() {
       });
     };
 
+    const interactionEvents = ["click", "touchend", "keydown"] as const;
+
     const removeInteractionListeners = () => {
-      window.removeEventListener("pointerdown", handleFirstInteraction, true);
-      window.removeEventListener("keydown", handleFirstInteraction, true);
+      interactionEvents.forEach((name) => window.removeEventListener(name, handleFirstInteraction, true));
     };
 
-    window.addEventListener("pointerdown", handleFirstInteraction, true);
-    window.addEventListener("keydown", handleFirstInteraction, true);
+    interactionEvents.forEach((name) => window.addEventListener(name, handleFirstInteraction, true));
 
     const handleUserReady = () => {
-      syncSubscription(true);
+      syncSubscription(!isIOS);
     };
 
     // Se o usuário voltar ao app depois de aceitar a permissão, tenta vincular de novo.
