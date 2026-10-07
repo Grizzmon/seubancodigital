@@ -1,36 +1,32 @@
 import { NextResponse } from "next/server";
 import webpush from "web-push";
-import { createClient } from "@supabase/supabase-js";
-import { APP_NAME, APP_URL, NOTIFICATION_BADGE, NOTIFICATION_ICON, VAPID_CONTACT } from "@/lib/push-config";
+import { APP_NAME, APP_URL, NOTIFICATION_BADGE, NOTIFICATION_ICON } from "@/lib/push-config";
+import { ensureVapid, getServerSupabase } from "@/lib/push-server";
 
-// Criados só no momento do pedido para o build não depender das variáveis de ambiente.
-function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    // Usa a service role para não esbarrar em RLS ao ler/limpar inscrições
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-}
-
-function configureVapid() {
-  webpush.setVapidDetails(
-    VAPID_CONTACT,
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-    process.env.VAPID_PRIVATE_KEY!
-  );
+function supabaseHost() {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || "").host || "(não definido)";
+  } catch {
+    return "(URL inválida)";
+  }
 }
 
 export async function GET() {
   try {
-    const supabase = getSupabase();
-    configureVapid();
+    const supabase = getServerSupabase();
+    ensureVapid();
     const { data, error } = await supabase
       .from("push_subscriptions")
       .select("id, endpoint, p256dh, auth");
 
     if (error) {
       return NextResponse.json(
-        { error: "Erro ao ler inscrições", details: error.message },
+        {
+          error: "Erro ao ler inscrições",
+          details: error.message,
+          supabase_host: supabaseHost(),
+          dica: "Se for 'fetch failed', o projeto Supabase está pausado/apagado ou a NEXT_PUBLIC_SUPABASE_URL na Vercel está errada.",
+        },
         { status: 500 }
       );
     }
