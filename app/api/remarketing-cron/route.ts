@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { sendWelcomePush } from '@/lib/welcome-push'
 import { getServerSupabase, runPool, sendToSubscriptions, type StoredSubscription } from '@/lib/push-server'
 import {
   REMARKETING_MAX_AGE_DAYS,
@@ -129,6 +130,17 @@ export async function GET(request: Request) {
       const userSubs = subsByUser.get(user.id)
       if (!userSubs || userSubs.length === 0) {
         semInscricao++
+        return
+      }
+
+      // Use the same atomic claim as exit beacons to avoid double welcomes.
+      if (step === 0) {
+        const outcome = await sendWelcomePush(supabase, user.id)
+        if (outcome.status === 'sent' && outcome.enviadas > 0) {
+          usuariosNotificados++
+          notificacoesEnviadas += outcome.enviadas
+          porPasso[0] = (porPasso[0] || 0) + 1
+        } else if (outcome.status === 'error') falhasDefinitivas++
         return
       }
 

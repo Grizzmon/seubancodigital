@@ -1,7 +1,7 @@
 // RealPayz Service Worker
 // Ao mudar ícones, nome ou comportamento das notificações, incremente SW_VERSION:
 // isso força o Android/Chrome a instalar o novo worker e descartar caches antigos (BankPix).
-const SW_VERSION = "realpayz-v3";
+const SW_VERSION = "realpayz-v4";
 
 const APP_NAME = "RealPayz";
 const NOTIFICATION_ICON = "/notification-icon-192.png";

@@ -41,18 +41,28 @@ export async function sendWelcomePush(
     return { status: 'pending', reason: 'Usuário ainda não possui inscrição de push vinculada' }
   }
 
-  const result = await sendToSubscriptions(
-    supabase,
-    subs,
-    buildWelcomePushPayload(user.name, user.access_type)
-  )
+  // Atomically claim this user's first notification. visibilitychange and
+  // pagehide can arrive together, and cron can run at the same instant.
+  const claim = new Date().toISOString()
+  const { data: claimed, error: claimError } = await supabase
+    .from('bankpix_users')
+    .update({ last_remarketing_sent_at: claim })
+    .eq('id', userId)
+    .is('last_remarketing_sent_at', null)
+    .select('id')
+  if (claimError) return { status: 'error', message: claimError.message }
+  if (!claimed?.length) return { status: 'skipped', reason: 'Notificação já enviada ou em envio' }
 
-  if (result.enviadas > 0) {
-    await supabase
-      .from('bankpix_users')
-      .update({ last_remarketing_sent_at: new Date().toISOString() })
-      .eq('id', userId)
+  try {
+    const result = await sendToSubscriptions(
+      supabase, subs, buildWelcomePushPayload(user.name, user.access_type)
+    )
+    if (result.enviadas > 0) return { status: 'sent', enviadas: result.enviadas, total: subs.length }
+    throw new Error('Nenhum serviço de push aceitou a notificação')
+  } catch (error) {
+    // Release only our own claim, keeping this user eligible for a later retry.
+    await supabase.from('bankpix_users').update({ last_remarketing_sent_at: null })
+      .eq('id', userId).eq('last_remarketing_sent_at', claim)
+    return { status: 'error', message: error instanceof Error ? error.message : 'Falha no envio' }
   }
-
-  return { status: 'sent', enviadas: result.enviadas, total: subs.length }
 }

@@ -1,233 +1,191 @@
-"use client";
+'use client'
 
-import { useEffect } from "react";
-import { WELCOME_PUSH_MODE } from "@/lib/push-config";
+import { useEffect, useRef, useState } from 'react'
 
-const VAPID_PUBLIC_KEY =
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
-  "BKOyYXXQkylmhMhXOq9qfBctTi0edUI6OzjUOzatYko2pgVSj_FU5WbV9WipbJdSyK-1XnWr1oZ46eVFHee00ho";
+const USER_ID_KEY = 'bankpix_user_id'
+const PENDING_KEY = 'bankpix_welcome_pending'
+const SENT_PREFIX = 'bankpix_welcome_sent_'
 
-const USER_ID_KEY = "bankpix_user_id";
-const WELCOME_PENDING_KEY = "bankpix_welcome_pending";
-const WELCOME_SENT_PREFIX = "bankpix_welcome_sent_";
-const LINKED_ENDPOINT_PREFIX = "realpayz_push_linked_";
+export interface UserReadyDetail { userId?: string; newAccount?: boolean }
 
-export interface UserReadyDetail {
-  userId?: string;
-  newAccount?: boolean;
-}
-
-// Avisa o ServiceWorkerRegister que o usuário foi identificado.
-// newAccount=true faz o push de boas-vindas ser disparado (modo 'immediate').
 export function notifyUserReady(detail: UserReadyDetail) {
-  if (typeof window === "undefined") return;
-  if (detail.userId) localStorage.setItem(USER_ID_KEY, detail.userId);
-  if (detail.newAccount && detail.userId) {
-    localStorage.setItem(WELCOME_PENDING_KEY, detail.userId);
+  if (typeof window === 'undefined') return
+  if (detail.userId) {
+    localStorage.setItem(USER_ID_KEY, detail.userId)
+    if (!localStorage.getItem(SENT_PREFIX + detail.userId)) localStorage.setItem(PENDING_KEY, detail.userId)
   }
-  window.dispatchEvent(new CustomEvent<UserReadyDetail>("bankpix-user-ready", { detail }));
+  window.dispatchEvent(new CustomEvent('bankpix-user-ready', { detail }))
 }
 
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
+function keyBytes(value: string) {
+  const raw = atob(value.replace(/-/g, '+').replace(/_/g, '/').padEnd(Math.ceil(value.length / 4) * 4, '='))
+  return Uint8Array.from(raw, (character) => character.charCodeAt(0))
 }
 
 export default function ServiceWorkerRegister() {
+  const [identified, setIdentified] = useState(false)
+  const [supported, setSupported] = useState(false)
+  const [needsInstall, setNeedsInstall] = useState(false)
+  const [permission, setPermission] = useState<NotificationPermission>('default')
+  const [linked, setLinked] = useState(false)
+  const [dismissed, setDismissed] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState('')
+  const syncRef = useRef<() => Promise<void>>(async () => {})
+  const endpointRef = useRef<string | null>(null)
+
   useEffect(() => {
-    const isSupported = "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    let cancelled = false
+    let running: Promise<void> | null = null
+    let rerun = false
+    const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    const standalone = matchMedia('(display-mode: standalone)').matches ||
+      (navigator as Navigator & { standalone?: boolean }).standalone === true
+    setNeedsInstall(ios && !standalone)
+    const capable = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
+    setSupported(capable)
+    setIdentified(Boolean(localStorage.getItem(USER_ID_KEY)))
+    if (!capable) return
+    setPermission(Notification.permission)
 
-    if (!isSupported) {
-      console.warn("[push] notificações não são suportadas neste navegador.");
-      return;
-    }
-
-    let syncing: Promise<void> | null = null;
-    // Se um pedido chegar enquanto outro ainda corre (ex.: cadastro concluído durante o
-    // pedido de permissão do primeiro toque), refaz a sincronização logo a seguir
-    // em vez de descartar o pedido — senão a inscrição só seria vinculada na próxima visita.
-    let rerunRequested = false;
-    let permissionAsked = false;
-    // O iOS só mostra o pedido de permissão dentro de um toque real (click/touchend).
-    // Pedir fora de um gesto não aparece e pode ficar pendente, bloqueando o pedido seguinte.
-    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    // Pede a permissão e cria a inscrição. Não depende do usuário estar identificado:
-    // a inscrição fica pronta no navegador e é vinculada assim que houver userId.
-    async function getOrCreateSubscription(requestIfDefault: boolean) {
-      const registration = await navigator.serviceWorker.ready;
-
-      let permission = Notification.permission;
-      if (permission === "default" && requestIfDefault && !permissionAsked) {
-        permissionAsked = true;
-        permission = await Notification.requestPermission();
-        permissionAsked = false;
-      }
-      if (permission !== "granted") return null;
-
-      const existing = await registration.pushManager.getSubscription();
-      if (existing) return existing;
-
-      return registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
-    }
-
-    // Garante a inscrição e, se houver usuário identificado, vincula no servidor
-    // (só uma vez por endpoint+usuário) e dispara o push de boas-vindas pendente.
-    async function syncSubscription(requestIfDefault: boolean): Promise<void> {
-      if (syncing) {
-        rerunRequested = true;
-        return syncing;
-      }
-
-      syncing = (async () => {
+    async function sync() {
+      if (running) { rerun = true; return running }
+      running = (async () => {
         try {
-          const subscription = await getOrCreateSubscription(requestIfDefault);
-          if (!subscription) {
-            console.log("[push] permissão ainda não concedida");
-            return;
+          setPermission(Notification.permission)
+          if (Notification.permission !== 'granted') return
+          const userId = localStorage.getItem(USER_ID_KEY)
+          if (!userId) return
+          const response = await fetch('/api/push-config', { cache: 'no-store' })
+          const config = await response.json()
+          if (!response.ok || !config.configured || !config.publicKey) throw new Error(config.error || 'Notificações indisponíveis no servidor.')
+          const registration = await navigator.serviceWorker.ready
+          const key = keyBytes(config.publicKey)
+          let subscription = await registration.pushManager.getSubscription()
+          const oldKey = subscription?.options.applicationServerKey
+          if (subscription && oldKey && !BufferEqual(new Uint8Array(oldKey), key)) {
+            await subscription.unsubscribe()
+            subscription = null
           }
-
-          const userId = localStorage.getItem(USER_ID_KEY);
-          if (!userId) {
-            console.log("[push] inscrição pronta; aguardando identificação do usuário");
-            return;
+          subscription ??= await registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key })
+          // Always persist again: localStorage is not proof that the server still
+          // has this endpoint, especially after a database cleanup or reinstall.
+          const saved = await fetch('/api/save-subscription', {
+            method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId, subscription: subscription.toJSON() }),
+          })
+          if (!saved.ok) throw new Error('Não foi possível guardar a inscrição. Tente novamente.')
+          if (!cancelled) {
+            endpointRef.current = subscription.endpoint
+            setLinked(true)
+            setMessage('Notificações ativadas. Pode testar o recebimento.')
           }
-
-          const json = subscription.toJSON();
-          if (!json.keys?.p256dh || !json.keys?.auth || !json.endpoint) {
-            console.error("[push] inscrição sem chaves p256dh/auth");
-            return;
-          }
-
-          const linkedKey = LINKED_ENDPOINT_PREFIX + userId;
-          if (localStorage.getItem(linkedKey) !== json.endpoint) {
-            const res = await fetch("/api/save-subscription", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ userId, subscription: json }),
-            });
-
-            if (!res.ok) {
-              console.error("[push] falha ao salvar inscrição:", await res.text());
-              return;
-            }
-            localStorage.setItem(linkedKey, json.endpoint);
-            console.log("[push] inscrição vinculada ao usuário", userId);
-
-            // O servidor já dispara as boas-vindas ao vincular; evita a segunda chamada.
-            const saved = await res.json().catch(() => null);
-            if (saved?.welcome === "sent" || saved?.welcome === "skipped") {
-              localStorage.setItem(WELCOME_SENT_PREFIX + userId, new Date().toISOString());
-              localStorage.removeItem(WELCOME_PENDING_KEY);
-            }
-          }
-
-          await sendWelcomeIfPending(userId);
         } catch (error) {
-          console.error("[push] erro na sincronização:", error);
-        } finally {
-          syncing = null;
-        }
-      })();
-
-      const current = syncing;
-      current.then(() => {
-        if (rerunRequested) {
-          rerunRequested = false;
-          void syncSubscription(false);
-        }
-      });
-
-      return current;
+          if (!cancelled) {
+            setLinked(false)
+            setMessage(error instanceof Error ? error.message : 'Falha ao ativar notificações.')
+          }
+        } finally { running = null }
+      })()
+      const current = running
+      await current
+      if (rerun && !cancelled) { rerun = false; await sync() }
     }
+    syncRef.current = sync
 
-    async function sendWelcomeIfPending(userId: string) {
-      if (WELCOME_PUSH_MODE !== "immediate") return;
-
-      const pending = localStorage.getItem(WELCOME_PENDING_KEY);
-      if (pending !== userId) return;
-      if (localStorage.getItem(WELCOME_SENT_PREFIX + userId)) {
-        localStorage.removeItem(WELCOME_PENDING_KEY);
-        return;
-      }
-
-      const res = await fetch("/api/welcome-push", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-
-      const result = await res.json().catch(() => null);
-      console.log("[push] boas-vindas:", result);
-
-      if (result?.success || result?.skipped) {
-        localStorage.setItem(WELCOME_SENT_PREFIX + userId, new Date().toISOString());
-        localStorage.removeItem(WELCOME_PENDING_KEY);
-      }
+    // Fire on hidden/pagehide rather than beforeunload. A beacon can outlive the
+    // tab; the server sends the push, never a timer in the closing page.
+    function sendOnExit() {
+      const userId = localStorage.getItem(USER_ID_KEY)
+      const endpoint = endpointRef.current
+      if (!userId || !endpoint || Notification.permission !== 'granted' ||
+          localStorage.getItem(SENT_PREFIX + userId)) return
+      const payload = JSON.stringify({ userId, endpoint })
+      const queued = navigator.sendBeacon?.('/api/welcome-push', new Blob([payload], { type: 'application/json' }))
+      if (!queued) void fetch('/api/welcome-push', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, keepalive: true,
+      }).catch(() => {})
+      // Do not mark as delivered: only a successful server response/cron may do so.
     }
-
-    async function boot() {
-      try {
-        // updateViaCache: "none" faz o navegador buscar sempre o sw.js mais recente
-        // em vez de reutilizar a cópia em cache HTTP (evita o worker antigo "BankPix").
-        const registration = await navigator.serviceWorker.register("/sw.js", { updateViaCache: "none" });
-        await registration.update().catch(() => null);
-        // Tenta já na entrada; navegadores que exigem gesto caem no primeiro toque abaixo.
-        await syncSubscription(!isIOS);
-      } catch (error) {
-        console.error("[push] erro ao registrar service worker:", error);
-      }
+    function onReady() {
+      setIdentified(Boolean(localStorage.getItem(USER_ID_KEY)))
+      setDismissed(false)
+      void sync()
     }
-
-    boot();
-
-    // Android/Chrome só mostram o pedido de permissão de forma visível quando vem
-    // de uma interação do usuário. O primeiro toque em qualquer lugar do app faz o pedido.
-    const handleFirstInteraction = () => {
-      if (Notification.permission !== "default") {
-        removeInteractionListeners();
-        return;
-      }
-      syncSubscription(true).finally(() => {
-        if (Notification.permission !== "default") removeInteractionListeners();
-      });
-    };
-
-    const interactionEvents = ["click", "touchend", "keydown"] as const;
-
-    const removeInteractionListeners = () => {
-      interactionEvents.forEach((name) => window.removeEventListener(name, handleFirstInteraction, true));
-    };
-
-    interactionEvents.forEach((name) => window.addEventListener(name, handleFirstInteraction, true));
-
-    const handleUserReady = () => {
-      syncSubscription(!isIOS);
-    };
-
-    // Se o usuário voltar ao app depois de aceitar a permissão, tenta vincular de novo.
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") syncSubscription(false);
-    };
-
-    window.addEventListener("bankpix-user-ready", handleUserReady);
-    document.addEventListener("visibilitychange", handleVisibility);
-
+    function onVisibility() {
+      if (document.visibilityState === 'hidden') sendOnExit()
+      else void sync()
+    }
+    const onOnline = () => { void sync() }
+    void navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' })
+      .then(async (registration) => { await registration.update().catch(() => {}); await sync() })
+      .catch(() => setMessage('Não foi possível preparar as notificações. Atualize a página e tente novamente.'))
+    window.addEventListener('bankpix-user-ready', onReady)
+    window.addEventListener('pagehide', sendOnExit)
+    window.addEventListener('online', onOnline)
+    document.addEventListener('visibilitychange', onVisibility)
     return () => {
-      removeInteractionListeners();
-      window.removeEventListener("bankpix-user-ready", handleUserReady);
-      document.removeEventListener("visibilitychange", handleVisibility);
-    };
-  }, []);
+      cancelled = true
+      window.removeEventListener('bankpix-user-ready', onReady)
+      window.removeEventListener('pagehide', sendOnExit)
+      window.removeEventListener('online', onOnline)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [])
 
-  return null;
+  async function enable() {
+    setBusy(true)
+    try {
+      // This MUST be the first async call in this button's click handler. Waiting
+      // for serviceWorker.ready first loses user activation on Safari and Firefox.
+      const result = Notification.permission === 'default'
+        ? await Notification.requestPermission() : Notification.permission
+      setPermission(result)
+      if (result === 'granted') await syncRef.current()
+      else setMessage('Permita as notificações nas definições deste site no navegador.')
+    } catch { setMessage('Não foi possível pedir a permissão. Abra no navegador principal.') }
+    finally { setBusy(false) }
+  }
+
+  async function test() {
+    setBusy(true)
+    try {
+      const response = await fetch('/api/welcome-push', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: localStorage.getItem(USER_ID_KEY), endpoint: endpointRef.current, test: true }),
+      })
+      const result = await response.json()
+      setMessage(response.ok && result.success
+        ? 'Teste enviado ao serviço de push. Verifique as notificações do aparelho.'
+        : result.expired ? 'A inscrição expirou. Toque em ativar novamente.' : result.error || 'O serviço de push recusou o envio. Verifique as chaves VAPID no servidor.')
+      if (result.expired) { setLinked(false); await syncRef.current() }
+    } catch { setMessage('Sem conexão para enviar o teste. Tente novamente.') }
+    finally { setBusy(false) }
+  }
+
+  if (!identified || dismissed) return null
+  return (
+    <aside aria-label="Notificações da conta" className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-sm rounded-2xl border border-border bg-background p-4 text-foreground shadow-xl">
+      <button type="button" aria-label="Fechar aviso de notificações" onClick={() => setDismissed(true)} className="absolute right-3 top-2 p-2">×</button>
+      <p className="pr-6 font-semibold">Receba os avisos da sua conta 🔔</p>
+      <p className="mt-2 text-sm text-muted-foreground">
+        {needsInstall ? 'No iPhone/iPad, adicione à Tela de Início pelo menu Compartilhar. Abra o app instalado e ative os avisos.'
+          : !supported ? 'Abra este site num navegador com suporte a notificações, como Chrome ou Safari atualizado.'
+          : permission === 'denied' ? 'As notificações estão bloqueadas. Permita os avisos nas definições deste site e volte aqui.'
+          : 'Ative os avisos para receber uma mensagem mesmo depois de sair do site ou do app.'}
+      </p>
+      {message && <p role="status" className="mt-2 text-sm">{message}</p>}
+      {supported && !needsInstall && permission !== 'denied' && (
+        <button type="button" disabled={busy} onClick={linked ? test : enable}
+          className="mt-3 rounded-xl bg-primary px-4 py-2 font-semibold text-primary-foreground disabled:opacity-50">
+          {busy ? 'Aguarde…' : linked ? 'Testar notificação' : 'Ativar notificações'}
+        </button>
+      )}
+    </aside>
+  )
+}
+
+function BufferEqual(left: Uint8Array, right: Uint8Array) {
+  return left.length === right.length && left.every((value, index) => value === right[index])
 }

@@ -6,7 +6,7 @@
 //
 // Em ambos os modos o cron (/api/remarketing-cron) é a rede de segurança e também
 // envia a sequência de remarketing (REMARKETING_SEQUENCE) ao longo dos dias.
-export const WELCOME_PUSH_MODE: 'immediate' | 'delayed' = 'immediate'
+export const WELCOME_PUSH_MODE: 'immediate' | 'delayed' = 'delayed'
 
 export const WELCOME_PUSH_DELAY_MINUTES = 25
 
@@ -37,8 +37,8 @@ export const REMARKETING_SEQUENCE: RemarketingStep[] = [
   {
     afterMinutes: 0,
     tag: 'realpayz-welcome',
-    free: (n) => `Parabéns, ${n}! Sua conta foi aprovada. Conclua os passos e use o Pix sem limites.`,
-    vip: (n) => `Parabéns, ${n}! Sua conta Pro está ativa. Crie sua chave e comece a receber Pix agora.`,
+    free: (n) => `Olá! 🥳❤️ ${n}, sua conta está pronta! Cadastre sua chave Pix e comece a receber o seu dinheiro.`,
+    vip: (n) => `Olá! 🥳❤️ ${n}, sua conta está pronta! Cadastre sua chave Pix e comece a receber o seu dinheiro.`,
   },
   {
     afterMinutes: 120,

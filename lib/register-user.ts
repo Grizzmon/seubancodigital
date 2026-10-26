@@ -18,6 +18,7 @@ export async function registerUserAndLinkPush({
   try {
     const res = await fetch('/api/register-user', {
       method: 'POST',
+      keepalive: true,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, phone, accessType }),
     })
