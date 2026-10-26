@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { DotsLoader } from '@/components/ui/dots-loader'
 import { StepShell, UnderlineInput, PinField, PrimaryButton, GhostButton, BrandMark } from './ui'
-import { formatMozPhone, isValidMozPhone } from '@/lib/onboarding-format'
+import { PhoneInput, usePhoneCountry } from './phone-input'
+import { accountPhone, validPhone } from '@/lib/phone-country'
 import { registerUserAndLinkPush } from '@/lib/register-user'
 import type { StoredUser } from '@/lib/stored-user'
 import { loadStoredUser } from '@/lib/stored-user'
@@ -17,12 +18,13 @@ interface LoginScreenProps {
 
 export function LoginScreen({ onBack, onCreateAccount, onLogin }: LoginScreenProps) {
   const [phone, setPhone] = useState('')
+  const { country, changeCountry, markEdited } = usePhoneCountry()
   const [pin, setPin] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [connecting, setConnecting] = useState(false)
 
-  const digits = phone.replace(/\D/g, '')
-  const canSubmit = isValidMozPhone(digits) && pin.length === 6
+  const digits = accountPhone(phone, country)
+  const canSubmit = validPhone(phone, country) && pin.length === 6
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -90,18 +92,9 @@ export function LoginScreen({ onBack, onCreateAccount, onLogin }: LoginScreenPro
             <label htmlFor="login-phone" className="text-sm font-medium text-muted-foreground">
               Número de celular
             </label>
-            <div className="flex items-end gap-3">
-              <span className="border-b-2 border-border py-3 text-2xl font-semibold text-muted-foreground">+258</span>
-              <UnderlineInput
-                id="login-phone"
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                placeholder="84 000 0000"
-                value={formatMozPhone(phone)}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
+            <PhoneInput id="login-phone" country={country} value={phone}
+              onCountryChange={(code) => { changeCountry(code); setPhone('') }}
+              onChange={(value) => { markEdited(); setPhone(value) }} />
           </div>
 
           <div className="flex flex-col gap-3">

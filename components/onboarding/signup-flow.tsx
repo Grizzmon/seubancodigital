@@ -11,6 +11,8 @@ import {
   OptionRow,
   PinField,
 } from './ui'
+import { PhoneInput, usePhoneCountry } from './phone-input'
+import { accountPhone, validPhone } from '@/lib/phone-country'
 import { DocumentCapture } from './document-capture'
 import { TransitionScreen } from './transition-screen'
 import { ProcessingScreen, useTimedProgress } from './processing-screen'
@@ -22,8 +24,6 @@ import {
   OCCUPATIONS,
   DOCUMENT_TYPES,
   MOBILE_WALLETS,
-  formatMozPhone,
-  isValidMozPhone,
   isValidEmail,
   formatBirthDate,
   isValidBirthDate,
@@ -114,6 +114,7 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
 
   const [phone, setPhone] = useState('')
+  const { country, changeCountry, markEdited } = usePhoneCountry()
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [reasons, setReasons] = useState<string[]>([])
@@ -134,7 +135,7 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
   const [approvedReady, setApprovedReady] = useState(false)
 
   const step = STEPS[index]
-  const phoneDigits = phone.replace(/\D/g, '')
+  const phoneDigits = accountPhone(phone, country)
   const userFirstName = useMemo(() => capitalizeWords(firstName(name)), [name])
 
   const jumpTo = (target: Step, dir: 'forward' | 'backward') => {
@@ -282,7 +283,7 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
 
   switch (step) {
     case 'phone': {
-      const valid = isValidMozPhone(phoneDigits)
+      const valid = validPhone(phone, country)
       return (
         <form onSubmit={submit(valid)} className="contents">
           <StepShell
@@ -293,19 +294,9 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
             subtitle="Vamos usar este número para proteger a sua conta e enviar avisos importantes."
             footer={<ArrowButton disabled={!valid} />}
           >
-            <div className="flex items-end gap-3">
-              <span className="border-b-2 border-border py-3 text-2xl font-semibold text-muted-foreground">+258</span>
-              <UnderlineInput
-                autoFocus
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                placeholder="84 000 0000"
-                aria-label="Número de celular"
-                value={formatMozPhone(phone)}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
+            <PhoneInput autoFocus country={country} value={phone}
+              onCountryChange={(code) => { changeCountry(code); setPhone('') }}
+              onChange={(value) => { markEdited(); setPhone(value) }} />
           </StepShell>
         </form>
       )
