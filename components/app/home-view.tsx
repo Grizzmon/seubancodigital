@@ -136,7 +136,7 @@ export function HomeView({
           <h1 className="text-xl font-bold tracking-tight">RealPayz</h1>
           <button
             type="button"
-            onClick={() => notify('Notificações')}
+            onClick={() => window.dispatchEvent(new Event('realpayz-open-notifications'))}
             aria-label="Notificações"
             className="relative flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-background/10"
           >
@@ -225,6 +225,13 @@ export function HomeView({
       </header>
 
       <main className="flex flex-col gap-8 px-6 pt-4">
+        <button type="button" onClick={() => window.dispatchEvent(new Event('realpayz-open-notifications'))}
+          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-accent/40 p-4 text-left">
+          <Bell className="h-6 w-6 shrink-0 text-primary" />
+          <span className="flex-1"><span className="block font-semibold">Testar notificações</span>
+            <span className="block text-sm text-muted-foreground">Ativar avisos e verificar o recebimento no aparelho</span></span>
+          <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+        </button>
         {isPro ? (
           /* Estado da conta Pro + subir plano */
           <div className="flex items-center gap-3 rounded-2xl border-2 border-success/30 bg-success/10 px-4 py-3">

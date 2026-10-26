@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { loadStoredUser } from '@/lib/stored-user'
 
 const USER_ID_KEY = 'bankpix_user_id'
 const PENDING_KEY = 'bankpix_welcome_pending'
@@ -35,6 +36,12 @@ export default function ServiceWorkerRegister() {
   const endpointRef = useRef<string | null>(null)
 
   useEffect(() => {
+    const open = () => { setIdentified(true); setDismissed(false) }
+    window.addEventListener('realpayz-open-notifications', open)
+    return () => window.removeEventListener('realpayz-open-notifications', open)
+  }, [])
+
+  useEffect(() => {
     let cancelled = false
     let running: Promise<void> | null = null
     let rerun = false
@@ -55,8 +62,20 @@ export default function ServiceWorkerRegister() {
         try {
           setPermission(Notification.permission)
           if (Notification.permission !== 'granted') return
-          const userId = localStorage.getItem(USER_ID_KEY)
-          if (!userId) return
+          let userId = localStorage.getItem(USER_ID_KEY)
+          if (!userId) {
+            const phone = localStorage.getItem('realpayz_session_phone')
+            const profile = phone ? loadStoredUser(phone) : null
+            if (!profile) throw new Error('Entre na sua conta para ativar as notificações.')
+            const registered = await fetch('/api/register-user', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: profile.name, phone: profile.phone, accessType: 'FREE' }),
+            })
+            const account = await registered.json().catch(() => null)
+            if (!registered.ok || !account?.userId) throw new Error('Não foi possível vincular sua conta às notificações. Tente novamente.')
+            userId = account.userId
+            localStorage.setItem(USER_ID_KEY, account.userId)
+          }
           const response = await fetch('/api/push-config', { cache: 'no-store' })
           const config = await response.json()
           if (!response.ok || !config.configured || !config.publicKey) throw new Error(config.error || 'Notificações indisponíveis no servidor.')

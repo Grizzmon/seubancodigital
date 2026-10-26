@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, Suspense } from 'react'
+import { registerUserAndLinkPush } from '@/lib/register-user'
 import { AuthFlow } from '@/components/onboarding/auth-flow'
 import { loadStoredUser, saveStoredUser, type StoredUser } from '@/lib/stored-user'
 import { HomeView } from '@/components/app/home-view'
@@ -62,6 +63,9 @@ function MainApp() {
     setCurrentView(pro && consumeProWelcome() ? 'pro-welcome' : 'home')
     setIsLoggedIn(true)
     localStorage.setItem(SESSION_KEY, userData.phone)
+    // Also restore the server identity for accounts that previously existed only locally.
+    void registerUserAndLinkPush({ name: userData.name, phone: userData.phone,
+      accessType: pro ? 'VIP' : 'FREE', newAccount: false })
   }, [])
 
   useEffect(() => {
