@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { InstallPrompt } from "@/components/install-prompt";
+import { RegionalProvider } from '@/components/regional-provider'
 import ServiceWorkerRegister from "@/components/service-worker-register";
 import "./globals.css";
 
@@ -13,7 +14,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "RealPayz — Seu dinheiro sem fronteiras",
   description:
-    "RealPayz: conta digital com Pix internacional e saques nas carteiras móveis M-Pesa, e-Mola e mKesh. Seu dinheiro sem fronteiras, no seu ritmo.",
+    "RealPayz: Pix internacional e preferências de pagamento adaptadas ao seu país. Seu dinheiro sem fronteiras, no seu ritmo.",
   manifest: "/manifest.json?v=2",
   icons: {
     icon: "/icon-192.png?v=2",
@@ -91,7 +92,7 @@ export default function RootLayout({
 
       <body className={`${inter.variable} font-sans antialiased`}>
         <ServiceWorkerRegister />
-        {children}
+        <RegionalProvider>{children}</RegionalProvider>
         <InstallPrompt />
         <Analytics />
       </body>

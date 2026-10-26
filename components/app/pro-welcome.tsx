@@ -1,5 +1,6 @@
 'use client'
 
+import { useRegionalSettings } from '@/components/regional-provider'
 import { useEffect } from 'react'
 import { BadgeCheck, KeyRound, Wallet, Banknote, ArrowRight, Sparkles } from 'lucide-react'
 import { PixSymbol } from './pix-symbol'
@@ -19,6 +20,10 @@ const BENEFITS = [
 ]
 
 export function ProWelcome({ userName, onContinue }: ProWelcomeProps) {
+  const regional = useRegionalSettings()
+  const benefits = BENEFITS.map((item, index) => index === 2
+    ? { ...item, label: regional.walletSummary }
+    : index === 3 ? { ...item, label: 'Consulte a disponibilidade dos serviços locais' } : item)
   useEffect(() => {
     analytics.proWelcomeViewed()
   }, [])
@@ -43,13 +48,13 @@ export function ProWelcome({ userName, onContinue }: ProWelcomeProps) {
               Boas-vindas ao modo Pro, {name}!
             </h1>
             <p className="text-pretty text-base leading-relaxed text-primary-foreground/85 animate-fade-in [animation-delay:400ms]">
-              Sua conta está ativa e todas as funcionalidades foram liberadas. Veja o que já pode usar agora.
+              Consulte as funcionalidades da sua conta e a disponibilidade dos serviços no seu país.
             </p>
           </div>
         </div>
 
         <ul className="flex flex-col gap-3">
-          {BENEFITS.map((item, i) => (
+          {benefits.map((item, i) => (
             <li
               key={item.label}
               className="flex items-center gap-4 rounded-2xl bg-background/12 px-4 py-3.5 backdrop-blur-sm animate-pop-in"

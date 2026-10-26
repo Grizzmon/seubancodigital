@@ -17,7 +17,7 @@ interface ProGateSheetProps {
 const PRO_FEATURES = [
   'Pix ativo para receber do Brasil',
   'Chaves Pix visíveis e prontas para uso',
-  'Levantamento para M-Pesa, e-Mola e mKesh',
+  'Opções locais conforme a disponibilidade no seu país',
   'Crédito e cadastro de mais chaves',
 ]
 

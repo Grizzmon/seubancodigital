@@ -1,5 +1,6 @@
 'use client'
 
+import { useRegionalSettings } from '@/components/regional-provider'
 import { useState } from 'react'
 import Image from 'next/image'
 import {
@@ -87,6 +88,10 @@ export function HomeView({
   onOpenPro,
   onLogout,
 }: HomeViewProps) {
+  const regional = useRegionalSettings()
+  const benefits = BENEFITS.map((benefit) => benefit.id === 'pix-internacional'
+    ? { ...benefit, text: `Receba do Brasil. Moeda local: ${regional.currencyName}.` }
+    : benefit.id === 'carteiras' ? { ...benefit, title: 'Meios de pagamento', text: `${regional.walletSummary}. Consulte a disponibilidade de cada serviço.` } : benefit)
   const [showBalance, setShowBalance] = useState(true)
   const [lockedFeature, setLockedFeature] = useState<string | null>(null)
   const [firstPixFeature, setFirstPixFeature] = useState<string | null>(null)
@@ -184,7 +189,9 @@ export function HomeView({
               </button>
             </div>
             <span className="text-sm text-primary-foreground/75">
-              {showBalance ? `≈ ${formatMZN(convertToMZN(balance))}` : '≈ •••• MZN'}
+              {regional.code === 'MZ'
+                ? (showBalance ? `≈ ${formatMZN(convertToMZN(balance))}` : '≈ •••• MZN')
+                : `Moeda local: ${regional.symbol} · ${regional.currency}`}
             </span>
           </div>
           <button
@@ -325,7 +332,7 @@ export function HomeView({
         <section className="flex flex-col gap-4">
           <h2 className="text-2xl font-semibold">Benefícios e parcerias</h2>
           <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {BENEFITS.map((benefit) => (
+            {benefits.map((benefit) => (
               <article
                 key={benefit.id}
                 className="flex w-[80%] shrink-0 snap-start flex-col justify-between gap-6 rounded-2xl bg-brand-gradient p-5 text-primary-foreground shadow-lg shadow-primary/20"

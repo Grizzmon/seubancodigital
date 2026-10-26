@@ -1,25 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
 import { UnderlineInput } from './ui'
-import { PHONE_COUNTRIES, phoneCountry, type PhoneCountry } from '@/lib/phone-country'
+import { PHONE_COUNTRIES, type PhoneCountry } from '@/lib/phone-country'
 
-export function usePhoneCountry() {
-  const [country, setCountry] = useState<PhoneCountry>(PHONE_COUNTRIES[0])
-  const edited = useRef(false)
-  useEffect(() => {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 4000)
-    fetch('/api/phone-country', { cache: 'no-store', signal: controller.signal })
-      .then((response) => response.ok ? response.json() : null)
-      .then((data) => { if (data && !edited.current) setCountry(phoneCountry(data.country)) })
-      .catch(() => {})
-      .finally(() => clearTimeout(timer))
-    return () => { controller.abort(); clearTimeout(timer) }
-  }, [])
-  return { country, changeCountry: (code: string) => { edited.current = true; setCountry(phoneCountry(code)) },
-    markEdited: () => { edited.current = true } }
-}
+export { useRegionalCountry as usePhoneCountry } from '@/components/regional-provider'
 
 export function PhoneInput({ country, onCountryChange, value, onChange, id, autoFocus = false }: {
   country: PhoneCountry; onCountryChange: (code: string) => void; value: string;

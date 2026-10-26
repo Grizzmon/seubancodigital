@@ -1,5 +1,6 @@
 'use client'
 
+import { RegionBadge, useRegionalSettings } from '@/components/regional-provider'
 import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Check, ArrowDown, AlertTriangle, Wallet, Smartphone } from 'lucide-react'
@@ -54,7 +55,7 @@ function phonePrefixError(digits: string, wallet: WalletId | null): string | nul
   return `Números ${name} começam com ${allowed.join(' ou ')}.`
 }
 
-export function WithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, onGoToPix, onCancel }: WithdrawFlowProps) {
+function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, onGoToPix, onCancel }: WithdrawFlowProps) {
   const [step, setStep] = useState<Step>('wallet')
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
   const [wallet, setWallet] = useState<WalletId | null>(null)
@@ -391,4 +392,25 @@ export function WithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, on
       </div>
     </div>
   )
+}
+
+export function WithdrawFlow(props: WithdrawFlowProps) {
+  const regional = useRegionalSettings()
+  if (regional.code === 'MZ') return <MozambiqueWithdrawFlow {...props} />
+  return <StepShell stepKey="regional-withdrawal" onBack={props.onCancel}
+    title="Levantamentos no seu país"
+    subtitle={`A sua moeda local é ${regional.currencyName} (${regional.symbol}).`}
+    footer={<PrimaryButton onClick={props.onCancel}>Voltar à conta</PrimaryButton>}>
+    <RegionBadge />
+    <p className="mb-5 rounded-2xl bg-accent p-4 text-sm leading-relaxed text-accent-foreground">
+      Os levantamentos para estes serviços ainda não estão disponíveis no RealPayz. A opção será apresentada aqui quando estiver ativa.
+    </p>
+    <div className="flex flex-col gap-3">
+      {regional.methods.map((method) => <div key={method.id} className="flex items-center gap-3 rounded-2xl border border-border p-4">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl font-bold text-white" style={{ backgroundColor: method.color }}>{method.monogram}</span>
+        <div className="flex-1"><p className="font-semibold">{method.name}</p><p className="text-sm text-muted-foreground">{method.operator}</p></div>
+        <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">Em breve</span>
+      </div>)}
+    </div>
+  </StepShell>
 }

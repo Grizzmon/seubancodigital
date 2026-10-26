@@ -1,5 +1,6 @@
 'use client'
 
+import { useRegionalSettings } from '@/components/regional-provider'
 import { ChevronLeft, ArrowDownLeft, ArrowUpRight, Receipt } from 'lucide-react'
 import { formatBRL, formatMZN, type Transaction } from '@/lib/store'
 
@@ -11,6 +12,7 @@ const METHOD_LABEL: Record<Transaction['method'], string> = {
 }
 
 export function StatementView({ balance, transactions, onBack }: { balance: number; transactions: Transaction[]; onBack: () => void }) {
+  const regional = useRegionalSettings()
   return (
     <div className="flex min-h-dvh flex-col bg-background animate-step-forward">
       <header className="bg-brand-gradient px-6 pb-10 pt-4 text-primary-foreground">
@@ -56,7 +58,7 @@ export function StatementView({ balance, transactions, onBack }: { balance: numb
                     <span className={`font-semibold tabular-nums ${incoming ? 'text-success' : 'text-foreground'}`}>
                       {incoming ? '+' : '-'}{formatBRL(t.amount)}
                     </span>
-                    <span className="text-xs text-muted-foreground">{formatMZN(t.amountMZN)}</span>
+                    {regional.code === 'MZ' && <span className="text-xs text-muted-foreground">{formatMZN(t.amountMZN)}</span>}
                   </span>
                 </li>
               )

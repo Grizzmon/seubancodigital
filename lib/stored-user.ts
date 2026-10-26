@@ -11,6 +11,9 @@ export interface StoredUser {
   birthDate?: string
   motherName?: string
   province?: string
+  countryCode?: 'MZ' | 'AO' | 'CV'
+  incomeCurrency?: 'MZN' | 'AOA' | 'CVE'
+  regionType?: string
   monthlyIncome?: number
   occupation?: string
   documentType?: string

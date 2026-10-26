@@ -12,6 +12,7 @@ import {
   PinField,
 } from './ui'
 import { PhoneInput, usePhoneCountry } from './phone-input'
+import { RegionBadge, useRegionalSettings } from '@/components/regional-provider'
 import { accountPhone, validPhone } from '@/lib/phone-country'
 import { DocumentCapture } from './document-capture'
 import { TransitionScreen } from './transition-screen'
@@ -19,11 +20,9 @@ import { ProcessingScreen, useTimedProgress } from './processing-screen'
 import { TIMING } from '@/lib/timing'
 import { analytics } from '@/lib/analytics'
 import {
-  PROVINCES,
   LEAD_REASONS,
   OCCUPATIONS,
   DOCUMENT_TYPES,
-  MOBILE_WALLETS,
   isValidEmail,
   formatBirthDate,
   isValidBirthDate,
@@ -78,7 +77,7 @@ const TRANSITION_MESSAGES: Partial<Record<Step, string>> = {
   birth: 'Senha guardada. Continuando o cadastro...',
   mother: 'Confirmando a sua data de nascimento...',
   province: 'Verificando as suas informações...',
-  income: 'Localizando a sua província...',
+  income: 'Guardando a sua localização...',
   occupation: 'Analisando o seu perfil financeiro...',
   docType: 'Preparando a verificação de identidade...',
   docInstructions: 'Configurando a leitura do documento...',
@@ -115,6 +114,11 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
 
   const [phone, setPhone] = useState('')
   const { country, changeCountry, markEdited } = usePhoneCountry()
+  const regional = useRegionalSettings()
+  const documentTypes = DOCUMENT_TYPES.map((document) => country.code === 'CV' && document.id === 'bi'
+    ? { ...document, id: 'cni', label: 'Cartão Nacional de Identificação (CNI)' } : document)
+  const leadReasons = LEAD_REASONS.map((reason, index) => index === 1
+    ? 'Organizar os meus meios de pagamento locais' : reason)
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
   const [reasons, setReasons] = useState<string[]>([])
@@ -127,7 +131,13 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
   const [documentType, setDocumentType] = useState<string>(DOCUMENT_TYPES[0].id)
   const [txPin, setTxPin] = useState('')
   const [txPinConfirm, setTxPinConfirm] = useState('')
-  const [wallets, setWallets] = useState<string[]>(MOBILE_WALLETS.map((w) => w.id))
+  const [wallets, setWallets] = useState<string[]>([])
+  useEffect(() => {
+    setProvince('')
+    setIncomeInput('')
+    setWallets([])
+    setDocumentType(country.code === 'CV' ? 'cni' : 'bi')
+  }, [country.code])
 
   // Tela para onde estamos indo enquanto a transição "Verificando..." é exibida.
   const [transitionTo, setTransitionTo] = useState<Step | null>(null)
@@ -258,6 +268,9 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
       birthDate,
       motherName: capitalizeWords(motherName.trim()),
       province,
+      countryCode: country.code,
+      incomeCurrency: regional.currency,
+      regionType: regional.regionLabel,
       monthlyIncome: currencyInputToNumber(incomeInput),
       occupation,
       documentType,
@@ -290,10 +303,11 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
             stepKey={step}
             direction={direction}
             onBack={back}
-            title="Qual é o seu número de celular?"
+            title="Qual é o seu número de telemóvel?"
             subtitle="Vamos usar este número para proteger a sua conta e enviar avisos importantes."
             footer={<ArrowButton disabled={!valid} />}
           >
+            <RegionBadge />
             <PhoneInput autoFocus country={country} value={phone}
               onCountryChange={(code) => { changeCountry(code); setPhone('') }}
               onChange={(value) => { markEdited(); setPhone(value) }} />
@@ -404,7 +418,7 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
           footer={<ArrowButton disabled={!valid} onClick={next} />}
         >
           <div className="flex flex-col gap-3" role="group" aria-label="Motivos">
-            {LEAD_REASONS.map((reason) => (
+            {leadReasons.map((reason) => (
               <OptionRow
                 key={reason}
                 multiple
@@ -563,11 +577,12 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
           stepKey={step}
           direction={direction}
           onBack={back}
-          title="Qual é a sua província?"
-          subtitle="Toque na província onde você mora."
+          title={regional.regionQuestion}
+          subtitle={`Selecione ${regional.regionLabel === 'Ilha' ? 'a ilha' : 'a província'} onde vive, em ${country.name}.`}
         >
-          <ul className="-mx-2 flex flex-col" role="listbox" aria-label="Províncias">
-            {PROVINCES.map((item) => (
+          <RegionBadge />
+          <ul className="-mx-2 flex flex-col" role="listbox" aria-label={regional.regionLabel}>
+            {regional.regions.map((item) => (
               <li key={item}>
                 <button
                   type="button"
@@ -596,7 +611,7 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
             stepKey={step}
             direction={direction}
             onBack={back}
-            title="Qual é a sua renda média mensal?"
+            title="Qual é o seu rendimento médio mensal?"
             footer={
               <>
                 <p className="text-pretty text-sm leading-relaxed text-muted-foreground">
@@ -606,14 +621,15 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
               </>
             }
           >
+            <RegionBadge />
             <div className="flex items-end gap-3">
-              <span className="border-b-2 border-border py-3 text-2xl font-semibold text-muted-foreground">MT</span>
+              <span className="border-b-2 border-border py-3 text-2xl font-semibold text-muted-foreground">{regional.symbol}</span>
               <UnderlineInput
                 autoFocus
                 type="text"
                 inputMode="numeric"
                 placeholder="0,00"
-                aria-label="Renda mensal em meticais"
+                aria-label={`Rendimento mensal em ${regional.currencyName}`}
                 value={incomeInput}
                 onChange={(e) => setIncomeInput(formatCurrencyInput(e.target.value))}
               />
@@ -658,7 +674,7 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
           footer={<PrimaryButton onClick={next}>Continuar</PrimaryButton>}
         >
           <div className="flex flex-col gap-3" role="radiogroup" aria-label="Tipo de documento">
-            {DOCUMENT_TYPES.map((doc) => (
+            {documentTypes.map((doc) => (
               <OptionRow
                 key={doc.id}
                 selected={documentType === doc.id}
@@ -730,7 +746,7 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
           stepKey={step}
           direction={direction}
           title={<>Sua conta foi aberta com sucesso, {userFirstName}!</>}
-          subtitle="Agora você pode aproveitar o Pix internacional, fazer saques e depósitos na sua carteira móvel."
+          subtitle="O seu cadastro está concluído. Agora pode configurar a segurança e as suas preferências de pagamento."
           footer={
             <PrimaryButton onClick={next}>
               Continuar <ArrowRight className="h-5 w-5" />
@@ -753,7 +769,7 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
           <StepShell
             stepKey={step}
             direction={direction}
-            title="Crie uma senha de 4 dígitos para autorizar saques e movimentações."
+            title="Crie uma senha de 4 dígitos para autorizar levantamentos e movimentações."
             subtitle="Ela é diferente da senha de acesso ao app."
             footer={<PrimaryButton type="submit" disabled={!match}>Confirmar</PrimaryButton>}
           >
@@ -794,17 +810,18 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
         <StepShell
           stepKey={step}
           direction={direction}
-          title="Encontramos estas carteiras móveis disponíveis no seu país."
-          subtitle="Selecione as que deseja utilizar para depósitos e saques."
+          title={`Quais são os seus meios de pagamento em ${country.name}?`}
+          subtitle="Selecione os serviços que utiliza. A sua escolha fica guardada como preferência de pagamento."
           footer={
-            <PrimaryButton onClick={finish} disabled={wallets.length === 0}>
+            <PrimaryButton onClick={finish} disabled={false}>
               <ShieldCheck className="h-5 w-5" />
-              {wallets.length === MOBILE_WALLETS.length ? 'Usar todas e continuar' : 'Continuar'}
+              {wallets.length ? 'Guardar preferências e continuar' : 'Escolher mais tarde'}
             </PrimaryButton>
           }
         >
-          <div className="flex flex-col gap-3" role="group" aria-label="Carteiras móveis">
-            {MOBILE_WALLETS.map((wallet) => (
+          <RegionBadge />
+          <div className="flex flex-col gap-3" role="group" aria-label="Meios de pagamento">
+            {regional.methods.map((wallet) => (
               <OptionRow
                 key={wallet.id}
                 multiple
@@ -812,13 +829,14 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
                 onSelect={() => setWallets((w) => toggle(w, wallet.id))}
                 badge={wallet.operator}
                 leading={
-                  <Image
+                  wallet.logo ? <Image
                     src={wallet.logo}
                     alt={`Logo ${wallet.name}`}
                     width={48}
                     height={48}
                     className="h-12 w-12 rounded-xl object-cover"
-                  />
+                  /> : <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-xl font-bold text-white"
+                    style={{ backgroundColor: wallet.color }}>{wallet.monogram}</span>
                 }
               >
                 {wallet.name}

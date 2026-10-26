@@ -1,5 +1,6 @@
 'use client'
 
+import { CountrySelector, useRegionalSettings } from '@/components/regional-provider'
 import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
 import { PrimaryButton, GhostButton } from './ui'
@@ -11,6 +12,7 @@ interface WelcomeScreenProps {
 }
 
 export function WelcomeScreen({ onStart, onLogin }: WelcomeScreenProps) {
+  const regional = useRegionalSettings()
   return (
     <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-hidden bg-primary text-primary-foreground animate-fade-in">
       <div className="relative flex min-h-[26rem] flex-1 flex-col justify-between">
@@ -33,9 +35,10 @@ export function WelcomeScreen({ onStart, onLogin }: WelcomeScreenProps) {
         </header>
 
         <div className="relative px-6 pb-14">
+          <div className="mb-5 flex"><CountrySelector /></div>
           <p className="text-balance text-3xl font-bold leading-tight">Seu dinheiro sem fronteiras, no seu ritmo.</p>
           <p className="mt-2 text-sm font-medium text-primary-foreground/85">
-            Pix internacional, M-Pesa, e-Mola e mKesh numa conta protegida.
+            Pix internacional e opções locais: {regional.walletSummary}.
           </p>
         </div>
       </div>
