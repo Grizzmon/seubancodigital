@@ -1,4 +1,6 @@
+import { SITE_UNDER_CONSTRUCTION } from '@/lib/site-status'
 import { NextResponse } from 'next/server'
+import { sendLaunchNotifications } from '@/lib/launch-notifications'
 import { sendWelcomePush } from '@/lib/welcome-push'
 import { getServerSupabase, runPool, sendToSubscriptions, type StoredSubscription } from '@/lib/push-server'
 import {
@@ -33,6 +35,9 @@ interface EligibleUser {
 // Para cada utilizador com inscrição de push, envia o próximo passo da sequência
 // de remarketing (lib/push-config.ts) cujo tempo mínimo já passou e ainda não foi enviado.
 export async function GET(request: Request) {
+  if (SITE_UNDER_CONSTRUCTION) return NextResponse.json({
+    unavailable: true, message: 'O RealPayz está temporariamente indisponível.'
+  }, { status: 503, headers: { 'Retry-After': '3600' } })
   try {
     const authHeader = request.headers.get('authorization')
 
@@ -41,6 +46,7 @@ export async function GET(request: Request) {
     }
 
     const supabase = getServerSupabase()
+    await sendLaunchNotifications(supabase)
     const now = Date.now()
 
     const welcomeDelayMs = (WELCOME_PUSH_MODE === 'delayed' ? WELCOME_PUSH_DELAY_MINUTES : 0) * 60_000

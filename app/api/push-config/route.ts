@@ -4,7 +4,7 @@ import { createECDH } from 'node:crypto'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+export async function GET(request: Request) {
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
   const privateKey = process.env.VAPID_PRIVATE_KEY
   let validKeys = false
@@ -15,6 +15,12 @@ export async function GET() {
       validKeys = ecdh.getPublicKey().toString('base64url') === publicKey.replace(/=+$/, '')
     }
   } catch { /* Report configuration failure without exposing private keys. */ }
+  // Public VAPID key is safe to expose independently of database availability.
+  // A launch visitor can grant permission while a server confirmation is pending.
+  if (new URL(request.url).searchParams.get('purpose') === 'launch') {
+    return NextResponse.json({ publicKey: validKeys ? publicKey : null },
+      { headers: { 'Cache-Control': 'no-store' } })
+  }
   const database = []
   if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const supabase = getServerSupabase()

@@ -1,3 +1,4 @@
+import { SITE_UNDER_CONSTRUCTION } from '@/lib/site-status'
 import { NextResponse } from 'next/server'
 import { getServerSupabase } from '@/lib/push-server'
 
@@ -5,6 +6,9 @@ import { getServerSupabase } from '@/lib/push-server'
 // Centraliza a escrita no servidor para que o schema real da tabela seja respeitado
 // e para evitar contas duplicadas para o mesmo telefone.
 export async function POST(request: Request) {
+  if (SITE_UNDER_CONSTRUCTION) return NextResponse.json({
+    unavailable: true, message: 'O RealPayz está temporariamente indisponível.'
+  }, { status: 503, headers: { 'Retry-After': '3600' } })
   try {
     const body = await request.json().catch(() => null)
     const name = typeof body?.name === 'string' ? body.name.trim().slice(0, 120) : ''

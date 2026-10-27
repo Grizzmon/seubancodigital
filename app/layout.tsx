@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
+import { SITE_UNDER_CONSTRUCTION } from '@/lib/site-status'
+import { MaintenanceScreen } from '@/components/maintenance-screen'
 import { InstallPrompt } from "@/components/install-prompt";
 import { RegionalProvider } from '@/components/regional-provider'
 import ServiceWorkerRegister from "@/components/service-worker-register";
@@ -15,6 +17,7 @@ export const metadata: Metadata = {
   title: "RealPayz — Seu dinheiro sem fronteiras",
   description:
     "RealPayz: Pix internacional e preferências de pagamento adaptadas ao seu país. Seu dinheiro sem fronteiras, no seu ritmo.",
+  robots: SITE_UNDER_CONSTRUCTION ? { index: false, follow: false } : undefined,
   manifest: "/manifest.json?v=2",
   icons: {
     icon: "/icon-192.png?v=2",
@@ -91,9 +94,11 @@ export default function RootLayout({
       </head>
 
       <body className={`${inter.variable} font-sans antialiased`}>
-        <ServiceWorkerRegister />
-        <RegionalProvider>{children}</RegionalProvider>
-        <InstallPrompt />
+        {SITE_UNDER_CONSTRUCTION ? <MaintenanceScreen /> : <>
+          <ServiceWorkerRegister />
+          <RegionalProvider>{children}</RegionalProvider>
+          <InstallPrompt />
+        </>}
         <Analytics />
       </body>
     </html>
