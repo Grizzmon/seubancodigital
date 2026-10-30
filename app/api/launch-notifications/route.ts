@@ -28,14 +28,14 @@ export async function POST(request: Request) {
 
     const supabase = getServerSupabase()
     const { data: existing, error: lookupError } = await supabase.from('launch_subscriptions')
-      .select('id,notified_at').eq('endpoint', subscription.endpoint).maybeSingle()
+      .select('id,test_sent_at').eq('endpoint', subscription.endpoint).maybeSingle()
     if (lookupError) {
       console.error('[launch-push] lookup failed', lookupError.code, lookupError.message)
       return NextResponse.json({ error: 'Não foi possível consultar o registo.' }, { status: 503 })
     }
     const { data: saved, error } = await supabase.from('launch_subscriptions').upsert({
       endpoint: subscription.endpoint, p256dh: subscription.keys.p256dh, auth: subscription.keys.auth,
-    }, { onConflict: 'endpoint' }).select('id,notified_at').single()
+    }, { onConflict: 'endpoint' }).select('id,test_sent_at').single()
     if (error || !saved) {
       console.error('[launch-push] save failed', error?.code, error?.message)
       return NextResponse.json({ error: 'Não foi possível guardar a inscrição.' }, { status: 503 })
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
     // First successful registration triggers exactly one real Web Push test.
     // Existing confirmed devices are never sent another test on page reload.
-    if (!existing?.notified_at && !saved.notified_at) {
+    if (!existing?.test_sent_at && !saved.test_sent_at) {
       try {
         ensureVapid()
         await webpush.sendNotification({
@@ -56,7 +56,7 @@ export async function POST(request: Request) {
           data: { url: '/' },
         }), { TTL: 3600, urgency: 'high', timeout: 10000 })
         const { error: updateError } = await supabase.from('launch_subscriptions')
-          .update({ notified_at: new Date().toISOString() }).eq('id', saved.id)
+          .update({ test_sent_at: new Date().toISOString() }).eq('id', saved.id)
         if (updateError) console.error('[launch-push] mark delivered failed', updateError.code)
         return NextResponse.json({ success: true, testSent: true }, { headers: { 'Cache-Control': 'no-store' } })
       } catch (pushError: unknown) {
