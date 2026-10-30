@@ -52,13 +52,14 @@ export function MaintenanceScreen() {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription: subscription.toJSON() }), signal: AbortSignal.timeout(12000),
       })
-      if (!response.ok) throw new Error('Ainda não conseguimos confirmar o aviso no servidor.')
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(result.error || 'Ainda não conseguimos confirmar o aviso no servidor.')
       localStorage.setItem(CONFIRMED_KEY, subscription.endpoint)
       setStatus('confirmed')
-      setDetail('Pedido confirmado! Vamos enviar um aviso neste aparelho quando o RealPayz estiver disponível.')
-    } catch {
+      setDetail(result.testSent ? 'Teste enviado! Verifique as notificações do iPhone. Também avisaremos quando o RealPayz estiver disponível.' : 'Aviso confirmado! Este aparelho já está registado para notificações.')
+    } catch (error) {
       setStatus('pending')
-      setDetail('A permissão ficou guardada neste aparelho, mas o aviso ainda não foi confirmado. Volte aqui mais tarde para concluir a ativação.')
+      setDetail(error instanceof Error ? error.message : 'Não foi possível confirmar o aviso. Tente novamente.')
     } finally { syncing.current = false }
   }
 
