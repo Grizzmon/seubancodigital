@@ -8,7 +8,7 @@
 // envia a sequência de remarketing (REMARKETING_SEQUENCE) ao longo dos dias.
 export const WELCOME_PUSH_MODE: 'immediate' | 'delayed' = 'delayed'
 
-export const WELCOME_PUSH_DELAY_MINUTES = 25
+export const WELCOME_PUSH_DELAY_MINUTES = 30
 
 // O cron só considera contas criadas dentro desta janela.
 export const REMARKETING_MAX_AGE_DAYS = 30
@@ -77,8 +77,8 @@ export function buildRemarketingPayload(step: number, name?: string | null, acce
   const body = accessType === 'VIP' ? config.vip(firstName) : config.free(firstName)
 
   return JSON.stringify({
-    title: APP_NAME,
-    body,
+    title: step === 0 ? `Olá ${firstName}! 👋 sua conta está ativada✅` : APP_NAME,
+    body: step === 0 ? 'cadastre suas chaves Pix e comece a receber seus R$ 😍💰' : body,
     icon: NOTIFICATION_ICON,
     badge: NOTIFICATION_BADGE,
     tag: config.tag,

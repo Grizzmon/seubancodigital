@@ -1,4 +1,3 @@
-import { SITE_UNDER_CONSTRUCTION } from '@/lib/site-status'
 import { NextResponse } from 'next/server'
 import { getServerSupabase, isUuid, sendToSubscriptions } from '@/lib/push-server'
 import { sendWelcomePush } from '@/lib/welcome-push'
@@ -7,9 +6,7 @@ import { buildWelcomePushPayload } from '@/lib/push-config'
 export const maxDuration = 60
 
 export async function POST(request: Request) {
-  if (SITE_UNDER_CONSTRUCTION) return NextResponse.json({
-    unavailable: true, message: 'O RealPayz está temporariamente indisponível.'
-  }, { status: 503, headers: { 'Retry-After': '3600' } })
+  // Existing accounts may test their own linked device during maintenance.
   try {
     const body = await request.json().catch(() => null)
     if (!isUuid(body?.userId) || typeof body?.endpoint !== 'string') {

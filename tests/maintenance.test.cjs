@@ -25,7 +25,7 @@ test('maintenance screen presents unavailability and an explicit opt-in button',
   assert.match(html, /Ativar notificação/)
   assert.doesNotMatch(html, /Criar conta|Sua conta está pronta/)
 })
-for (const [file, method] of [['register-user', 'POST'], ['welcome-push', 'POST'], ['remarketing-cron', 'GET']]) {
+for (const [file, method] of [['register-user', 'POST'], ['remarketing-cron', 'GET']]) {
   test(`${file} stops processing while maintenance is enabled`, async () => {
     const module = load(`app/api/${file}/route.ts`, {
       '@/lib/site-status': { SITE_UNDER_CONSTRUCTION: true },

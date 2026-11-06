@@ -41,7 +41,8 @@ function database() {
 test('personalized welcome, no uppercase name, same request for FREE and VIP', () => {
   for (const access of ['FREE', 'VIP']) {
     const payload = JSON.parse(config.buildWelcomePushPayload(' gimo Mendes ', access))
-    assert.equal(payload.body, 'Olá! 🥳❤️ Gimo, sua conta está pronta! Cadastre sua chave Pix e comece a receber o seu dinheiro.')
+    assert.equal(payload.title, 'Olá Gimo! 👋 sua conta está ativada✅')
+    assert.equal(payload.body, 'cadastre suas chaves Pix e comece a receber seus R$ 😍💰')
     assert.equal(payload.tag, 'realpayz-welcome')
   }
   assert.equal(config.WELCOME_PUSH_MODE, 'delayed')
