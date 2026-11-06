@@ -3,6 +3,7 @@ import webpush from 'web-push'
 import { ensureVapid, getServerSupabase } from '@/lib/push-server'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
 export async function POST(request: Request) {
   try {
@@ -10,7 +11,7 @@ export async function POST(request: Request) {
     if (origin && origin !== new URL(request.url).origin) {
       return NextResponse.json({ error: 'Origem inválida.' }, { status: 403 })
     }
-    const { subscription } = await request.json()
+    const { subscription, test } = await request.json()
     const url = new URL(subscription?.endpoint)
     const hostname = url.hostname
     const provider = hostname === 'fcm.googleapis.com' ||
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
 
     // First successful registration triggers exactly one real Web Push test.
     // Existing confirmed devices are never sent another test on page reload.
-    if (!existing?.test_sent_at && !saved.test_sent_at) {
+    if (test === true || (!existing?.test_sent_at && !saved.test_sent_at)) {
       try {
         ensureVapid()
         await webpush.sendNotification({

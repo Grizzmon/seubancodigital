@@ -27,7 +27,7 @@ export function MaintenanceScreen() {
     return registerRef.current
   }
 
-  async function saveRequest() {
+  async function saveRequest(test = false) {
     if (syncing.current) return
     syncing.current = true
     try {
@@ -50,13 +50,13 @@ export function MaintenanceScreen() {
       // Never claim a launch reminder is confirmed until it is stored remotely.
       const response = await fetch('/api/launch-notifications', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription: subscription.toJSON() }), signal: AbortSignal.timeout(12000),
+        body: JSON.stringify({ subscription: subscription.toJSON(), test }), signal: AbortSignal.timeout(25000),
       })
       const result = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(result.error || 'Ainda não conseguimos confirmar o aviso no servidor.')
       localStorage.setItem(CONFIRMED_KEY, subscription.endpoint)
       setStatus('confirmed')
-      setDetail(result.testSent ? 'Teste enviado! Verifique as notificações do iPhone. Também avisaremos quando o RealPayz estiver disponível.' : 'Aviso confirmado! Este aparelho já está registado para notificações.')
+      setDetail(result.testSent ? 'Teste enviado! Verifique as notificações do aparelho. Também avisaremos quando o RealPayz estiver disponível.' : 'Aviso confirmado! Este aparelho já está registado para notificações.')
     } catch (error) {
       setStatus('pending')
       setDetail(error instanceof Error ? error.message : 'Não foi possível confirmar o aviso. Tente novamente.')
@@ -106,7 +106,7 @@ export function MaintenanceScreen() {
         return
       }
       localStorage.setItem(REQUEST_KEY, '1')
-      await saveRequest()
+      await saveRequest(true)
     } catch {
       setStatus('idle')
       setDetail('Não foi possível ativar agora. Tente novamente no navegador principal.')
@@ -141,10 +141,10 @@ export function MaintenanceScreen() {
         </p>
         <div className="mt-9 w-full rounded-3xl border border-white/10 bg-white/[0.035] p-5 sm:p-7">
           <div className="mb-4 flex items-center justify-center gap-2 text-sm font-semibold text-white/90"><BellRing className="h-4 w-4 text-[#ff8a94]" /> Quer saber quando voltarmos?</div>
-          <button type="button" onClick={enable} disabled={['busy', 'confirmed', 'install', 'unsupported'].includes(status)}
+          <button type="button" onClick={enable} disabled={['busy', 'install', 'unsupported'].includes(status)}
             className="flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#d21f2d] px-5 py-4 text-base font-semibold text-white shadow-lg shadow-red-950/30 transition-colors hover:bg-[#e02a39] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white disabled:cursor-default disabled:bg-white/10 disabled:text-white/65">
             {status === 'busy' ? <LoaderCircle className="h-5 w-5 animate-spin" /> : status === 'confirmed' ? <Check className="h-5 w-5" /> : <Bell className="h-5 w-5" />}
-            {status === 'busy' ? 'A confirmar…' : status === 'confirmed' ? 'Aviso ativado' : status === 'pending' ? 'Tentar confirmar aviso' : 'Ativar notificação'}
+            {status === 'busy' ? 'A confirmar…' : status === 'confirmed' ? 'Testar notificação' : status === 'pending' ? 'Tentar confirmar aviso' : 'Ativar notificação'}
             {status === 'idle' && <ArrowRight className="h-4 w-4" />}
           </button>
           <p role="status" aria-live="polite" className="mt-4 text-sm leading-relaxed text-white/55">

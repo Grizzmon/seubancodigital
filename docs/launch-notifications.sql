@@ -6,8 +6,10 @@ create table if not exists public.launch_subscriptions (
   p256dh text not null,
   auth text not null,
   created_at timestamptz not null default now(),
-  notified_at timestamptz
+  notified_at timestamptz,
+  test_sent_at timestamptz
 );
+alter table public.launch_subscriptions add column if not exists test_sent_at timestamptz;
 alter table public.launch_subscriptions enable row level security;
 revoke all on public.launch_subscriptions from anon, authenticated;
 grant select, insert, update, delete on public.launch_subscriptions to service_role;
