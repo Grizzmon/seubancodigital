@@ -55,5 +55,6 @@ export async function GET(request: Request) {
   })
   // Expired throttle buckets contain only hashes, never PINs or raw addresses.
   await supabase.from('school_auth_limits').delete().lt('resets_at', new Date(Date.now() - 86400000).toISOString())
+  console.info('[scheduled-push] complete', totals)
   return NextResponse.json({ success: true, ...totals })
 }
