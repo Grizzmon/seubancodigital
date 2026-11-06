@@ -97,8 +97,8 @@ export default function RootLayout({
         {SITE_UNDER_CONSTRUCTION ? <MaintenanceScreen /> : <>
           <ServiceWorkerRegister />
           <RegionalProvider>{children}</RegionalProvider>
-          <InstallPrompt />
         </>}
+        <InstallPrompt />
         <Analytics />
       </body>
     </html>

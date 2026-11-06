@@ -47,7 +47,6 @@ export function InstallPrompt() {
   const pathname = usePathname()
   const [show, setShow] = useState(false)
 
-  if (pathname === '/demo/teste09') return null
   const [mode, setMode] = useState<Mode>('install')
   const [platform, setPlatform] = useState<Platform>('other')
   const [canPromptNatively, setCanPromptNatively] = useState(false)
@@ -62,8 +61,11 @@ export function InstallPrompt() {
     setPlatform(detectPlatform())
     setCanPromptNatively(deferredPrompt !== null)
 
-    const alreadyInstalled = localStorage.getItem(INSTALLED_KEY) === 'true'
-    setMode(alreadyInstalled ? 'open-app' : 'install')
+    // A previous installation flag can survive uninstalling the app.
+    setMode('install')
+    if ('serviceWorker' in navigator) {
+      void navigator.serviceWorker.register('/sw.js', { updateViaCache: 'none' }).catch(() => {})
+    }
 
     // Aparece logo na entrada, salvo se o usuário fechou nesta mesma sessão.
     if (!sessionStorage.getItem(SESSION_DISMISS_KEY)) {
@@ -84,7 +86,7 @@ export function InstallPrompt() {
     const onForceShow = () => {
       if (isStandaloneMode()) return
       sessionStorage.removeItem(SESSION_DISMISS_KEY)
-      setMode(localStorage.getItem(INSTALLED_KEY) === 'true' ? 'open-app' : 'install')
+      setMode('install')
       setShow(true)
     }
 
@@ -100,15 +102,14 @@ export function InstallPrompt() {
 
   const handleInstall = async () => {
     if (!deferredPrompt) return
-    await deferredPrompt.prompt()
-    const { outcome } = await deferredPrompt.userChoice
+    const prompt = deferredPrompt
     deferredPrompt = null
-    if (outcome === 'accepted') {
-      localStorage.setItem(INSTALLED_KEY, 'true')
-      setMode('installed')
-    } else {
-      setCanPromptNatively(false)
-    }
+    setCanPromptNatively(false)
+    try {
+      await prompt.prompt()
+      await prompt.userChoice
+      // Only appinstalled confirms installation has completed.
+    } catch { /* Keep manual installation instructions available. */ }
   }
 
   const handleClose = () => {
@@ -116,7 +117,7 @@ export function InstallPrompt() {
     setShow(false)
   }
 
-  if (!show) return null
+  if (!show || pathname === '/demo/teste09') return null
 
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col justify-end" role="dialog" aria-modal="true" aria-labelledby="install-title">
@@ -154,7 +155,7 @@ export function InstallPrompt() {
                 ? 'Encontre o ícone RealPayz na sua tela inicial e continue por lá.'
                 : mode === 'open-app'
                   ? 'O RealPayz já está na sua tela inicial. Use o app para receber os avisos da sua conta.'
-                  : 'Adicione à tela inicial para entrar mais rápido e receber notificações de Pix e saques.'}
+                  : 'Instale no seu celular para abrir em um toque e ativar os avisos do RealPayz.'}
             </p>
           </div>
         </div>
@@ -165,7 +166,7 @@ export function InstallPrompt() {
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-primary">
                 <Bell className="h-4 w-4" />
               </span>
-              Avisos instantâneos de Pix recebido e saque concluído
+              Receba os avisos do RealPayz após permitir notificações
             </li>
             <li className="flex items-center gap-3">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-primary">
@@ -183,7 +184,7 @@ export function InstallPrompt() {
               onClick={handleInstall}
               className="flex h-14 w-full items-center justify-center gap-2 rounded-full bg-brand-gradient text-base font-semibold text-primary-foreground shadow-lg shadow-primary/30 transition-transform active:scale-[0.98]"
             >
-              <Download className="h-5 w-5" /> Adicionar à tela inicial
+              <Download className="h-5 w-5" /> Instalar app
             </button>
           ) : mode === 'install' ? (
             <ManualSteps platform={platform} />
