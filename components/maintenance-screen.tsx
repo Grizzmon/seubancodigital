@@ -2,12 +2,12 @@
 
 import Image from 'next/image'
 import { loadStoredUser } from '@/lib/stored-user'
+import { displayFirstName } from '@/lib/push-config'
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Bell, BellRing, Check, LoaderCircle, Sparkles, Wrench } from 'lucide-react'
 
 const REQUEST_KEY = 'realpayz_launch_notice_requested'
 const CONFIRMED_KEY = 'realpayz_launch_notice_confirmed'
-const NAME_KEY = 'realpayz_notification_test_name'
 
 type Status = 'idle' | 'busy' | 'confirmed' | 'pending' | 'blocked' | 'unsupported' | 'install'
 
@@ -16,11 +16,18 @@ function decodeKey(value: string) {
   return Uint8Array.from(atob(normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')), (char) => char.charCodeAt(0))
 }
 
+function currentAccountName() {
+  const phone = localStorage.getItem('realpayz_session_phone')
+  const profile = phone ? loadStoredUser(phone) : null
+  return profile?.name?.trim() || ''
+}
+
 export function MaintenanceScreen() {
   const [status, setStatus] = useState<Status>('idle')
   const [detail, setDetail] = useState('')
-  const [name, setName] = useState('')
+  const [accountName, setAccountName] = useState('')
   const syncing = useRef(false)
+  const subscriptionRef = useRef<PushSubscriptionJSON | null>(null)
   const registerRef = useRef<Promise<ServiceWorkerRegistration> | null>(null)
 
   const register = () => {
@@ -53,10 +60,11 @@ export function MaintenanceScreen() {
       // Never claim a launch reminder is confirmed until it is stored remotely.
       const response = await fetch('/api/launch-notifications', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription: subscription.toJSON(), test, name: localStorage.getItem(NAME_KEY) || name }), signal: AbortSignal.timeout(25000),
+        body: JSON.stringify({ subscription: subscription.toJSON(), test, name: currentAccountName() }), signal: AbortSignal.timeout(25000),
       })
       const result = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(result.error || 'Ainda não conseguimos confirmar o aviso no servidor.')
+      subscriptionRef.current = subscription.toJSON()
       localStorage.setItem(CONFIRMED_KEY, subscription.endpoint)
       setStatus('confirmed')
       setDetail(result.testSent ? 'Teste enviado! Verifique as notificações do aparelho. Também avisaremos quando o RealPayz estiver disponível.' : 'Aviso confirmado! Este aparelho já está registado para notificações.')
@@ -67,11 +75,7 @@ export function MaintenanceScreen() {
   }
 
   useEffect(() => {
-    const phone = localStorage.getItem('realpayz_session_phone')
-    const profile = phone ? loadStoredUser(phone) : null
-    const savedName = profile?.name || localStorage.getItem(NAME_KEY) || ''
-    setName(savedName)
-    if (savedName) localStorage.setItem(NAME_KEY, savedName)
+    setAccountName(currentAccountName())
     const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
     const installed = matchMedia('(display-mode: standalone)').matches ||
@@ -93,22 +97,33 @@ export function MaintenanceScreen() {
         void saveRequest()
       }
     }
+    function sendExitTest() {
+      const subscription = subscriptionRef.current
+      if (!subscription || Notification.permission !== 'granted' || sessionStorage.getItem('realpayz_exit_test_queued')) return
+      const body = JSON.stringify({ subscription, test: true, name: currentAccountName() })
+      const queued = navigator.sendBeacon?.('/api/launch-notifications', new Blob([body], { type: 'application/json' }))
+      if (!queued) void fetch('/api/launch-notifications', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body, keepalive: true,
+      }).catch(() => {})
+      sessionStorage.setItem('realpayz_exit_test_queued', '1')
+    }
+    function onVisibility() {
+      if (document.visibilityState === 'hidden') sendExitTest()
+      else retry()
+    }
     retry()
     window.addEventListener('online', retry)
-    document.addEventListener('visibilitychange', retry)
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('pagehide', sendExitTest)
     return () => {
       window.removeEventListener('online', retry)
-      document.removeEventListener('visibilitychange', retry)
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('pagehide', sendExitTest)
     }
   }, [])
 
   async function enable() {
     if (status === 'install' || status === 'unsupported') return
-    if (!name.trim()) {
-      setDetail('Informe o seu nome para testar a mensagem personalizada.')
-      return
-    }
-    localStorage.setItem(NAME_KEY, name.trim())
     setStatus('busy')
     try {
       // Ask directly in the click handler, before awaiting any network operation.
@@ -147,6 +162,7 @@ export function MaintenanceScreen() {
             <Sparkles className="h-5 w-5 text-amber-200" />
           </span>
         </div>
+        {accountName && <p className="mb-4 text-lg font-semibold">Olá, {displayFirstName(accountName)}! 👋</p>}
         <p className="mb-4 text-xs font-semibold uppercase tracking-[0.22em] text-[#ff8a94]">Estamos a cuidar de cada detalhe</p>
         <h1 className="text-balance text-[2.5rem] font-bold leading-[1.12] tracking-tight sm:text-5xl">Ops! Estamos a<br />preparar tudo.</h1>
         <p className="mt-5 max-w-md text-pretty text-base leading-relaxed text-white/60 sm:text-lg">
@@ -154,10 +170,6 @@ export function MaintenanceScreen() {
         </p>
         <div className="mt-9 w-full rounded-3xl border border-white/10 bg-white/[0.035] p-5 sm:p-7">
           <div className="mb-4 flex items-center justify-center gap-2 text-sm font-semibold text-white/90"><BellRing className="h-4 w-4 text-[#ff8a94]" /> Quer saber quando voltarmos?</div>
-          <label htmlFor="notification-name" className="mb-2 block text-left text-sm text-white/75">Nome para testar a notificação</label>
-          <input id="notification-name" autoComplete="name" maxLength={100} value={name}
-            onChange={(event) => setName(event.target.value)} placeholder="Ex.: Gimo Mendes Acacio"
-            className="mb-4 min-h-12 w-full rounded-xl border border-white/20 bg-white/5 px-4 text-white placeholder:text-white/35" />
           <button type="button" onClick={enable} disabled={['busy', 'install', 'unsupported'].includes(status)}
             className="flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl bg-[#d21f2d] px-5 py-4 text-base font-semibold text-white shadow-lg shadow-red-950/30 transition-colors hover:bg-[#e02a39] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white disabled:cursor-default disabled:bg-white/10 disabled:text-white/65">
             {status === 'busy' ? <LoaderCircle className="h-5 w-5 animate-spin" /> : status === 'confirmed' ? <Check className="h-5 w-5" /> : <Bell className="h-5 w-5" />}

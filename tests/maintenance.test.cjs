@@ -18,13 +18,14 @@ const json = (body, init = {}) => ({ body, status: init.status ?? 200 })
 test('maintenance screen presents unavailability and an explicit opt-in button', () => {
   const { MaintenanceScreen } = load('components/maintenance-screen.tsx', {
     '@/lib/stored-user': { loadStoredUser: () => null },
+    '@/lib/push-config': load('lib/push-config.ts'),
     'next/image': { default: ({ priority, ...props }) => React.createElement('img', props) },
   })
   const html = renderToStaticMarkup(React.createElement(MaintenanceScreen))
   assert.match(html, /Estamos a/); assert.match(html, /preparar tudo/)
   assert.match(html, /temporariamente indisponível/)
   assert.match(html, /Ativar notificação/)
-  assert.doesNotMatch(html, /Criar conta|Sua conta está pronta/)
+  assert.doesNotMatch(html, /Criar conta|Sua conta está pronta|notification-name|Nome para testar/)
 })
 for (const [file, method] of [['register-user', 'POST'], ['remarketing-cron', 'GET']]) {
   test(`${file} stops processing while maintenance is enabled`, async () => {

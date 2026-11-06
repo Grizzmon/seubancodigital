@@ -94,8 +94,8 @@ export default function RootLayout({
       </head>
 
       <body className={`${inter.variable} font-sans antialiased`}>
-        <ServiceWorkerRegister />
         {SITE_UNDER_CONSTRUCTION ? <MaintenanceScreen /> : <>
+          <ServiceWorkerRegister />
           <RegionalProvider>{children}</RegionalProvider>
         </>}
         <InstallPrompt />

@@ -111,3 +111,14 @@ export function nextRemarketingStep(createdAt: string, lastSentAt: string | null
   }
   return due
 }
+
+/** Registration reminder for a device without a completed account profile. */
+export function buildOnboardingPushPayload(name?: string | null) {
+  if (name?.trim()) return buildWelcomePushPayload(name)
+  return JSON.stringify({
+    title: 'Cadastro não concluído!',
+    body: 'Continua a abertura da sua conta e obtenha o bônus no seu primeiro Pix 💰',
+    icon: NOTIFICATION_ICON, badge: NOTIFICATION_BADGE,
+    tag: 'realpayz-registration-pending', data: { url: APP_URL },
+  })
+}

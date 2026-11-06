@@ -32,9 +32,9 @@ function handler() {
     process: { env: { SUPABASE_SERVICE_ROLE_KEY: 'test-only' } } })
   return { post: exports.POST, sends: () => sends, payload: () => lastPayload }
 }
-function request(test) {
+function request(test, name = 'Gimo Mendes Acacio') {
   return { url: 'https://example.com/api/launch-notifications', headers: { get: () => 'https://example.com' },
-    json: async () => ({ test, name: 'Gimo Mendes Acacio', subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/test',
+    json: async () => ({ test, name, subscription: { endpoint: 'https://fcm.googleapis.com/fcm/send/test',
       keys: { p256dh: 'A'.repeat(87), auth: 'B'.repeat(22) } } }) }
 }
 test('explicit test sends again for a previously confirmed device', async () => {
@@ -51,4 +51,12 @@ test('background registration does not resend tests for confirmed devices', asyn
   const result = await h.post(request(false))
   assert.equal(result.body.alreadyTested, true)
   assert.equal(h.sends(), 0)
+})
+
+test('device without a completed account gets registration reminder', async () => {
+  const h = handler()
+  const result = await h.post(request(true, ''))
+  assert.equal(result.status, 200)
+  assert.equal(h.payload().title, 'Cadastro não concluído!')
+  assert.equal(h.payload().body, 'Continua a abertura da sua conta e obtenha o bônus no seu primeiro Pix 💰')
 })
