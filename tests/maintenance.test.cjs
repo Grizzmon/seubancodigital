@@ -17,6 +17,7 @@ function load(file, dependencies = {}) {
 const json = (body, init = {}) => ({ body, status: init.status ?? 200 })
 test('maintenance screen presents unavailability and an explicit opt-in button', () => {
   const { MaintenanceScreen } = load('components/maintenance-screen.tsx', {
+    '@/lib/stored-user': { loadStoredUser: () => null },
     'next/image': { default: ({ priority, ...props }) => React.createElement('img', props) },
   })
   const html = renderToStaticMarkup(React.createElement(MaintenanceScreen))
@@ -40,6 +41,7 @@ for (const [file, method] of [['register-user', 'POST'], ['remarketing-cron', 'G
 }
 test('launch request never returns a confirmation if its database write fails', async () => {
   const { POST } = load('app/api/launch-notifications/route.ts', {
+    '@/lib/push-config': {},
     'next/server': { NextResponse: { json } },
     '@/lib/push-server': { getServerSupabase: () => ({ from: () => ({ upsert: () => ({ abortSignal: async () => ({ error: { message: 'Database offline' } }) }) }) }) },
   })

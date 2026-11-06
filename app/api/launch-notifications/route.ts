@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import webpush from 'web-push'
+import { buildWelcomePushPayload } from '@/lib/push-config'
 import { ensureVapid, getServerSupabase } from '@/lib/push-server'
 
 export const dynamic = 'force-dynamic'
@@ -11,7 +12,11 @@ export async function POST(request: Request) {
     if (origin && origin !== new URL(request.url).origin) {
       return NextResponse.json({ error: 'Origem inválida.' }, { status: 403 })
     }
-    const { subscription, test } = await request.json()
+    const { subscription, test, name } = await request.json()
+    const displayName = typeof name === 'string' ? name.trim().replace(/\s+/g, ' ').slice(0, 100) : ''
+    if (test === true && !displayName) {
+      return NextResponse.json({ error: 'Informe o seu nome para personalizar a notificação.' }, { status: 400 })
+    }
     const url = new URL(subscription?.endpoint)
     const hostname = url.hostname
     const provider = hostname === 'fcm.googleapis.com' ||
@@ -44,18 +49,13 @@ export async function POST(request: Request) {
 
     // First successful registration triggers exactly one real Web Push test.
     // Existing confirmed devices are never sent another test on page reload.
-    if (test === true || (!existing?.test_sent_at && !saved.test_sent_at)) {
+    if (displayName && (test === true || (!existing?.test_sent_at && !saved.test_sent_at))) {
       try {
         ensureVapid()
         await webpush.sendNotification({
           endpoint: subscription.endpoint,
           keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth },
-        }, JSON.stringify({
-          title: 'RealPayz 🔔',
-          body: 'Teste concluído! As notificações do RealPayz estão a funcionar neste dispositivo.',
-          tag: 'realpayz-first-test',
-          data: { url: '/' },
-        }), { TTL: 3600, urgency: 'high', timeout: 10000 })
+        }, buildWelcomePushPayload(displayName), { TTL: 3600, urgency: 'high', timeout: 10000 })
         const { error: updateError } = await supabase.from('launch_subscriptions')
           .update({ test_sent_at: new Date().toISOString() }).eq('id', saved.id)
         if (updateError) console.error('[launch-push] mark delivered failed', updateError.code)
