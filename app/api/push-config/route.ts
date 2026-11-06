@@ -29,7 +29,11 @@ export async function GET(request: Request) {
       ['push_subscriptions', 'id,user_id,endpoint,p256dh,auth'],
     ]) {
       // Read metadata only: never return accounts or subscription endpoints.
-      const { error } = await supabase.from(table).select(columns).limit(0)
+      const { error, status } = await supabase.from(table).select(columns).limit(0)
+      if (error) console.error('[push-config] database unavailable', {
+        table, status, code: error.code, message: error.message,
+        host: new URL(process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://cjxfvpkbfixjkppowhwg.supabase.co').hostname,
+      })
       database.push({ table, ok: !error, code: error?.code ?? null,
         // Schema errors contain column/table names, not user data or credentials.
         detail: error && ['42703', '42P01', 'PGRST204', 'PGRST205'].includes(error.code)
