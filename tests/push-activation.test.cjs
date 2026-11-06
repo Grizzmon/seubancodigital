@@ -5,7 +5,7 @@ const vm = require('node:vm')
 const ts = require('typescript')
 const jsx = require('react/jsx-runtime')
 
-test('activation recovers saved account after logout, links the device and sends a test in one click', async () => {
+test('activation after permission grant registers the device and requests confirmation in one click', async () => {
   const states = [], effects = [], calls = []
   let cursor = 0, mounting = true
   const hooks = {
@@ -25,7 +25,7 @@ test('activation recovers saved account after logout, links the device and sends
   async function fetch(url, options) {
     calls.push({ url, body: options?.body ? JSON.parse(options.body) : null })
     const result = url === '/api/register-user' ? { userId: 'real-user' }
-      : url === '/api/push-config' ? { configured: true, publicKey: 'AQ' }
+      : url.startsWith('/api/push-config') ? { configured: true, publicKey: 'AQ' }
       : { success: true }
     return { ok: true, json: async () => result }
   }
@@ -51,7 +51,6 @@ test('activation recovers saved account after logout, links the device and sends
   const activate = buttons(tree).find((node) => node.props.children === 'Ativar notificações')
   assert.ok(activate)
   await activate.props.onClick()
-  assert.ok(calls.some((call) => call.url === '/api/register-user' && call.body.name === 'Rubem Mendes'))
-  assert.ok(calls.some((call) => call.url === '/api/save-subscription' && call.body.userId === 'real-user'))
-  assert.ok(calls.some((call) => call.url === '/api/welcome-push' && call.body.test === true))
+  assert.ok(calls.some((call) => call.url === '/api/notification-device' && call.body.action === 'activate'))
+  assert.equal(calls.filter((call) => call.url === '/api/notification-device' && call.body.action === 'activate').length, 1)
 })

@@ -67,9 +67,9 @@ export function FaceSimulation({ onConfirm }: { onConfirm: () => void }) {
 
   return (
     <section className="flex min-h-dvh flex-col items-center justify-center bg-white px-6 py-10 text-center text-slate-900" aria-label="Simulação de validação facial">
-      <span className="mb-5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-slate-600">Simulação</span>
-      <h1 className="text-2xl font-bold">{phase === 'success' ? 'Simulação concluída' : phase === 'processing' ? 'A processar a simulação…' : 'Posicione o rosto no oval'}</h1>
-      <p className="mt-3 max-w-sm text-sm text-slate-500">Demonstração visual de validação facial. A imagem é apenas uma pré-visualização e não é gravada nem enviada.</p>
+      <span className="mb-5 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-slate-600">Projeto escolar · simulação</span>
+      <h1 className="text-2xl font-bold">{phase === 'success' ? 'Etapa concluída' : phase === 'processing' ? 'A processar…' : 'Posicione o rosto no oval'}</h1>
+      <p className="mt-3 max-w-sm text-sm text-slate-500">Enquadre o rosto para continuar. A imagem é apenas uma pré-visualização e não é gravada nem enviada.</p>
 
       {phase === 'ready' || phase === 'scanning' ? (
         <div className="relative my-9 h-80 w-60 max-w-full overflow-hidden rounded-[50%] bg-slate-100 p-1.5">
@@ -86,10 +86,10 @@ export function FaceSimulation({ onConfirm }: { onConfirm: () => void }) {
           <Check className="h-20 w-20 text-green-600" strokeWidth={3} />
         </div>
       )}
-      <p role="status" aria-live="polite" className="mb-6 text-sm text-slate-500">{phase === 'scanning' ? 'Captura simulada em curso…' : phase === 'processing' ? 'A concluir a demonstração…' : phase === 'success' ? 'Pode continuar o cadastro.' : error}</p>
+      <p role="status" aria-live="polite" className="mb-6 text-sm text-slate-500">{phase === 'scanning' ? 'A capturar…' : phase === 'processing' ? 'A concluir a etapa…' : phase === 'success' ? 'Pode continuar o cadastro.' : error}</p>
       <div className="w-full max-w-sm">
         {phase === 'ready' ? <>
-          <PrimaryButton disabled={starting} onClick={() => void begin(true)}><Camera className="h-5 w-5" /> {starting ? 'A abrir câmera…' : 'Iniciar simulação'}</PrimaryButton>
+          <PrimaryButton disabled={starting} onClick={() => void begin(true)}><Camera className="h-5 w-5" /> {starting ? 'A abrir câmera…' : 'Confirmar identidade'}</PrimaryButton>
           {error && <button type="button" onClick={() => void begin(false)} className="mt-4 text-sm font-medium text-rose-600">Continuar sem câmera</button>}
         </> : phase === 'success' ? <PrimaryButton onClick={onConfirm}>Continuar</PrimaryButton> : null}
       </div>

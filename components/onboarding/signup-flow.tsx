@@ -34,6 +34,7 @@ import {
 } from '@/lib/onboarding-format'
 import { registerUserAndLinkPush } from '@/lib/register-user'
 import { saveStoredUser, type StoredUser } from '@/lib/stored-user'
+import { accessSchoolAccount } from '@/lib/school-account-client'
 import { showInstallPrompt } from '@/components/install-prompt'
 
 const STEPS = [
@@ -134,6 +135,8 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
   const [txPin, setTxPin] = useState('')
   const [txPinConfirm, setTxPinConfirm] = useState('')
   const [wallets, setWallets] = useState<string[]>([])
+  const [savingAccount, setSavingAccount] = useState(false)
+  const [accountSaveError, setAccountSaveError] = useState('')
   useEffect(() => {
     setProvince('')
     setIncomeInput('')
@@ -259,7 +262,10 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
     )
   }
 
-  const finish = () => {
+  const finish = async () => {
+    if (savingAccount) return
+    setSavingAccount(true)
+    setAccountSaveError('')
     analytics.signupCompleted()
     const user: StoredUser = {
       name: capitalizeWords(name.trim()),
@@ -283,9 +289,13 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
       keys: [],
       transactions: [],
     }
-    saveStoredUser(user)
-    showInstallPrompt()
-    onComplete(user)
+    try {
+      const saved = await accessSchoolAccount(user.phone, user.password, user, true)
+      showInstallPrompt()
+      onComplete(saved)
+    } catch (error) {
+      setAccountSaveError(error instanceof Error ? error.message : 'Não foi possível guardar a conta.')
+    } finally { setSavingAccount(false) }
   }
 
   const toggle = (list: string[], value: string) =>
@@ -818,13 +828,14 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
           title={`Quais são os seus meios de pagamento em ${country.name}?`}
           subtitle="Selecione os serviços que utiliza. A sua escolha fica guardada como preferência de pagamento."
           footer={
-            <PrimaryButton onClick={finish} disabled={false}>
+            <PrimaryButton onClick={() => void finish()} disabled={savingAccount}>
               <ShieldCheck className="h-5 w-5" />
-              {wallets.length ? 'Guardar preferências e continuar' : 'Escolher mais tarde'}
+              {savingAccount ? 'A guardar a sua conta…' : wallets.length ? 'Guardar preferências e continuar' : 'Escolher mais tarde'}
             </PrimaryButton>
           }
         >
           <RegionBadge />
+          {accountSaveError && <div role="alert" className="mb-4 rounded-xl bg-red-50 p-4 text-sm text-red-700">{accountSaveError}<button type="button" onClick={onExit} className="mt-2 block font-semibold underline">Voltar para entrar</button></div>}
           <div className="flex flex-col gap-3" role="group" aria-label="Meios de pagamento">
             {regional.methods.map((wallet) => (
               <OptionRow

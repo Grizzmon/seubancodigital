@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useCallback, useEffect, Suspense } from 'react'
+import { accessSchoolAccount } from '@/lib/school-account-client'
+import { notifyUserReady } from '@/components/service-worker-register'
 import { registerUserAndLinkPush } from '@/lib/register-user'
 import { AuthFlow } from '@/components/onboarding/auth-flow'
 import { loadStoredUser, saveStoredUser, type StoredUser } from '@/lib/stored-user'
@@ -69,17 +71,36 @@ function MainApp() {
   }, [])
 
   useEffect(() => {
-    const sessionPhone = localStorage.getItem(SESSION_KEY)
-    if (!sessionPhone) {
-      setSessionChecked(true)
-      return
+    let cancelled = false
+    async function restore() {
+      try {
+        const response = await fetch('/api/account', { cache: 'no-store' })
+        const result = await response.json()
+        if (cancelled) return
+        if (result.authenticated && result.user) {
+          const local = loadStoredUser(result.user.phone)
+          const user = { ...result.user, ...(local || {}), name: result.user.name, phone: result.user.phone, password: '' }
+          saveStoredUser(user)
+          if (result.userId) notifyUserReady({ userId: result.userId })
+          await handleLogin(user)
+        } else {
+          const phone = localStorage.getItem(SESSION_KEY)
+          const legacy = phone ? loadStoredUser(phone) : null
+          if (legacy && /^\d{6}$/.test(legacy.password)) {
+            const user = await accessSchoolAccount(legacy.phone, legacy.password, legacy)
+            if (!cancelled) await handleLogin(user)
+          }
+        }
+      } catch { /* Keep saved account data; the user can sign in again. */ }
+      finally { if (!cancelled) setSessionChecked(true) }
     }
-    const saved = loadStoredUser(sessionPhone)
-    if (saved) handleLogin(saved)
-    setSessionChecked(true)
+    void restore()
+    return () => { cancelled = true }
   }, [handleLogin])
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
+    await fetch('/api/account', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'logout' }) }).catch(() => {})
     localStorage.removeItem(SESSION_KEY)
     setIsLoggedIn(false)
     setUserName('')

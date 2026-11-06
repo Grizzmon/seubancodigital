@@ -8,7 +8,7 @@
 // envia a sequência de remarketing (REMARKETING_SEQUENCE) ao longo dos dias.
 export const WELCOME_PUSH_MODE: 'immediate' | 'delayed' = 'delayed'
 
-export const WELCOME_PUSH_DELAY_MINUTES = 30
+export const WELCOME_PUSH_DELAY_MINUTES = 5
 
 // O cron só considera contas criadas dentro desta janela.
 export const REMARKETING_MAX_AGE_DAYS = 30

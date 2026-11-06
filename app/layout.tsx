@@ -99,6 +99,7 @@ export default function RootLayout({
           <RegionalProvider>{children}</RegionalProvider>
         </>}
         <InstallPrompt />
+        <p className="pointer-events-none fixed bottom-1 right-2 z-50 text-[9px] text-slate-500/80">Projeto escolar · banco simulado</p>
         <Analytics />
       </body>
     </html>

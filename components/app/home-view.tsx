@@ -235,8 +235,8 @@ export function HomeView({
         <button type="button" onClick={() => window.dispatchEvent(new Event('realpayz-open-notifications'))}
           className="flex w-full items-center gap-3 rounded-2xl border border-border bg-accent/40 p-4 text-left">
           <Bell className="h-6 w-6 shrink-0 text-primary" />
-          <span className="flex-1"><span className="block font-semibold">Testar notificações</span>
-            <span className="block text-sm text-muted-foreground">Ativar avisos e verificar o recebimento no aparelho</span></span>
+          <span className="flex-1"><span className="block font-semibold">Ativar notificações</span>
+            <span className="block text-sm text-muted-foreground">Receber automaticamente os avisos da sua conta</span></span>
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
         </button>
         {isPro ? (

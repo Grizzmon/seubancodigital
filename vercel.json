@@ -1,8 +1,5 @@
 {
   "crons": [
-    {
-      "path": "/api/remarketing-cron",
-      "schedule": "*/15 * * * *"
-    }
+    { "path": "/api/remarketing-cron", "schedule": "* * * * *" }
   ]
 }

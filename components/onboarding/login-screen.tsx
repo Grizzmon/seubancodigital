@@ -5,7 +5,7 @@ import { DotsLoader } from '@/components/ui/dots-loader'
 import { StepShell, UnderlineInput, PinField, PrimaryButton, GhostButton, BrandMark } from './ui'
 import { PhoneInput, usePhoneCountry } from './phone-input'
 import { accountPhone, validPhone } from '@/lib/phone-country'
-import { registerUserAndLinkPush } from '@/lib/register-user'
+import { accessSchoolAccount } from '@/lib/school-account-client'
 import type { StoredUser } from '@/lib/stored-user'
 import { loadStoredUser } from '@/lib/stored-user'
 import { analytics } from '@/lib/analytics'
@@ -31,28 +31,20 @@ export function LoginScreen({ onBack, onCreateAccount, onLogin }: LoginScreenPro
     if (!canSubmit) return
     setError(null)
 
-    const user = loadStoredUser(digits)
-    if (!user) {
-      setError('Não encontramos uma conta com este número. Crie a sua conta em poucos passos.')
-      return
-    }
-    if (user.password !== pin) {
-      setError('Senha incorreta. Verifique os 6 dígitos e tente novamente.')
-      setPin('')
-      return
-    }
-
     setConnecting(true)
-    const params = new URLSearchParams(window.location.search)
-    const isVip = params.get('acesso') === 'vip' || params.get('plano') === 'vip'
-
-    await Promise.all([
-      registerUserAndLinkPush({ name: user.name, phone: digits, accessType: isVip ? 'VIP' : 'FREE', newAccount: false }),
-      new Promise((r) => setTimeout(r, 2200)),
-    ])
-
-    analytics.login()
-    onLogin(user)
+    try {
+      const legacy = loadStoredUser(digits) || undefined
+      const [user] = await Promise.all([
+        accessSchoolAccount(digits, pin, legacy),
+        new Promise((resolve) => setTimeout(resolve, 1200)),
+      ])
+      analytics.login()
+      onLogin(user)
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Não foi possível entrar.')
+      setPin('')
+      setConnecting(false)
+    }
   }
 
   if (connecting) {
