@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { loadStoredUser } from '@/lib/stored-user'
+import { loadRememberedUser } from '@/lib/stored-user'
 
 const USER_ID_KEY = 'bankpix_user_id'
 const PENDING_KEY = 'bankpix_welcome_pending'
@@ -52,20 +52,20 @@ export default function ServiceWorkerRegister() {
     setNeedsInstall(ios && !standalone)
     const capable = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
     setSupported(capable)
-    setIdentified(Boolean(localStorage.getItem(USER_ID_KEY)))
+    setIdentified(Boolean(localStorage.getItem(USER_ID_KEY) || loadRememberedUser()))
     if (!capable) return
     setPermission(Notification.permission)
 
     async function sync() {
       if (running) { rerun = true; return running }
-      running = (async () => {
+      // Defer execution so early returns cannot leave a resolved promise locked in running.
+      running = Promise.resolve().then(async () => {
         try {
           setPermission(Notification.permission)
           if (Notification.permission !== 'granted') return
           let userId = localStorage.getItem(USER_ID_KEY)
-          if (!userId) {
-            const phone = localStorage.getItem('realpayz_session_phone')
-            const profile = phone ? loadStoredUser(phone) : null
+          const profile = loadRememberedUser()
+          if (!userId || (profile && localStorage.getItem('bankpix_user_id_phone') !== profile.phone)) {
             if (!profile) throw new Error('Entre na sua conta para ativar as notificações.')
             const registered = await fetch('/api/register-user', {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -75,6 +75,7 @@ export default function ServiceWorkerRegister() {
             if (!registered.ok || !account?.userId) throw new Error('Não foi possível vincular sua conta às notificações. Tente novamente.')
             userId = account.userId
             localStorage.setItem(USER_ID_KEY, account.userId)
+            localStorage.setItem('bankpix_user_id_phone', profile.phone)
           }
           const response = await fetch('/api/push-config', { cache: 'no-store' })
           const config = await response.json()
@@ -102,11 +103,12 @@ export default function ServiceWorkerRegister() {
           }
         } catch (error) {
           if (!cancelled) {
+            endpointRef.current = null
             setLinked(false)
             setMessage(error instanceof Error ? error.message : 'Falha ao ativar notificações.')
           }
         } finally { running = null }
-      })()
+      })
       const current = running
       await current
       if (rerun && !cancelled) { rerun = false; await sync() }
@@ -128,7 +130,7 @@ export default function ServiceWorkerRegister() {
       // Do not mark as delivered: only a successful server response/cron may do so.
     }
     function onReady() {
-      setIdentified(Boolean(localStorage.getItem(USER_ID_KEY)))
+      setIdentified(Boolean(localStorage.getItem(USER_ID_KEY) || loadRememberedUser()))
       setDismissed(false)
       void sync()
     }
@@ -161,7 +163,10 @@ export default function ServiceWorkerRegister() {
       const result = Notification.permission === 'default'
         ? await Notification.requestPermission() : Notification.permission
       setPermission(result)
-      if (result === 'granted') await syncRef.current()
+      if (result === 'granted') {
+        await syncRef.current()
+        if (endpointRef.current) await test()
+      }
       else setMessage('Permita as notificações nas definições deste site no navegador.')
     } catch { setMessage('Não foi possível pedir a permissão. Abra no navegador principal.') }
     finally { setBusy(false) }

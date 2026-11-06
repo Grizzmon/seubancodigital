@@ -15,6 +15,7 @@ import { PhoneInput, usePhoneCountry } from './phone-input'
 import { RegionBadge, useRegionalSettings } from '@/components/regional-provider'
 import { accountPhone, validPhone } from '@/lib/phone-country'
 import { DocumentCapture } from './document-capture'
+import { FaceSimulation } from './face-simulation'
 import { TransitionScreen } from './transition-screen'
 import { ProcessingScreen, useTimedProgress } from './processing-screen'
 import { TIMING } from '@/lib/timing'
@@ -53,6 +54,7 @@ const STEPS = [
   'docInstructions',
   'docFront',
   'docBack',
+  'faceSimulation',
   'opening',
   'accountOpen',
   'txPin',
@@ -62,10 +64,10 @@ const STEPS = [
 type Step = (typeof STEPS)[number]
 
 // Telas em que não faz sentido voltar (processos já concluídos).
-const NO_BACK: Step[] = ['processing', 'approved', 'pin6', 'opening', 'accountOpen', 'txPin', 'wallets']
+const NO_BACK: Step[] = ['processing', 'approved', 'pin6', 'faceSimulation', 'opening', 'accountOpen', 'txPin', 'wallets']
 
 // Telas que já são um "processamento": não precisam da tela de transição antes.
-const LOADER_STEPS: Step[] = ['processing', 'opening']
+const LOADER_STEPS: Step[] = ['processing', 'faceSimulation', 'opening']
 
 // Mensagem da tela de transição, de acordo com a tela para onde o usuário vai.
 const TRANSITION_MESSAGES: Partial<Record<Step, string>> = {
@@ -739,6 +741,9 @@ export function SignupFlow({ onExit, onComplete }: SignupFlowProps) {
           <DocumentCapture key="verso" side="verso" onConfirm={next} />
         </StepShell>
       )
+
+    case 'faceSimulation':
+      return <FaceSimulation onConfirm={next} />
 
     case 'accountOpen':
       return (

@@ -17,7 +17,7 @@ function load(file, dependencies = {}) {
 const json = (body, init = {}) => ({ body, status: init.status ?? 200 })
 test('maintenance screen presents unavailability and an explicit opt-in button', () => {
   const { MaintenanceScreen } = load('components/maintenance-screen.tsx', {
-    '@/lib/stored-user': { loadStoredUser: () => null },
+    '@/lib/stored-user': { loadRememberedUser: () => null },
     '@/lib/push-config': load('lib/push-config.ts'),
     'next/image': { default: ({ priority, ...props }) => React.createElement('img', props) },
   })

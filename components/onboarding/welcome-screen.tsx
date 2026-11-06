@@ -2,6 +2,9 @@
 
 import { CountrySelector, useRegionalSettings } from '@/components/regional-provider'
 import Image from 'next/image'
+import { useEffect, useState } from 'react'
+import { loadRememberedUser } from '@/lib/stored-user'
+import { displayFirstName } from '@/lib/push-config'
 import { ArrowRight } from 'lucide-react'
 import { PrimaryButton, GhostButton } from './ui'
 import { HeroPhotos } from './hero-photos'
@@ -13,6 +16,8 @@ interface WelcomeScreenProps {
 
 export function WelcomeScreen({ onStart, onLogin }: WelcomeScreenProps) {
   const regional = useRegionalSettings()
+  const [returningName, setReturningName] = useState('')
+  useEffect(() => { setReturningName(loadRememberedUser()?.name || '') }, [])
   return (
     <div className="relative mx-auto flex min-h-dvh w-full max-w-md flex-col overflow-hidden bg-primary text-primary-foreground animate-fade-in">
       <div className="relative flex min-h-[26rem] flex-1 flex-col justify-between">
@@ -44,11 +49,12 @@ export function WelcomeScreen({ onStart, onLogin }: WelcomeScreenProps) {
       </div>
 
       <div className="relative -mt-8 rounded-t-[32px] bg-background px-6 pb-10 pt-8 text-foreground">
+        {returningName && <p className="mb-5 text-center text-xl font-semibold">Olá, {displayFirstName(returningName)}! 👋</p>}
         <div className="flex flex-col gap-3">
           <PrimaryButton onClick={onStart}>
             Criar conta <ArrowRight className="h-5 w-5" />
           </PrimaryButton>
-          <GhostButton onClick={onLogin}>Já tenho uma conta</GhostButton>
+          <GhostButton onClick={onLogin}>{returningName ? 'Entrar na minha conta' : 'Já tenho uma conta'}</GhostButton>
         </div>
       </div>
     </div>

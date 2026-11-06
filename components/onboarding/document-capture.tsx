@@ -19,6 +19,8 @@ interface DocumentCaptureProps {
 export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const readerRef = useRef<FileReader | null>(null)
+  const validationTimer = useRef<number | null>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const [status, setStatus] = useState<Status>('idle')
   const [cameraReady, setCameraReady] = useState(false)
@@ -78,6 +80,9 @@ export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
 
     return () => {
       cancelledRef.current = true
+      if (validationTimer.current !== null) window.clearTimeout(validationTimer.current)
+      if (readerRef.current?.readyState === FileReader.LOADING) readerRef.current.abort()
+      if (canvasRef.current) { canvasRef.current.width = 0; canvasRef.current.height = 0 }
       document.removeEventListener('visibilitychange', onVisible)
       streamRef.current?.getTracks().forEach((t) => t.stop())
       streamRef.current = null
@@ -91,7 +96,10 @@ export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
     const attempt = attempts + 1
     setAttempts(attempt)
     const approved = attempt > 1 || Math.random() > 0.3
-    window.setTimeout(() => setStatus(approved ? 'success' : 'error'), TIMING.documentAnalysis)
+    if (validationTimer.current !== null) window.clearTimeout(validationTimer.current)
+    validationTimer.current = window.setTimeout(() => {
+      if (!cancelledRef.current) setStatus(approved ? 'success' : 'error')
+    }, TIMING.documentAnalysis)
   }
 
   const takePhoto = () => {
@@ -109,9 +117,14 @@ export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
 
   const onFilePicked = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
+    e.target.value = ''
     if (!file) return
     const reader = new FileReader()
-    reader.onload = () => runValidation(String(reader.result))
+    readerRef.current = reader
+    reader.onload = () => {
+      if (!cancelledRef.current) runValidation(String(reader.result))
+      readerRef.current = null
+    }
     reader.readAsDataURL(file)
   }
 
@@ -119,6 +132,14 @@ export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
     setSnapshot(null)
     setStatus('idle')
     void startCamera()
+  }
+
+  const confirmAndDiscard = () => {
+    setSnapshot(null)
+    if (canvasRef.current) { canvasRef.current.width = 0; canvasRef.current.height = 0 }
+    streamRef.current?.getTracks().forEach((track) => track.stop())
+    if (videoRef.current) videoRef.current.srcObject = null
+    onConfirm()
   }
 
   const sideLabel = side === 'frente' ? 'FRENTE' : 'VERSO'
@@ -173,6 +194,7 @@ export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
       </div>
 
       <canvas ref={canvasRef} className="hidden" />
+      <p className="text-center text-xs text-background/70">Simulação: a foto é usada apenas nesta tela e descartada ao continuar. Não é guardada nem enviada.</p>
 
       <div className="flex min-h-20 flex-col justify-center">
         {status === 'success' ? (
@@ -195,7 +217,7 @@ export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
 
       <div className="flex flex-col gap-3">
         {status === 'success' ? (
-          <PrimaryButton onClick={onConfirm}>Continuar</PrimaryButton>
+          <PrimaryButton onClick={confirmAndDiscard}>Continuar</PrimaryButton>
         ) : status === 'error' ? (
           <PrimaryButton onClick={retry}>
             <RefreshCw className="h-5 w-5" /> Refazer foto

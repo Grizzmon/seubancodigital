@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { loadStoredUser } from '@/lib/stored-user'
+import { loadRememberedUser } from '@/lib/stored-user'
 import { displayFirstName } from '@/lib/push-config'
 import { useEffect, useRef, useState } from 'react'
 import { ArrowRight, Bell, BellRing, Check, LoaderCircle, Sparkles, Wrench } from 'lucide-react'
@@ -17,9 +17,7 @@ function decodeKey(value: string) {
 }
 
 function currentAccountName() {
-  const phone = localStorage.getItem('realpayz_session_phone')
-  const profile = phone ? loadStoredUser(phone) : null
-  return profile?.name?.trim() || ''
+  return loadRememberedUser()?.name?.trim() || ''
 }
 
 export function MaintenanceScreen() {
