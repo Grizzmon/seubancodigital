@@ -6,7 +6,10 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request) {
   // Vercel derives this header from the visitor IP. No raw IP is stored.
   const code = request.headers.get('x-vercel-ip-country')?.toUpperCase() ?? ''
-  return NextResponse.json({ country: phoneCountry(code).code }, {
+  return NextResponse.json({
+    country: phoneCountry(code).code,
+    detectedCountry: code === 'AO' || code === 'MZ' ? code : null,
+  }, {
     headers: { 'Cache-Control': 'private, no-store' },
   })
 }
