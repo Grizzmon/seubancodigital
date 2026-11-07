@@ -1,21 +1,3 @@
-O termo `" · simulação"` foi encontrado na exibição do valor convertido quando o país selecionado é diferente de Moçambique:
-
-```tsx
-// Linha original:
-: (showBalance ? `≈ ${formatLocalAmount(convertDemoBRL(balance, regional.currency), regional.currency)} · simulação` : `≈ •••• ${regional.symbol}`)}
-
-```
-
-Ele foi ajustado para exibir apenas o valor formatado:
-
-```tsx
-: (showBalance ? `≈ ${formatLocalAmount(convertDemoBRL(balance, regional.currency), regional.currency)}` : `≈ •••• ${regional.symbol}`)}
-
-```
-
-Código completo atualizado:
-
-```tsx
 'use client'
 
 import { convertDemoBRL, formatLocalAmount } from '@/lib/regional-settings'
@@ -123,7 +105,6 @@ export function HomeView({
   const [lockedFeature, setLockedFeature] = useState<string | null>(null)
   const [firstPixFeature, setFirstPixFeature] = useState<string | null>(null)
 
-  // Não Pro: aviso para ativar. Pro sem movimentações: orienta a fazer o primeiro Pix.
   const notify = (feature: string) => {
     if (isPro) {
       if (hasTransactions) return
@@ -161,7 +142,6 @@ export function HomeView({
 
   return (
     <div className="relative flex min-h-dvh flex-col bg-background pb-24 animate-fade-in">
-      {/* Cabeçalho vermelho */}
       <header className="relative bg-brand-gradient text-primary-foreground">
         <div className="flex items-center justify-between px-6 pt-4">
           <span className="w-10" aria-hidden />
@@ -251,7 +231,6 @@ export function HomeView({
           </button>
         </div>
 
-        {/* Onda de transição */}
         <div className="relative mt-4 h-14 overflow-hidden">
           <svg
             viewBox="0 0 400 56"
@@ -289,7 +268,6 @@ export function HomeView({
         </button>
 
         {isPro ? (
-          /* Estado da conta Pro + subir plano */
           <div className="flex items-center gap-3 rounded-2xl border-2 border-success/30 bg-success/10 px-4 py-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-success text-background">
               <BadgeCheck className="h-5 w-5" />
@@ -309,7 +287,6 @@ export function HomeView({
             </button>
           </div>
         ) : (
-          /* Faixa de ativação Pro */
           <button
             type="button"
             onClick={onOpenPro}
@@ -330,7 +307,6 @@ export function HomeView({
           </button>
         )}
 
-        {/* Favoritos */}
         <section className="flex flex-col gap-5">
           <h2 className="text-2xl font-semibold">Favoritos</h2>
           <div className="grid grid-cols-4 gap-x-3 gap-y-6">
@@ -363,7 +339,6 @@ export function HomeView({
           </div>
         </section>
 
-        {/* Card promocional */}
         <button
           type="button"
           onClick={() => notify('Atualização de dados')}
@@ -383,7 +358,6 @@ export function HomeView({
           <ChevronRight className="mr-4 h-6 w-6 shrink-0 text-primary" />
         </button>
 
-        {/* Benefícios e parcerias — slide horizontal */}
         <section className="flex flex-col gap-4">
           <h2 className="text-2xl font-semibold">Benefícios e parcerias</h2>
           <div className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -407,7 +381,6 @@ export function HomeView({
         </section>
       </main>
 
-      {/* Navegação inferior */}
       <nav
         aria-label="Navegação principal"
         className="fixed inset-x-0 bottom-0 z-40 mx-auto max-w-md border-t border-border bg-card/95 backdrop-blur"
@@ -460,5 +433,3 @@ export function HomeView({
     </div>
   )
 }
-
-```
