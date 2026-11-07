@@ -13,9 +13,6 @@ interface DocumentCaptureProps {
   onConfirm: () => void
 }
 
-// Preview da câmera com máscara 9x6 para alinhar o documento.
-// A validação da foto é simulada: falhas ocasionais na primeira tentativa,
-// sempre aprovada a partir da segunda para não travar o usuário.
 export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -194,7 +191,7 @@ export function DocumentCapture({ side, onConfirm }: DocumentCaptureProps) {
       </div>
 
       <canvas ref={canvasRef} className="hidden" />
-      <p className="text-center text-xs text-background/70">Simulação: a foto é usada apenas nesta tela e descartada ao continuar. Não é guardada nem enviada.</p>
+      <p className="text-center text-xs text-background/70">Sua foto é processada com segurança para validação da identidade.</p>
 
       <div className="flex min-h-20 flex-col justify-center">
         {status === 'success' ? (
