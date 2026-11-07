@@ -17,7 +17,7 @@ export async function GET(request: Request) {
   const supabase = getServerSupabase()
   const now = new Date().toISOString()
   const { data: devices, error } = await supabase.from('school_notification_devices').select('*').is('disabled_at', null)
-    .or(`welcome_due_at.lte.${now},followup_due_at.lte.${now},abandonment_due_at.lte.${now}`)
+    .or(`welcome_due_at.lte.${now},followup_due_at.lte.${now},abandonment_due_at.lte.${now},day1_due_at.lte.${now},day1followup_due_at.lte.${now}`)
     .order('last_seen_at').limit(100)
   if (error) return NextResponse.json({ error: 'Não foi possível consultar os avisos.' }, { status: 503 })
   ensureVapid()
@@ -41,6 +41,9 @@ export async function GET(request: Request) {
         { TTL: 86400, urgency: 'high', timeout: 10000 })
       const { error } = await supabase.from('school_notification_devices').update({
         [`${notice.kind}_sent_at`]: new Date().toISOString(), [`${notice.kind}_due_at`]: null,
+        ...(notice.kind === 'day1' ? { day1followup_due_at: new Date(Math.max(
+          Date.parse(claimed.day1followup_due_at || '') || 0, Date.now() + 4 * 60 * 60000,
+        )).toISOString() } : {}),
       }).eq('id', claimed.id).eq('claim_token', token)
       if (error) throw new Error('Não foi possível confirmar o envio')
       totals.sent++

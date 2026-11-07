@@ -50,3 +50,16 @@ test('logging out does not turn a completed device into an incomplete registrati
   assert.equal(api.row().user_id, 'account')
   assert.equal(api.row().abandonment_due_at, null)
 })
+
+test('account sync creates day-one reminders and preserves their sent state', async () => {
+  const api = route(null, true)
+  const start = Date.now()
+  await api.post('sync')
+  assert.ok(Date.parse(api.row().day1_due_at) >= start + 86400000)
+  assert.ok(Date.parse(api.row().day1followup_due_at) >= start + 100800000)
+  const due = api.row().day1_due_at
+  api.row().day1_sent_at = new Date().toISOString()
+  await api.post('sync')
+  assert.equal(api.row().day1_due_at, due)
+  assert.ok(api.row().day1_sent_at)
+})

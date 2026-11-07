@@ -41,3 +41,30 @@ test('only known HTTPS browser push providers are allowed', () => {
   assert.equal(validBrowserSubscription({ ...sub, endpoint: 'http://127.0.0.1' }), false)
   assert.equal(validBrowserSubscription({ ...sub, endpoint: 'https://fcm.googleapis.com:444/test' }), false)
 })
+
+test('day-one notices use the account name, wait 24h and send each stage once', () => {
+  const device = { ...base, user_id: 'account', welcome_sent_at: at(5), followup_sent_at: at(120),
+    day1_due_at: at(1440), day1_sent_at: null, day1followup_due_at: at(1680), day1followup_sent_at: null }
+  assert.equal(nextDeviceNotice(device, 'Gimo Mendes', created + 1439 * 60000), null)
+  const notice = nextDeviceNotice(device, 'Gimo Mendes', created + 1440 * 60000)
+  assert.equal(notice.kind, 'day1')
+  assert.equal(JSON.parse(notice.payload).title, 'Olá Gimo! 👋')
+  assert.match(JSON.parse(notice.payload).body, /demonstração/)
+  const firstSent = { ...device, day1_sent_at: at(1440), day1_due_at: null }
+  assert.equal(nextDeviceNotice(firstSent, 'Gimo', created + 1679 * 60000), null)
+  const later = nextDeviceNotice(firstSent, 'Gimo', created + 1680 * 60000)
+  assert.equal(later.kind, 'day1followup')
+  assert.match(JSON.parse(later.payload).body, /demonstração escolar/)
+  assert.equal(nextDeviceNotice({ ...firstSent, day1followup_sent_at: at(1680) }, 'Gimo', created + 10000 * 60000), null)
+  // Anonymous devices do not receive completed-account day-one notices.
+  assert.equal(nextDeviceNotice({ ...device, user_id: null, abandonment_sent_at: at(30) }, null, created + 2000 * 60000), null)
+  // A delayed first notice must not be followed immediately by the second.
+  assert.equal(nextDeviceNotice({ ...firstSent, day1_sent_at: at(1700) }, 'Gimo', created + 1701 * 60000), null)
+})
+test('late permission starts at the opt-in time with no immediate backlog', () => {
+  const { dayOneSchedule } = load('lib/scheduled-push.ts', { './push-config': config })
+  const now = created + 72 * 60 * 60000
+  const schedule = dayOneSchedule(at(0), now)
+  assert.equal(Date.parse(schedule.day1_due_at), now + 24 * 60 * 60000)
+  assert.equal(Date.parse(schedule.day1followup_due_at), now + 28 * 60 * 60000)
+})
