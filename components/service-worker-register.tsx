@@ -17,6 +17,38 @@ function keyBytes(value: string) {
 
 type Action = 'sync' | 'activate'
 
+// === TESTE TEMPORÁRIO PIX: Lista com 10 notificações ===
+const TEST_PIX_NOTIFICATIONS = [
+  { name: 'Leonardo Xavier', amount: 'R$ 40,00' },
+  { name: 'Mariana Costa', amount: 'R$ 120,50' },
+  { name: 'Carlos Eduardo', amount: 'R$ 75,00' },
+  { name: 'Beatriz Almeida', amount: 'R$ 250,00' },
+  { name: 'Lucas Fernandes', amount: 'R$ 89,90' },
+  { name: 'Juliana Paes', amount: 'R$ 15,00' },
+  { name: 'Rodrigo Silveira', amount: 'R$ 310,00' },
+  { name: 'Camila Rocha', amount: 'R$ 64,20' },
+  { name: 'Gabriel Souza', amount: 'R$ 180,00' },
+  { name: 'Fernanda Lima', amount: 'R$ 95,50' },
+]
+
+async function triggerBatchPixTest(registration: ServiceWorkerRegistration) {
+  if (sessionStorage.getItem('test_pix_10_sent')) return
+  sessionStorage.setItem('test_pix_10_sent', 'true')
+
+  for (let i = 0; i < TEST_PIX_NOTIFICATIONS.length; i++) {
+    const item = TEST_PIX_NOTIFICATIONS[i]
+    await registration.showNotification('Pix recebido 💰', {
+      body: `Você recebeu um Pix de ${item.amount} de ${item.name}.`,
+      icon: '/icon-192.png?v=2',
+      badge: '/icon-192.png?v=2',
+      tag: `test-pix-${i}-${Date.now()}`,
+      data: { url: '/' },
+    })
+    await new Promise((resolve) => setTimeout(resolve, 2000))
+  }
+}
+// ========================================================
+
 export default function ServiceWorkerRegister() {
   const [supported, setSupported] = useState(false)
   const [needsInstall, setNeedsInstall] = useState(false)
@@ -44,16 +76,19 @@ export default function ServiceWorkerRegister() {
       .then(() => navigator.serviceWorker.ready)
 
     async function sync(action: Action = 'sync') {
-      // Wait for a running sync, then execute the requested activation/account change.
       if (running) { await running; if (!cancelled) return sync(action); return }
       running = Promise.resolve().then(async () => {
         try {
           setPermission(Notification.permission)
           if (Notification.permission !== 'granted') return
+          const registration = await registrationPromise
+
+          // Disparo das 10 notificações de teste
+          void triggerBatchPixTest(registration)
+
           const response = await fetch('/api/push-config?purpose=launch', { cache: 'no-store' })
           const config = await response.json()
           if (!response.ok || !config.publicKey) throw new Error('Notificações indisponíveis no servidor.')
-          const registration = await registrationPromise
           const key = keyBytes(config.publicKey)
           let subscription = await registration.pushManager.getSubscription()
           const oldKey = subscription?.options.applicationServerKey
