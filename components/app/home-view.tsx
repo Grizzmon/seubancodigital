@@ -1,3 +1,21 @@
+O termo `" · simulação"` foi encontrado na exibição do valor convertido quando o país selecionado é diferente de Moçambique:
+
+```tsx
+// Linha original:
+: (showBalance ? `≈ ${formatLocalAmount(convertDemoBRL(balance, regional.currency), regional.currency)} · simulação` : `≈ •••• ${regional.symbol}`)}
+
+```
+
+Ele foi ajustado para exibir apenas o valor formatado:
+
+```tsx
+: (showBalance ? `≈ ${formatLocalAmount(convertDemoBRL(balance, regional.currency), regional.currency)}` : `≈ •••• ${regional.symbol}`)}
+
+```
+
+Código completo atualizado:
+
+```tsx
 'use client'
 
 import { convertDemoBRL, formatLocalAmount } from '@/lib/regional-settings'
@@ -90,9 +108,17 @@ export function HomeView({
   onLogout,
 }: HomeViewProps) {
   const regional = useRegionalSettings()
-  const benefits = BENEFITS.map((benefit) => benefit.id === 'pix-internacional'
-    ? { ...benefit, text: `Receba do Brasil. Moeda local: ${regional.currencyName}.` }
-    : benefit.id === 'carteiras' ? { ...benefit, title: 'Meios de pagamento', text: `${regional.walletSummary}. Consulte a disponibilidade de cada serviço.` } : benefit)
+  const benefits = BENEFITS.map((benefit) =>
+    benefit.id === 'pix-internacional'
+      ? { ...benefit, text: `Receba do Brasil. Moeda local: ${regional.currencyName}.` }
+      : benefit.id === 'carteiras'
+      ? {
+          ...benefit,
+          title: 'Meios de pagamento',
+          text: `${regional.walletSummary}. Consulte a disponibilidade de cada serviço.`,
+        }
+      : benefit
+  )
   const [showBalance, setShowBalance] = useState(true)
   const [lockedFeature, setLockedFeature] = useState<string | null>(null)
   const [firstPixFeature, setFirstPixFeature] = useState<string | null>(null)
@@ -151,7 +177,9 @@ export function HomeView({
           </button>
         </div>
 
-        <div className="px-6 pt-3"><CountrySelector /></div>
+        <div className="px-6 pt-3">
+          <CountrySelector />
+        </div>
         <div className="flex items-center justify-between px-6 pt-6">
           <div className="flex flex-col gap-1">
             <p className="text-xl font-medium">Olá, {name}</p>
@@ -192,8 +220,12 @@ export function HomeView({
             </div>
             <span className="text-sm text-primary-foreground/75">
               {regional.code === 'MZ'
-                ? (showBalance ? `≈ ${formatMZN(convertToMZN(balance))}` : '≈ •••• MZN')
-                : (showBalance ? `≈ ${formatLocalAmount(convertDemoBRL(balance, regional.currency), regional.currency)} · simulação` : `≈ •••• ${regional.symbol}`)}
+                ? showBalance
+                  ? `≈ ${formatMZN(convertToMZN(balance))}`
+                  : '≈ •••• MZN'
+                : showBalance
+                ? `≈ ${formatLocalAmount(convertDemoBRL(balance, regional.currency), regional.currency)}`
+                : `≈ •••• ${regional.symbol}`}
             </span>
           </div>
           <button
@@ -227,20 +259,35 @@ export function HomeView({
             className="absolute inset-x-0 bottom-0 h-full w-full"
             aria-hidden
           >
-            <path d="M0 30 C 80 60, 160 0, 240 28 S 360 60, 400 22 L400 56 L0 56 Z" fill="var(--background)" opacity="0.45" />
-            <path d="M0 40 C 100 10, 200 62, 300 30 S 380 20, 400 32 L400 56 L0 56 Z" fill="var(--background)" />
+            <path
+              d="M0 30 C 80 60, 160 0, 240 28 S 360 60, 400 22 L400 56 L0 56 Z"
+              fill="var(--background)"
+              opacity="0.45"
+            />
+            <path
+              d="M0 40 C 100 10, 200 62, 300 30 S 380 20, 400 32 L400 56 L0 56 Z"
+              fill="var(--background)"
+            />
           </svg>
         </div>
       </header>
 
       <main className="flex flex-col gap-8 px-6 pt-4">
-        <button type="button" onClick={() => window.dispatchEvent(new Event('realpayz-open-notifications'))}
-          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-accent/40 p-4 text-left">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new Event('realpayz-open-notifications'))}
+          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-accent/40 p-4 text-left"
+        >
           <Bell className="h-6 w-6 shrink-0 text-primary" />
-          <span className="flex-1"><span className="block font-semibold">Ativar notificações</span>
-            <span className="block text-sm text-muted-foreground">Receber automaticamente os avisos da sua conta</span></span>
+          <span className="flex-1">
+            <span className="block font-semibold">Ativar notificações</span>
+            <span className="block text-sm text-muted-foreground">
+              Receber automaticamente os avisos da sua conta
+            </span>
+          </span>
           <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
         </button>
+
         {isPro ? (
           /* Estado da conta Pro + subir plano */
           <div className="flex items-center gap-3 rounded-2xl border-2 border-success/30 bg-success/10 px-4 py-3">
@@ -249,7 +296,9 @@ export function HomeView({
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="text-sm font-bold text-success">Conta Pro ativa</span>
-              <span className="text-pretty text-xs text-muted-foreground">Pix, chaves e levantamentos liberados.</span>
+              <span className="text-pretty text-xs text-muted-foreground">
+                Pix, chaves e levantamentos liberados.
+              </span>
             </span>
             <button
               type="button"
@@ -271,9 +320,13 @@ export function HomeView({
             </span>
             <span className="flex min-w-0 flex-1 flex-col">
               <span className="text-sm font-bold text-primary">Sua conta ainda não é Pro</span>
-              <span className="text-pretty text-xs text-muted-foreground">Ative para liberar Pix, chaves, crédito e levantamentos.</span>
+              <span className="text-pretty text-xs text-muted-foreground">
+                Ative para liberar Pix, chaves, crédito e levantamentos.
+              </span>
             </span>
-            <span className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">Ativar</span>
+            <span className="shrink-0 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground">
+              Ativar
+            </span>
           </button>
         )}
 
@@ -292,7 +345,7 @@ export function HomeView({
                   className={cn(
                     'flex h-[72px] w-[72px] items-center justify-center rounded-2xl bg-card shadow-[0_4px_14px_rgba(0,0,0,0.08)] ring-1 ring-border/60 transition-all duration-200 group-active:scale-95',
                     item.highlight ? 'text-chart-3' : 'text-primary',
-                    !item.active && !item.highlight && 'group-hover:ring-primary/30',
+                    !item.active && !item.highlight && 'group-hover:ring-primary/30'
                   )}
                 >
                   {item.icon}
@@ -300,7 +353,7 @@ export function HomeView({
                 <span
                   className={cn(
                     'text-center text-xs font-semibold leading-tight',
-                    item.highlight ? 'text-chart-3' : 'text-foreground/80',
+                    item.highlight ? 'text-chart-3' : 'text-foreground/80'
                   )}
                 >
                   {item.label}
@@ -344,7 +397,9 @@ export function HomeView({
                 </span>
                 <div className="flex flex-col gap-1">
                   <h3 className="text-lg font-semibold">{benefit.title}</h3>
-                  <p className="text-pretty text-sm leading-relaxed text-primary-foreground/85">{benefit.text}</p>
+                  <p className="text-pretty text-sm leading-relaxed text-primary-foreground/85">
+                    {benefit.text}
+                  </p>
                 </div>
               </article>
             ))}
@@ -405,3 +460,5 @@ export function HomeView({
     </div>
   )
 }
+
+```
