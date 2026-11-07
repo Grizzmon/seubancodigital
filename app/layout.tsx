@@ -1,10 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
-import { SITE_UNDER_CONSTRUCTION } from '@/lib/site-status'
-import { MaintenanceScreen } from '@/components/maintenance-screen'
+import { SITE_UNDER_CONSTRUCTION } from "@/lib/site-status";
+import { MaintenanceScreen } from "@/components/maintenance-screen";
 import { InstallPrompt } from "@/components/install-prompt";
-import { RegionalProvider } from '@/components/regional-provider'
+import { RegionalProvider } from "@/components/regional-provider";
 import ServiceWorkerRegister from "@/components/service-worker-register";
 import "./globals.css";
 
@@ -94,12 +94,15 @@ export default function RootLayout({
       </head>
 
       <body className={`${inter.variable} font-sans antialiased`}>
-        {SITE_UNDER_CONSTRUCTION ? <MaintenanceScreen /> : <>
-          <ServiceWorkerRegister />
-          <RegionalProvider>{children}</RegionalProvider>
-        </>}
+        {SITE_UNDER_CONSTRUCTION ? (
+          <MaintenanceScreen />
+        ) : (
+          <>
+            <ServiceWorkerRegister />
+            <RegionalProvider>{children}</RegionalProvider>
+          </>
+        )}
         <InstallPrompt />
-        <p className="pointer-events-none fixed bottom-1 right-2 z-50 text-[9px] text-slate-500/80">Projeto escolar · banco simulado</p>
         <Analytics />
       </body>
     </html>
