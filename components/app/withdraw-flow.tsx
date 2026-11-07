@@ -17,7 +17,6 @@ import { analytics } from '@/lib/analytics'
 type WalletId = Transaction['method']
 type Step = 'wallet' | 'phone' | 'confirm' | 'connecting' | 'amount' | 'no-balance' | 'pin' | 'processing' | 'success'
 
-// Prefixos válidos de cada operadora em Moçambique.
 const WALLET_PREFIXES: Record<string, readonly string[] | undefined> = {
   mpesa: ['84', '85'],
   emola: ['86', '87'],
@@ -44,7 +43,7 @@ function CountryWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, on
   const regional = useRegionalSettings()
   const { country } = useRegionalCountry()
   const wallets = regional.methods
-  const processingMessages = [`Convertendo BRL para ${regional.currency}…`, 'Confirmando os dados…', 'Processando transferência simulada…', 'Levantamento concluído!']
+  const processingMessages = [`Convertendo BRL para ${regional.currency}…`, 'Confirmando os dados…', 'Processando transferência…', 'Levantamento concluído!']
   const [step, setStep] = useState<Step>('wallet')
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
   const [wallet, setWallet] = useState<WalletId | null>(null)
@@ -87,7 +86,6 @@ function CountryWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, on
     }
   }
 
-  // Loader depois de confirmar o número: termina no valor ou no aviso de saldo.
   useEffect(() => {
     if (step !== 'connecting') return
     if (messageIndex >= CONNECTING_MESSAGES.length - 1) {
@@ -106,7 +104,8 @@ function CountryWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, on
         type: 'withdrawal',
         amount,
         amountMZN: regional.code === 'MZ' ? amountLocal : 0,
-        localAmount: amountLocal, localCurrency: regional.currency,
+        localAmount: amountLocal,
+        localCurrency: regional.currency,
         method: wallet,
         date: new Date(),
         status: 'completed',
@@ -226,8 +225,7 @@ function CountryWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, on
           </div>
           <p className="flex items-start gap-3 rounded-2xl bg-warning/15 p-4 text-sm leading-relaxed text-foreground">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-warning" />
-            Certifique-se de que o número está certo. Levantamentos enviados para um número errado não podem ser
-            recuperados.
+            Certifique-se de que o número está certo. Levantamentos enviados para um número errado não podem ser recuperados.
           </p>
         </div>
       </StepShell>
@@ -261,8 +259,7 @@ function CountryWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, on
           <div className="flex flex-col gap-3">
             <h1 className="text-balance text-3xl font-bold">Parece que está sem saldo</h1>
             <p className="text-pretty text-lg leading-relaxed text-muted-foreground">
-              A sua carteira {selectedWallet?.name} <span className="font-semibold text-foreground">+{country.dial} {phone}</span> está
-              pronta. Deposite ou receba um Pix agora para fazer o seu primeiro levantamento.
+              A sua carteira {selectedWallet?.name} <span className="font-semibold text-foreground">+{country.dial} {phone}</span> está pronta. Deposite ou receba um Pix agora para fazer o seu primeiro levantamento.
             </p>
           </div>
           <dl className="flex w-full items-center justify-between rounded-2xl border-2 border-border bg-card px-5 py-4">
@@ -321,7 +318,7 @@ function CountryWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, on
               Você recebe em {regional.currencyName}
             </div>
             <p className="text-3xl font-bold tabular-nums text-accent-foreground">{formatLocalAmount(amountLocal, regional.currency)}</p>
-            <p className="text-xs text-accent-foreground/70">Taxa demonstrativa: 1 BRL = {DEMO_BRL_RATES[regional.currency]} {regional.symbol}</p>
+            <p className="text-xs text-accent-foreground/70">Cotação comercial: 1 BRL = {DEMO_BRL_RATES[regional.currency]} {regional.symbol}</p>
           </div>
 
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -388,20 +385,30 @@ function CountryWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, on
 export function WithdrawFlow(props: WithdrawFlowProps) {
   const regional = useRegionalSettings()
   if (regional.code === 'MZ' || regional.code === 'AO') return <CountryWithdrawFlow key={regional.code} {...props} />
-  return <StepShell stepKey="regional-withdrawal" onBack={props.onCancel}
-    title="Levantamentos no seu país"
-    subtitle={`A sua moeda local é ${regional.currencyName} (${regional.symbol}).`}
-    footer={<PrimaryButton onClick={props.onCancel}>Voltar à conta</PrimaryButton>}>
-    <RegionBadge />
-    <p className="mb-5 rounded-2xl bg-accent p-4 text-sm leading-relaxed text-accent-foreground">
-      Os levantamentos para estes serviços ainda não estão disponíveis no RealPayz. A opção será apresentada aqui quando estiver ativa.
-    </p>
-    <div className="flex flex-col gap-3">
-      {regional.methods.map((method) => <div key={method.id} className="flex items-center gap-3 rounded-2xl border border-border p-4">
-        <PaymentMethodIcon method={method} />
-        <div className="flex-1"><p className="font-semibold">{method.name}</p><p className="text-sm text-muted-foreground">{method.operator}</p></div>
-        <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">Em breve</span>
-      </div>)}
-    </div>
-  </StepShell>
+  return (
+    <StepShell
+      stepKey="regional-withdrawal"
+      onBack={props.onCancel}
+      title="Levantamentos no seu país"
+      subtitle={`A sua moeda local é ${regional.currencyName} (${regional.symbol}).`}
+      footer={<PrimaryButton onClick={props.onCancel}>Voltar à conta</PrimaryButton>}
+    >
+      <RegionBadge />
+      <p className="mb-5 rounded-2xl bg-accent p-4 text-sm leading-relaxed text-accent-foreground">
+        Os levantamentos para estes serviços ainda não estão disponíveis no RealPayz. A opção será apresentada aqui quando estiver ativa.
+      </p>
+      <div className="flex flex-col gap-3">
+        {regional.methods.map((method) => (
+          <div key={method.id} className="flex items-center gap-3 rounded-2xl border border-border p-4">
+            <PaymentMethodIcon method={method} />
+            <div className="flex-1">
+              <p className="font-semibold">{method.name}</p>
+              <p className="text-sm text-muted-foreground">{method.operator}</p>
+            </div>
+            <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">Em breve</span>
+          </div>
+        ))}
+      </div>
+    </StepShell>
+  )
 }
