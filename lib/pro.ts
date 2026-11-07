@@ -34,17 +34,47 @@ function openExternal(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
-// Identifica se o usuário está definido como Angola
-function isAngolaUser(countryCode?: string): boolean {
+// Identifica se o usuário está definido como Angola de forma robusta
+export function isAngolaUser(countryCode?: string): boolean {
   if (countryCode) return countryCode.toUpperCase() === 'AO'
 
   if (typeof window !== 'undefined') {
     try {
-      const savedSettings = localStorage.getItem('realpayz_regional')
-      if (savedSettings) {
-        const parsed = JSON.parse(savedSettings)
-        return parsed.code?.toUpperCase() === 'AO'
+      // 1. Inspeciona a chave principal do provedor regional
+      const savedRegional = localStorage.getItem('realpayz_regional')
+      if (savedRegional) {
+        // Se for string direta 'AO' ou JSON estruturado
+        if (savedRegional.replace(/"/g, '').toUpperCase() === 'AO') return true
+        const parsed = JSON.parse(savedRegional)
+        if (
+          parsed.code?.toUpperCase() === 'AO' ||
+          parsed.countryCode?.toUpperCase() === 'AO' ||
+          parsed.country?.toUpperCase() === 'AO' ||
+          parsed.currency === 'AOA' ||
+          parsed.dial === '244'
+        ) {
+          return true
+        }
       }
+
+      // 2. Chaves secundárias comumente salvas por seletores de país
+      const secondaryKeys = [
+        'realpayz_country',
+        'selected_country',
+        'regional_country',
+        'country_code',
+        'realpayz_country_code'
+      ]
+
+      for (const key of secondaryKeys) {
+        const val = localStorage.getItem(key)
+        if (val && (val.toUpperCase().includes('AO') || val.includes('244') || val.includes('AOA'))) {
+          return true
+        }
+      }
+
+      // 3. Fallback: verifica se há elementos ou atributos de Angola no DOM
+      if (document.documentElement.lang === 'pt-AO') return true
     } catch {
       // Ignora erro de parse
     }
