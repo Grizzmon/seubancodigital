@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pt"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Prévia de notificações</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#eff5f2;color:#132d22;font:16px system-ui,sans-serif}main{max-width:520px;margin:12vh auto;padding:28px}h1{font-size:28px}p{line-height:1.6;color:#52675d}.badge{display:inline-block;background:#fff1c2;color:#725300;border-radius:20px;padding:6px 12px;font-size:12px;font-weight:700}button{font:inherit;cursor:pointer;border:0;border-radius:14px;padding:15px 20px;margin:8px 6px 8px 0;background:#087b50;color:white}button:disabled{opacity:.5;cursor:default}button.secondary{background:#dce8e1;color:#193e2c}button:focus-visible{outline:3px solid #d69a00;outline-offset:4px}#notice{position:fixed;top:max(20px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:min(430px,calc(100% - 28px));background:white;border:1px solid #d8e4dc;border-radius:22px;padding:18px;box-shadow:0 15px 55px #163f2633}#notice[hidden]{display:none}.top{display:flex;align-items:center;gap:10px;margin-bottom:12px}.icon{background:#087b50;color:white;border-radius:12px;padding:9px;font-size:20px}.app{flex:1;font-size:13px;font-weight:600}#notice h2{font-size:18px;margin:10px 0 6px}#body{margin:0;font-size:15px;color:#243e30}#progress{font-variant-numeric:tabular-nums}small{color:#607267}
+</style></head>
+<body><main><span class="badge">Modo de teste</span><h1>Prévia de notificações Pix</h1><p>Veja 10 exemplos fictícios, um a cada 5 segundos, apenas nesta página. Nenhum valor é movimentado.</p><button id="start" type="button">Testar 10 notificações</button><button id="stop" class="secondary" type="button">Parar e limpar</button><p id="progress" role="status">Pronto para testar.</p><small>Fechar esta página encerra o teste.</small></main>
+<section id="notice" aria-live="polite" aria-atomic="true" hidden><div class="top"><span class="icon" aria-hidden="true">↙</span><span class="app">Prévia Pix</span><span class="badge">Modo de teste</span></div><h2>Pix recebido</h2><p id="body"></p></section>
+<script>
+(function(){
+const examples=[
+["Marcos Paulo André",50],["Ana Clara Santos",125],["João Pedro Oliveira",80],
+["Beatriz Costa",200],["Lucas Gabriel Silva",35],["Mariana Ribeiro",150],
+["Rafael Almeida",320],["Juliana Ferreira",75],["Pedro Henrique Lima",500],["Camila Souza",100]
+];
+const start=document.getElementById("start"),stop=document.getElementById("stop"),notice=document.getElementById("notice"),body=document.getElementById("body"),progress=document.getElementById("progress");
+let timer=null,index=0;
+const currency=new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"});
+function cancel(){if(timer!==null)clearTimeout(timer);timer=null;notice.hidden=true;start.disabled=false;}
+function next(){
+if(index===examples.length){cancel();progress.textContent="Teste concluído: 10 de 10 exemplos exibidos.";return;}
+const item=examples[index++];
+body.textContent="Você recebeu um Pix de "+currency.format(item[1])+" de "+item[0]+".";
+notice.hidden=false;progress.textContent="Exemplo "+index+" de 10 — valores e nomes fictícios.";
+timer=setTimeout(next,5000);
+}
+start.addEventListener("click",function(){cancel();index=0;start.disabled=true;next();});
+stop.addEventListener("click",function(){cancel();index=0;progress.textContent="Teste parado e notificações limpas.";});
+window.addEventListener("pagehide",cancel);
+})();
+</script></body></html>
