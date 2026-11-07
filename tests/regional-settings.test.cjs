@@ -21,7 +21,7 @@ test('Angola uses current 21 provinces, kwanza and only local payment preference
   assert.equal(ao.regions.length, 21)
   for (const region of ['Luanda', 'Cuando', 'Cubango', 'Icolo e Bengo', 'Moxico Leste']) assert.ok(ao.regions.includes(region))
   assert.ok(!ao.regions.includes('Maputo Cidade'))
-  assert.deepEqual(Array.from(ao.methods, (method) => method.id), ['unitel-money', 'afrimoney'])
+  assert.deepEqual(Array.from(ao.methods, (method) => method.id), ['multicaixa-express', 'unitel-money', 'afrimoney'])
 })
 test('Cabo Verde asks for an inhabited island and uses escudos', () => {
   const cv = getRegionalSettings('CV')

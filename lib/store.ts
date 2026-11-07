@@ -27,7 +27,9 @@ export interface Transaction {
   type: 'withdrawal' | 'income'
   amount: number
   amountMZN: number
-  method: 'mpesa' | 'emola' | 'mkesh' | 'transfer'
+  method: 'mpesa' | 'emola' | 'mkesh' | 'transfer' | 'multicaixa-express' | 'unitel-money' | 'afrimoney' | 'televinti4' | 'bank-transfer-cv'
+  localAmount?: number
+  localCurrency?: 'MZN' | 'AOA' | 'CVE'
   date: Date
   status: 'completed' | 'pending'
   senderName?: string

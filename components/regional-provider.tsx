@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { phoneCountry, type PhoneCountry } from '@/lib/phone-country'
 import { countryFromPhone, getRegionalSettings, supportedCountry } from '@/lib/regional-settings'
-import { loadStoredUser } from '@/lib/stored-user'
+import { loadRememberedUser } from '@/lib/stored-user'
 
 const COUNTRY_KEY = 'realpayz_country'
 const RegionContext = createContext({
@@ -15,21 +15,45 @@ const RegionContext = createContext({
 export function RegionalProvider({ children }: { children: ReactNode }) {
   const [country, setCountry] = useState<PhoneCountry>(phoneCountry('MZ'))
   const edited = useRef(false)
+  const [ready, setReady] = useState(false)
   useEffect(() => {
-    // Once a visitor has chosen a country or has an account, travel/VPN must not
-    // silently change their saved income currency or payment preferences.
-    const phone = localStorage.getItem('realpayz_session_phone')
-    const user = phone ? loadStoredUser(phone) : null
-    const saved = user?.countryCode ?? (user ? countryFromPhone(user.phone) : localStorage.getItem(COUNTRY_KEY))
-    if (supportedCountry(saved)) { setCountry(phoneCountry(saved)); return }
+    let cancelled = false
     const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), 4000)
-    fetch('/api/phone-country', { cache: 'no-store', signal: controller.signal })
-      .then((response) => response.ok ? response.json() : null)
-      .then((data) => { if (!edited.current && supportedCountry(data?.country)) setCountry(phoneCountry(data.country)) })
-      .catch(() => {})
-      .finally(() => clearTimeout(timer))
-    return () => { controller.abort(); clearTimeout(timer) }
+    let timer: ReturnType<typeof setTimeout> | undefined
+    function restoreCountry() {
+      const manual = localStorage.getItem(COUNTRY_KEY)
+      if (supportedCountry(manual)) {
+        edited.current = true
+        setCountry(phoneCountry(manual))
+        return true
+      }
+      const user = loadRememberedUser()
+      const accountCountry = user?.countryCode || (user ? countryFromPhone(user.phone) : null)
+      if (!edited.current && supportedCountry(accountCountry)) {
+        setCountry(phoneCountry(accountCountry))
+        return true
+      }
+      return false
+    }
+    const onAccount = () => {
+      if (restoreCountry()) { controller.abort(); clearTimeout(timer); setReady(true) }
+    }
+    window.addEventListener('bankpix-user-ready', onAccount)
+    if (restoreCountry()) setReady(true)
+    else {
+      timer = setTimeout(() => controller.abort(), 4000)
+      fetch('/api/phone-country', { cache: 'no-store', signal: controller.signal })
+        .then((response) => response.ok ? response.json() : null)
+        .then((data) => { if (!cancelled && !edited.current && supportedCountry(data?.country) && !restoreCountry()) setCountry(phoneCountry(data.country)) })
+        .catch(() => {})
+        .finally(() => { clearTimeout(timer); if (!cancelled) setReady(true) })
+    }
+    return () => {
+      cancelled = true
+      controller.abort()
+      clearTimeout(timer)
+      window.removeEventListener('bankpix-user-ready', onAccount)
+    }
   }, [])
   const changeCountry = (code: string) => {
     if (!supportedCountry(code)) return
@@ -37,6 +61,7 @@ export function RegionalProvider({ children }: { children: ReactNode }) {
     setCountry(phoneCountry(code))
     localStorage.setItem(COUNTRY_KEY, code)
   }
+  if (!ready) return <div className="flex min-h-dvh items-center justify-center bg-background text-muted-foreground" role="status">A preparar o RealPayz…</div>
   return <RegionContext.Provider value={{ country, changeCountry, markEdited: () => { edited.current = true } }}>{children}</RegionContext.Provider>
 }
 

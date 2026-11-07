@@ -38,10 +38,11 @@ export const REGIONAL_SETTINGS: Record<CountryCode, RegionalSettings> = {
       'Cubango', 'Cunene', 'Huambo', 'Huíla', 'Icolo e Bengo', 'Luanda', 'Lunda Norte',
       'Lunda Sul', 'Malanje', 'Moxico', 'Moxico Leste', 'Namibe', 'Uíge', 'Zaire'],
     methods: [
-      { id: 'unitel-money', name: 'UNITEL Money', operator: 'UNITEL', monogram: 'U', color: '#ed6b22' },
+      { id: 'multicaixa-express', name: 'MULTICAIXA Express', operator: 'Rede MULTICAIXA', logo: '/images/wallets/multicaixa-express.png', color: '#ed8000' },
+      { id: 'unitel-money', name: 'UNITEL Money', operator: 'UNITEL', logo: '/images/wallets/unitel-money.svg', monogram: 'U', color: '#ed6b22' },
       { id: 'afrimoney', name: 'Afrimoney', operator: 'Africell', monogram: 'a', color: '#773d91' },
     ],
-    walletSummary: 'UNITEL Money e Afrimoney',
+    walletSummary: 'MULTICAIXA Express, UNITEL Money e Afrimoney',
   },
   CV: {
     code: 'CV', currency: 'CVE', symbol: 'CVE', currencyName: 'escudos cabo-verdianos', locale: 'pt-CV',
@@ -69,4 +70,24 @@ export function countryFromPhone(phone: string): CountryCode {
 
 export function supportedCountry(value: unknown): value is CountryCode {
   return PHONE_COUNTRIES.some((country) => country.code === value)
+}
+
+// Illustrative rates for the school simulation; not market quotations.
+export const DEMO_BRL_RATES = { MZN: 14, AOA: 160, CVE: 20 } as const
+export function convertDemoBRL(value: number, currency: RegionalSettings['currency']) {
+  return value * DEMO_BRL_RATES[currency]
+}
+export function formatLocalAmount(value: number, currency: RegionalSettings['currency']) {
+  const settings = Object.values(REGIONAL_SETTINGS).find((item) => item.currency === currency)!
+  return `${new Intl.NumberFormat(settings.locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} ${settings.symbol}`
+}
+export function walletPhoneError(digits: string, walletId: string | null, country: CountryCode): string | null {
+  if (!walletId || digits.length < 2) return null
+  if (country === 'AO') return digits.startsWith('9') ? null : 'Use um número de Angola que começa com 9.'
+  if (country !== 'MZ') return null
+  const prefixes: Record<string, string[]> = { mpesa: ['84', '85'], emola: ['86', '87'], mkesh: ['82', '83'] }
+  const allowed = prefixes[walletId]
+  if (!allowed || allowed.includes(digits.slice(0, 2))) return null
+  const method = REGIONAL_SETTINGS.MZ.methods.find((item) => item.id === walletId)
+  return `Números ${method?.name} começam com ${allowed.join(' ou ')}.`
 }

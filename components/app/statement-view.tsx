@@ -2,6 +2,7 @@
 
 import { useRegionalSettings } from '@/components/regional-provider'
 import { ChevronLeft, ArrowDownLeft, ArrowUpRight, Receipt } from 'lucide-react'
+import { formatLocalAmount } from '@/lib/regional-settings'
 import { formatBRL, formatMZN, type Transaction } from '@/lib/store'
 
 const METHOD_LABEL: Record<Transaction['method'], string> = {
@@ -9,6 +10,11 @@ const METHOD_LABEL: Record<Transaction['method'], string> = {
   emola: 'e-Mola',
   mkesh: 'mKesh',
   transfer: 'Pix recebido',
+  'multicaixa-express': 'MULTICAIXA Express',
+  'unitel-money': 'UNITEL Money',
+  afrimoney: 'Afrimoney',
+  televinti4: 'televinti4',
+  'bank-transfer-cv': 'Transferência bancária',
 }
 
 export function StatementView({ balance, transactions, onBack }: { balance: number; transactions: Transaction[]; onBack: () => void }) {
@@ -58,7 +64,7 @@ export function StatementView({ balance, transactions, onBack }: { balance: numb
                     <span className={`font-semibold tabular-nums ${incoming ? 'text-success' : 'text-foreground'}`}>
                       {incoming ? '+' : '-'}{formatBRL(t.amount)}
                     </span>
-                    {regional.code === 'MZ' && <span className="text-xs text-muted-foreground">{formatMZN(t.amountMZN)}</span>}
+                    {(t.localCurrency || regional.code === 'MZ') && <span className="text-xs text-muted-foreground">{t.localCurrency ? formatLocalAmount(t.localAmount ?? 0, t.localCurrency) : formatMZN(t.amountMZN)}</span>}
                   </span>
                 </li>
               )

@@ -1,6 +1,7 @@
 'use client'
 
-import { useRegionalSettings } from '@/components/regional-provider'
+import { convertDemoBRL, formatLocalAmount } from '@/lib/regional-settings'
+import { CountrySelector, useRegionalSettings } from '@/components/regional-provider'
 import { useState } from 'react'
 import Image from 'next/image'
 import {
@@ -150,6 +151,7 @@ export function HomeView({
           </button>
         </div>
 
+        <div className="px-6 pt-3"><CountrySelector /></div>
         <div className="flex items-center justify-between px-6 pt-6">
           <div className="flex flex-col gap-1">
             <p className="text-xl font-medium">Olá, {name}</p>
@@ -191,7 +193,7 @@ export function HomeView({
             <span className="text-sm text-primary-foreground/75">
               {regional.code === 'MZ'
                 ? (showBalance ? `≈ ${formatMZN(convertToMZN(balance))}` : '≈ •••• MZN')
-                : `Moeda local: ${regional.symbol} · ${regional.currency}`}
+                : (showBalance ? `≈ ${formatLocalAmount(convertDemoBRL(balance, regional.currency), regional.currency)} · simulação` : `≈ •••• ${regional.symbol}`)}
             </span>
           </div>
           <button

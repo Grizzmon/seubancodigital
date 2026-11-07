@@ -1,11 +1,12 @@
 'use client'
 
-import { RegionBadge, useRegionalSettings } from '@/components/regional-provider'
+import { RegionBadge, useRegionalSettings, useRegionalCountry } from '@/components/regional-provider'
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
+import { PaymentMethodIcon } from '@/components/payment-method-icon'
+import { convertDemoBRL, formatLocalAmount, DEMO_BRL_RATES, walletPhoneError } from '@/lib/regional-settings'
 import { Check, ArrowDown, AlertTriangle, Wallet, Smartphone } from 'lucide-react'
-import { formatBRL, formatMZN, convertToMZN, BRL_TO_MZN, type Transaction } from '@/lib/store'
-import { MOBILE_WALLETS, formatMozPhone, formatCurrencyInput, currencyInputToNumber } from '@/lib/onboarding-format'
+import { formatBRL, type Transaction } from '@/lib/store'
+import { formatMozPhone, formatCurrencyInput, currencyInputToNumber } from '@/lib/onboarding-format'
 import { StepShell, PrimaryButton, GhostButton, OptionRow, PinField } from '@/components/onboarding/ui'
 import { DotsLoader } from '@/components/ui/dots-loader'
 import { PixSymbol } from './pix-symbol'
@@ -13,11 +14,11 @@ import { cn } from '@/lib/utils'
 import { TIMING } from '@/lib/timing'
 import { analytics } from '@/lib/analytics'
 
-type WalletId = (typeof MOBILE_WALLETS)[number]['id']
+type WalletId = Transaction['method']
 type Step = 'wallet' | 'phone' | 'confirm' | 'connecting' | 'amount' | 'no-balance' | 'pin' | 'processing' | 'success'
 
 // Prefixos válidos de cada operadora em Moçambique.
-const WALLET_PREFIXES: Record<WalletId, readonly string[]> = {
+const WALLET_PREFIXES: Record<string, readonly string[] | undefined> = {
   mpesa: ['84', '85'],
   emola: ['86', '87'],
   mkesh: ['82', '83'],
@@ -39,23 +40,11 @@ const CONNECTING_MESSAGES = [
   'Carteira pronta para receber.',
 ]
 
-const PROCESSING_MESSAGES = [
-  'Convertendo BRL para MZN...',
-  'Confirmando os dados...',
-  'Processando transferência...',
-  'Levantamento concluído!',
-]
-
-function phonePrefixError(digits: string, wallet: WalletId | null): string | null {
-  if (!wallet || digits.length < 2) return null
-  const prefix = digits.slice(0, 2)
-  const allowed = WALLET_PREFIXES[wallet]
-  if (allowed.includes(prefix)) return null
-  const name = MOBILE_WALLETS.find((w) => w.id === wallet)?.name
-  return `Números ${name} começam com ${allowed.join(' ou ')}.`
-}
-
-function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, onGoToPix, onCancel }: WithdrawFlowProps) {
+function CountryWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone, onGoToPix, onCancel }: WithdrawFlowProps) {
+  const regional = useRegionalSettings()
+  const { country } = useRegionalCountry()
+  const wallets = regional.methods
+  const processingMessages = [`Convertendo BRL para ${regional.currency}…`, 'Confirmando os dados…', 'Processando transferência simulada…', 'Levantamento concluído!']
   const [step, setStep] = useState<Step>('wallet')
   const [direction, setDirection] = useState<'forward' | 'backward'>('forward')
   const [wallet, setWallet] = useState<WalletId | null>(null)
@@ -66,13 +55,13 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
   const [messageIndex, setMessageIndex] = useState(0)
   const [result, setResult] = useState<Transaction | null>(null)
 
-  const selectedWallet = MOBILE_WALLETS.find((w) => w.id === wallet)
+  const selectedWallet = wallets.find((w) => w.id === wallet)
   const phoneDigits = phone.replace(/\D/g, '')
-  const prefixError = phonePrefixError(phoneDigits, wallet)
-  const phoneValid = phoneDigits.length === 9 && !prefixError
+  const prefixError = walletPhoneError(phoneDigits, wallet, regional.code)
+  const phoneValid = phoneDigits.length === country.length && !prefixError
 
   const amount = currencyInputToNumber(amountInput)
-  const amountMZN = convertToMZN(amount)
+  const amountLocal = convertDemoBRL(amount, regional.currency)
   const hasBalance = balance > 0
   const amountValid = amount > 0 && amount <= balance
 
@@ -111,12 +100,13 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
 
   useEffect(() => {
     if (step !== 'processing' || !wallet) return
-    if (messageIndex >= PROCESSING_MESSAGES.length - 1) {
+    if (messageIndex >= processingMessages.length - 1) {
       const transaction: Transaction = {
         id: crypto.randomUUID(),
         type: 'withdrawal',
         amount,
-        amountMZN,
+        amountMZN: regional.code === 'MZ' ? amountLocal : 0,
+        localAmount: amountLocal, localCurrency: regional.currency,
         method: wallet,
         date: new Date(),
         status: 'completed',
@@ -130,7 +120,7 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
     }
     const timer = setTimeout(() => setMessageIndex((i) => i + 1), TIMING.withdrawMessage)
     return () => clearTimeout(timer)
-  }, [step, messageIndex, wallet, amount, amountMZN, onWithdrawal])
+  }, [step, messageIndex, wallet, amount, amountLocal, regional.code, regional.currency, onWithdrawal])
 
   if (step === 'wallet') {
     return (
@@ -139,7 +129,7 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
         direction={direction}
         onBack={onCancel}
         title="Para qual carteira móvel?"
-        subtitle="Escolha onde quer receber o dinheiro em meticais."
+        subtitle={`Escolha onde quer receber em ${regional.currencyName}.`}
         footer={
           <PrimaryButton
             disabled={!wallet}
@@ -152,17 +142,18 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
           </PrimaryButton>
         }
       >
+        <RegionBadge />
         <div className="flex flex-col gap-3">
-          {MOBILE_WALLETS.map((w) => (
+          {wallets.map((w) => (
             <OptionRow
               key={w.id}
               selected={wallet === w.id}
               onSelect={() => {
-                setWallet(w.id)
+                setWallet(w.id as WalletId)
                 setPhone('')
               }}
-              badge={`${w.operator} · ${WALLET_PREFIXES[w.id].join('/')}`}
-              leading={<Image src={w.logo} alt="" width={44} height={44} className="h-11 w-11 rounded-xl object-cover" />}
+              badge={regional.code === 'MZ' ? `${w.operator} · ${WALLET_PREFIXES[w.id]?.join('/')}` : w.operator}
+              leading={<PaymentMethodIcon method={w} />}
             >
               {w.name}
             </OptionRow>
@@ -179,7 +170,7 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
         direction={direction}
         onBack={() => go('wallet', 'backward')}
         title={`Qual é o seu número ${selectedWallet?.name}?`}
-        subtitle={`Aceita números que começam com ${wallet ? WALLET_PREFIXES[wallet].join(' ou ') : ''}.`}
+        subtitle={regional.code === 'MZ' ? `Aceita números que começam com ${wallet ? WALLET_PREFIXES[wallet]?.join(' ou ') : ''}.` : `Use o número associado ao serviço em ${country.name} (+${country.dial}).`}
         footer={<PrimaryButton disabled={!phoneValid} onClick={() => go('confirm')}>Continuar</PrimaryButton>}
       >
         <form
@@ -190,15 +181,15 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
           }}
         >
           <div className="flex items-end gap-3 border-b-2 border-border py-3 transition-colors focus-within:border-primary">
-            <span className="pb-0.5 text-2xl font-semibold text-muted-foreground">+258</span>
+            <span className="pb-0.5 text-2xl font-semibold text-muted-foreground">{`+${country.dial}`}</span>
             <input
               autoFocus
               type="tel"
               inputMode="numeric"
               autoComplete="tel-national"
               value={phone}
-              onChange={(e) => setPhone(formatMozPhone(e.target.value))}
-              placeholder={`${wallet ? WALLET_PREFIXES[wallet][0] : '84'} 000 0000`}
+              onChange={(e) => setPhone(regional.code === 'MZ' ? formatMozPhone(e.target.value) : (e.target.value.replace(/\D/g, '').slice(0, country.length).match(/.{1,3}/g)?.join(' ') || ''))}
+              placeholder={regional.code === 'MZ' ? `${wallet ? WALLET_PREFIXES[wallet]?.[0] : '84'} 000 0000` : country.placeholder}
               className="w-full bg-transparent text-2xl font-semibold text-foreground outline-none placeholder:font-normal placeholder:text-muted-foreground/50"
             />
           </div>
@@ -226,11 +217,11 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
         <div className="flex flex-col gap-4">
           <div className="flex items-center gap-4 rounded-2xl border-2 border-border bg-card p-5">
             {selectedWallet ? (
-              <Image src={selectedWallet.logo} alt="" width={56} height={56} className="h-14 w-14 rounded-2xl object-cover" />
+              <PaymentMethodIcon method={selectedWallet} size={56} />
             ) : null}
             <div className="flex flex-col">
               <span className="text-sm text-muted-foreground">{selectedWallet?.name} · {selectedWallet?.operator}</span>
-              <span className="whitespace-nowrap text-xl font-bold tabular-nums tracking-wide">+258 {phone}</span>
+              <span className="whitespace-nowrap text-xl font-bold tabular-nums tracking-wide">+{country.dial} {phone}</span>
             </div>
           </div>
           <p className="flex items-start gap-3 rounded-2xl bg-warning/15 p-4 text-sm leading-relaxed text-foreground">
@@ -244,7 +235,7 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
   }
 
   if (step === 'connecting' || step === 'processing') {
-    const messages = step === 'connecting' ? CONNECTING_MESSAGES : PROCESSING_MESSAGES
+    const messages = step === 'connecting' ? CONNECTING_MESSAGES : processingMessages
     const progress = ((messageIndex + 1) / messages.length) * 100
     return (
       <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center gap-10 bg-background px-6 animate-fade-in">
@@ -270,7 +261,7 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
           <div className="flex flex-col gap-3">
             <h1 className="text-balance text-3xl font-bold">Parece que está sem saldo</h1>
             <p className="text-pretty text-lg leading-relaxed text-muted-foreground">
-              A sua carteira {selectedWallet?.name} <span className="font-semibold text-foreground">+258 {phone}</span> está
+              A sua carteira {selectedWallet?.name} <span className="font-semibold text-foreground">+{country.dial} {phone}</span> está
               pronta. Deposite ou receba um Pix agora para fazer o seu primeiro levantamento.
             </p>
           </div>
@@ -327,14 +318,14 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
           <div className={cn('flex flex-col gap-3 rounded-2xl bg-accent p-5 transition-opacity', amount > 0 ? 'opacity-100' : 'opacity-50')}>
             <div className="flex items-center gap-2 text-sm font-semibold text-accent-foreground">
               <ArrowDown className="h-4 w-4" />
-              Você recebe em meticais
+              Você recebe em {regional.currencyName}
             </div>
-            <p className="text-3xl font-bold tabular-nums text-accent-foreground">{formatMZN(amountMZN)}</p>
-            <p className="text-xs text-accent-foreground/70">Câmbio: 1 BRL = {BRL_TO_MZN},00 MZN</p>
+            <p className="text-3xl font-bold tabular-nums text-accent-foreground">{formatLocalAmount(amountLocal, regional.currency)}</p>
+            <p className="text-xs text-accent-foreground/70">Taxa demonstrativa: 1 BRL = {DEMO_BRL_RATES[regional.currency]} {regional.symbol}</p>
           </div>
 
           <p className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Smartphone className="h-4 w-4" /> {selectedWallet?.name} · +258 {phone}
+            <Smartphone className="h-4 w-4" /> {selectedWallet?.name} · +{country.dial} {phone}
           </p>
         </form>
       </StepShell>
@@ -348,7 +339,7 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
         direction={direction}
         onBack={() => go('amount', 'backward')}
         title="Digite sua senha de transação"
-        subtitle={`Autorize o levantamento de ${formatMZN(amountMZN)} para +258 ${phone}.`}
+        subtitle={`Autorize o levantamento de ${formatLocalAmount(amountLocal, regional.currency)} para +${country.dial} ${phone}.`}
       >
         <div className="flex flex-col gap-4">
           <PinField length={4} value={pin} onChange={handlePinChange} autoFocus label="Senha de transação" error={pinError} />
@@ -376,12 +367,12 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
               <dd className="font-semibold tabular-nums">{formatBRL(result.amount)}</dd>
             </div>
             <div className="flex items-center justify-between py-4">
-              <dt className="text-sm text-muted-foreground">Recebido em MZN</dt>
-              <dd className="text-xl font-bold tabular-nums text-primary">{formatMZN(result.amountMZN)}</dd>
+              <dt className="text-sm text-muted-foreground">Recebido em {regional.currency}</dt>
+              <dd className="text-xl font-bold tabular-nums text-primary">{formatLocalAmount(result.localAmount ?? result.amountMZN, result.localCurrency ?? 'MZN')}</dd>
             </div>
             <div className="flex items-center justify-between py-4">
               <dt className="text-sm text-muted-foreground">Carteira</dt>
-              <dd className="font-semibold">{selectedWallet?.name} · +258 {phone}</dd>
+              <dd className="font-semibold">{selectedWallet?.name} · +{country.dial} {phone}</dd>
             </div>
           </dl>
         ) : null}
@@ -396,7 +387,7 @@ function MozambiqueWithdrawFlow({ balance, transactionPin, onWithdrawal, onDone,
 
 export function WithdrawFlow(props: WithdrawFlowProps) {
   const regional = useRegionalSettings()
-  if (regional.code === 'MZ') return <MozambiqueWithdrawFlow {...props} />
+  if (regional.code === 'MZ' || regional.code === 'AO') return <CountryWithdrawFlow key={regional.code} {...props} />
   return <StepShell stepKey="regional-withdrawal" onBack={props.onCancel}
     title="Levantamentos no seu país"
     subtitle={`A sua moeda local é ${regional.currencyName} (${regional.symbol}).`}
@@ -407,7 +398,7 @@ export function WithdrawFlow(props: WithdrawFlowProps) {
     </p>
     <div className="flex flex-col gap-3">
       {regional.methods.map((method) => <div key={method.id} className="flex items-center gap-3 rounded-2xl border border-border p-4">
-        <span className="flex h-11 w-11 items-center justify-center rounded-xl font-bold text-white" style={{ backgroundColor: method.color }}>{method.monogram}</span>
+        <PaymentMethodIcon method={method} />
         <div className="flex-1"><p className="font-semibold">{method.name}</p><p className="text-sm text-muted-foreground">{method.operator}</p></div>
         <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">Em breve</span>
       </div>)}
