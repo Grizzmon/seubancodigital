@@ -34,67 +34,95 @@ function openExternal(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
-// Identifica se o usuário está definido como Angola de forma robusta
-export function isAngolaUser(countryCode?: string): boolean {
-  if (countryCode) return countryCode.toUpperCase() === 'AO'
+// Usa primeiro a escolha do seletor existente e o país do cadastro.
+// Não deduz o país a partir do fuso horário ou idioma.
+type ActivationCountry = 'AO' | 'MZ'
 
-  if (typeof window !== 'undefined') {
-    try {
-      // 1. Inspeciona a chave principal do provedor regional
-      const savedRegional = localStorage.getItem('realpayz_regional')
-      if (savedRegional) {
-        // Se for string direta 'AO' ou JSON estruturado
-        if (savedRegional.replace(/"/g, '').toUpperCase() === 'AO') return true
-        const parsed = JSON.parse(savedRegional)
-        if (
-          parsed.code?.toUpperCase() === 'AO' ||
-          parsed.countryCode?.toUpperCase() === 'AO' ||
-          parsed.country?.toUpperCase() === 'AO' ||
-          parsed.currency === 'AOA' ||
-          parsed.dial === '244'
-        ) {
-          return true
-        }
-      }
-
-      // 2. Chaves secundárias comumente salvas por seletores de país
-      const secondaryKeys = [
-        'realpayz_country',
-        'selected_country',
-        'regional_country',
-        'country_code',
-        'realpayz_country_code'
-      ]
-
-      for (const key of secondaryKeys) {
-        const val = localStorage.getItem(key)
-        if (val && (val.toUpperCase().includes('AO') || val.includes('244') || val.includes('AOA'))) {
-          return true
-        }
-      }
-
-      // 3. Fallback: verifica se há elementos ou atributos de Angola no DOM
-      if (document.documentElement.lang === 'pt-AO') return true
-    } catch {
-      // Ignora erro de parse
-    }
-  }
-
-  return false
+function validActivationCountry(value: unknown): ActivationCountry | null {
+  return value === 'AO' || value === 'MZ' ? value : null
 }
 
-export function openProActivation(countryCode?: string) {
-  const url = isAngolaUser(countryCode) ? ANGOLA_PRO_ACTIVATION_URL : PRO_ACTIVATION_URL
-  openExternal(url)
+function savedActivationCountry(): ActivationCountry | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const selected = validActivationCountry(localStorage.getItem('realpayz_country'))
+    if (selected) return selected
+
+    for (const key of ['realpayz_session_phone', 'realpayz_last_account_phone']) {
+      const phone = localStorage.getItem(key)
+      if (!phone) continue
+      const stored = localStorage.getItem('bankpix_user_' + phone.replace(/\\D/g, ''))
+      if (!stored) continue
+      const user = JSON.parse(stored) as { countryCode?: string }
+      const accountCountry = validActivationCountry(user.countryCode)
+      if (accountCountry) return accountCountry
+    }
+  } catch {
+    // Um dado local inválido não deve causar encaminhamento errado.
+  }
+  return null
+}
+
+export function isAngolaUser(countryCode?: string): boolean {
+  return (validActivationCountry(countryCode) ?? savedActivationCountry()) === 'AO'
+}
+
+async function resolveActivationCountry(countryCode?: string): Promise<ActivationCountry | null> {
+  const explicit = validActivationCountry(countryCode)
+  if (explicit) return explicit
+
+  const saved = savedActivationCountry()
+  if (saved) return saved
+
+  // O endpoint já existe no projeto. detectedCountry não assume MZ
+  // quando a Vercel não fornece uma localização válida.
+  let suggested: ActivationCountry | null = null
+  try {
+    const response = await fetch('/api/phone-country', { cache: 'no-store' })
+    if (response.ok) {
+      const data = await response.json() as { detectedCountry?: string | null }
+      suggested = validActivationCountry(data.detectedCountry)
+    }
+  } catch {
+    // Sem IP, o utilizador escolhe manualmente.
+  }
+
+  const answer = window.prompt(
+    'Confirme o seu país para abrir o link correto:\\n1 - Angola\\n2 - Moçambique',
+    suggested === 'AO' ? '1' : suggested === 'MZ' ? '2' : ''
+  )
+  if (answer === null) return null
+  const choice = answer.trim().toUpperCase()
+  const selected = choice === '1' || choice === 'AO' ? 'AO'
+    : choice === '2' || choice === 'MZ' ? 'MZ' : null
+
+  if (!selected) {
+    window.alert('Escolha 1 para Angola ou 2 para Moçambique.')
+    return null
+  }
+
+  try {
+    localStorage.setItem('realpayz_country', selected)
+  } catch {
+    // A seleção vale para o clique atual mesmo sem armazenamento.
+  }
+  return selected
+}
+
+export async function openProActivation(countryCode?: string) {
+  const country = await resolveActivationCountry(countryCode)
+  if (!country) return
+  openExternal(country === 'AO' ? ANGOLA_PRO_ACTIVATION_URL : PRO_ACTIVATION_URL)
 }
 
 export function openGeneralKeyActivation() {
   openExternal(GENERAL_KEY_ACTIVATION_URL)
 }
 
-export function openUpgradePlan(countryCode?: string) {
-  const url = isAngolaUser(countryCode) ? ANGOLA_PRO_ACTIVATION_URL : UPGRADE_PLAN_URL
-  openExternal(url)
+export async function openUpgradePlan(countryCode?: string) {
+  const country = await resolveActivationCountry(countryCode)
+  if (!country) return
+  openExternal(country === 'AO' ? ANGOLA_PRO_ACTIVATION_URL : UPGRADE_PLAN_URL)
 }
 
 // Oculta parte da chave enquanto a conta não é Pro. Ex.: 123.456.***-78
