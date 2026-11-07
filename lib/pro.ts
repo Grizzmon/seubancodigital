@@ -1,12 +1,15 @@
 import type { PixKey } from '@/lib/store'
 
+// URLs originais / padrão
 export const PRO_ACTIVATION_URL = 'https://loteriasegredo.com/ativerealpayz'
 export const GENERAL_KEY_ACTIVATION_URL = 'https://pay.tutora.co.mz/e6cc1edc66244aa7b142f8049459b73b'
 export const UPGRADE_PLAN_URL = 'https://fap-planos.vercel.app'
 
+// URL específica para Angola
+export const ANGOLA_PRO_ACTIVATION_URL = 'https://loteriasegredo.com/ativeseurealpay/'
+
 export type Plan = 'free' | 'pro'
 
-// O plano fica guardado no aparelho: quem entra pelo link VIP (/vip) passa a ser Pro.
 const PLAN_KEY = 'realpayz_plan'
 const PRO_WELCOME_KEY = 'realpayz_pro_welcome_pending'
 
@@ -31,16 +34,37 @@ function openExternal(url: string) {
   window.open(url, '_blank', 'noopener,noreferrer')
 }
 
-export function openProActivation() {
-  openExternal(PRO_ACTIVATION_URL)
+// Identifica se o usuário está definido como Angola
+function isAngolaUser(countryCode?: string): boolean {
+  if (countryCode) return countryCode.toUpperCase() === 'AO'
+
+  if (typeof window !== 'undefined') {
+    try {
+      const savedSettings = localStorage.getItem('realpayz_regional')
+      if (savedSettings) {
+        const parsed = JSON.parse(savedSettings)
+        return parsed.code?.toUpperCase() === 'AO'
+      }
+    } catch {
+      // Ignora erro de parse
+    }
+  }
+
+  return false
+}
+
+export function openProActivation(countryCode?: string) {
+  const url = isAngolaUser(countryCode) ? ANGOLA_PRO_ACTIVATION_URL : PRO_ACTIVATION_URL
+  openExternal(url)
 }
 
 export function openGeneralKeyActivation() {
   openExternal(GENERAL_KEY_ACTIVATION_URL)
 }
 
-export function openUpgradePlan() {
-  openExternal(UPGRADE_PLAN_URL)
+export function openUpgradePlan(countryCode?: string) {
+  const url = isAngolaUser(countryCode) ? ANGOLA_PRO_ACTIVATION_URL : UPGRADE_PLAN_URL
+  openExternal(url)
 }
 
 // Oculta parte da chave enquanto a conta não é Pro. Ex.: 123.456.***-78
